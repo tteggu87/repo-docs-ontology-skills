@@ -76,6 +76,182 @@
 - `warehouse/ontology.duckdb`
 - `vector/chroma/`
 
+## 시각화
+
+### 두 스킬의 역할 분담
+
+```mermaid
+flowchart LR
+    A["기존 프로젝트"] --> B["repo-docs-intelligence-bootstrap"]
+    B --> C["AGENTS.md"]
+    B --> D["docs/CURRENT_STATE.md"]
+    B --> E["docs/ARCHITECTURE.md"]
+    B --> F["intelligence/glossary.yaml"]
+    B --> G["actions / entities / datasets / policies"]
+
+    A --> H["lightweight-ontology-core"]
+    H --> I["documents.jsonl"]
+    H --> J["entities.jsonl"]
+    H --> K["claims.jsonl"]
+    H --> L["claim_evidence.jsonl"]
+    H --> M["segments.jsonl"]
+    H --> N["derived_edges.jsonl"]
+    H --> O["retrieval / duckdb mirror"]
+```
+
+읽는 법은 단순합니다.
+
+- `bootstrap`는 레포의 운영 기준선과 현재 상태 문서를 만듭니다.
+- `ontology`는 문서 내용을 구조화된 사실 레이어로 바꿉니다.
+- 둘이 겹치는 것처럼 보여도, 실제로는 `운영 정렬`과 `지식 구조화`로 책임이 나뉩니다.
+
+### 실제로 굴러가는 구조
+
+```mermaid
+flowchart TD
+    A["코드 변경 / 구조 변경 / 문서 누적"] --> B{"변화 종류는?"}
+    B -->|"진입점, 레이어, 규칙 변경"| C["repo-docs-intelligence-bootstrap 재적용"]
+    B -->|"회의록, 설계안, 운영 지식 누적"| D["lightweight-ontology-core 적용"]
+
+    C --> E["AGENTS.md 갱신"]
+    C --> F["CURRENT_STATE / ARCHITECTURE 갱신"]
+    C --> G["legacy / archive 분류"]
+    C --> H["minimal intelligence contracts 정리"]
+
+    D --> I["entity / document registry 생성"]
+    D --> J["claim / evidence 연결"]
+    D --> K["segment 생성"]
+    D --> L["accepted claim 기반 derived edge 생성"]
+
+    E --> M["새 세션 에이전트가 빠르게 맥락 파악"]
+    F --> M
+    G --> M
+    H --> M
+    I --> N["근거 추적 가능한 지식 레이어"]
+    J --> N
+    K --> N
+    L --> N
+```
+
+핵심은 `항상 둘 다 돌리는 구조`가 아니라, 변화의 성격에 따라 필요한 스킬을 다시 적용하는 구조입니다.
+
+### bootstrap의 의도
+
+```mermaid
+flowchart LR
+    A["혼란스러운 레포"] --> B["entrypoint 탐색"]
+    A --> C["현재 문서 점검"]
+    A --> D["legacy 경로 식별"]
+    A --> E["용어와 계약 정리"]
+
+    B --> F["공식 실행 경로 명시"]
+    C --> G["current-state 문서 생성"]
+    D --> H["archive / legacy 분류"]
+    E --> I["glossary / manifests / policies"]
+
+    F --> J["AGENTS.md"]
+    G --> J
+    H --> J
+    I --> J
+```
+
+이 스킬의 의도는 문서를 많이 만드는 것이 아닙니다.
+
+- 에이전트가 헤매지 않게 시작점을 짧게 만들기
+- "무엇이 공식인가"를 레포 안에 명시적으로 남기기
+- 오래된 문서를 삭제하지 않고 의미 있게 분류하기
+- 코드와 문서가 어긋나는 드리프트를 구조적으로 줄이기
+
+### 경량 온톨로지의 의도
+
+```mermaid
+flowchart LR
+    A["문서 / 메모 / 설계안 / 회의록"] --> B["document 등록"]
+    B --> C["segment 분해"]
+    C --> D["entity 추출"]
+    C --> E["claim 추출"]
+    E --> F["evidence 연결"]
+    E --> G["status 관리 proposed / accepted / disputed / superseded"]
+    G --> H["accepted claim만 derived edge 생성"]
+    C --> I["retrieval sync 후보"]
+```
+
+이 스킬의 의도는 "문서를 더 예쁘게 정리"가 아닙니다. 더 정확히는 아래입니다.
+
+- 텍스트를 `사람이 읽는 설명`에서 `기계도 다룰 수 있는 사실 구조`로 바꾸기
+- claim이 어디서 왔는지 evidence로 추적 가능하게 만들기
+- accepted / disputed / superseded 상태를 분리해서 운영하기
+- retrieval을 붙여도 canonical truth와 헷갈리지 않게 분리하기
+
+### 경량 온톨로지 내부 레이어
+
+```mermaid
+flowchart TD
+    A["manifests/relations.yaml"] --> B["추출 규칙과 관계 vocabulary"]
+    C["manifests/document_types.yaml"] --> B
+
+    D["warehouse/jsonl/documents.jsonl"] --> E["canonical document registry"]
+    F["warehouse/jsonl/entities.jsonl"] --> G["canonical entity registry"]
+    H["warehouse/jsonl/claims.jsonl"] --> I["canonical claims"]
+    J["warehouse/jsonl/claim_evidence.jsonl"] --> K["claim-evidence links"]
+    L["warehouse/jsonl/segments.jsonl"] --> M["stable text references"]
+
+    I --> N["derived_edges.jsonl"]
+    K --> N
+    M --> O["Chroma retrieval layer"]
+    I --> P["DuckDB mirror"]
+```
+
+이 구조에서 중요한 구분은 아래입니다.
+
+- `JSONL registry`는 canonical
+- `derived_edges`는 accepted claim 기반의 derived output
+- `DuckDB`는 분석용 mirror
+- `Chroma`는 retrieval 보조층
+
+즉 `검색 결과`가 곧 `승인된 사실`이 되지 않도록 경계를 분명히 둡니다.
+
+### 에이전트가 왜 더 "알잘딱" 움직이게 되는가
+
+```mermaid
+flowchart LR
+    A["레포에 current truth가 없음"] --> B["매 세션 재탐색"]
+    B --> C["큰 계획 수립 필요"]
+    C --> D["맥락 손실 / 반복 질문 / 드리프트"]
+
+    E["AGENTS.md + docs + intelligence + ontology"] --> F["짧은 탐색 경로"]
+    F --> G["현재 공식 경로 빠른 파악"]
+    F --> H["용어와 계약 빠른 파악"]
+    F --> I["근거 문서 빠른 추적"]
+    G --> J["작업 착수 속도 향상"]
+    H --> J
+    I --> J
+```
+
+여기서 중요한 포인트는 자동 판단의 근거가 "모델 감"이 아니라 "레포 안에 저장된 구조화된 truth"라는 점입니다.
+
+### bootstrap만 쓸 때와 ontology까지 쓸 때의 차이
+
+```mermaid
+flowchart LR
+    A["bootstrap only"] --> B["AGENTS.md"]
+    A --> C["current-state docs"]
+    A --> D["minimal manifests"]
+    A --> E["문서 드리프트 감소"]
+    A --> F["에이전트 온보딩 쉬움"]
+
+    G["bootstrap + ontology"] --> H["claims / evidence / segments"]
+    G --> I["contradiction / supersession 관리"]
+    G --> J["retrieval-ready knowledge layer"]
+    G --> K["근거 기반 질의 가능"]
+```
+
+실무 판단 기준은 보통 이렇습니다.
+
+- 현재 필요한 것이 `정리와 기준선`이면 `bootstrap`
+- 현재 필요한 것이 `사실/근거 추적`이면 `ontology`
+- 둘 다 필요하면 `bootstrap` 후 `ontology`
+
 ## 기존 프로젝트에 적용하는 가장 실무적인 순서
 
 아래 순서가 가장 안정적입니다.
@@ -287,6 +463,22 @@ This repository packages two complementary Codex skills:
   Aligns repository docs, `AGENTS.md`, and a minimal intelligence layer with the live codebase. It is the right first step for an existing project with drifted docs or unclear entrypoints.
 - `lightweight-ontology-core`
   Adds a structured knowledge layer over documents using entities, relations, claims, evidence, and segments. It is useful when you need provenance, contradiction tracking, or retrieval-ready document structure.
+
+## Visual overview
+
+```mermaid
+flowchart LR
+    A["Existing repository"] --> B["repo-docs-intelligence-bootstrap"]
+    B --> C["AGENTS.md and current-state docs"]
+    B --> D["minimal intelligence layer"]
+
+    A --> E["lightweight-ontology-core"]
+    E --> F["documents / entities / claims / evidence / segments"]
+    E --> G["derived edges, DuckDB mirror, retrieval support"]
+```
+
+Bootstrap aligns repository truth around code and operations.
+Ontology turns document knowledge into structured, traceable facts.
 
 ## Practical adoption flow
 
