@@ -24,6 +24,27 @@ CURRENT_DOCS = [
 ]
 
 PATHLIKE_EXTENSIONS = (".md", ".yaml", ".yml", ".sql", ".py")
+IMPACT_SUMMARY_REQUIRED_SECTIONS = (
+    "changed",
+    "checked not changed",
+    "remaining drift",
+    "validator summary",
+)
+LEGACY_VISIBILITY_HINTS = (
+    "intentional legacy",
+    "transitional",
+    "still live",
+    "still imported",
+    "runtime dependency",
+    "legacy support",
+)
+NEGATING_HINTS = (
+    "none recorded",
+    "not recorded",
+    "not clearly",
+    "does not clearly",
+    "not yet",
+)
 
 
 class ValidationReport:
@@ -223,10 +244,7 @@ def validate_archive_banners(archive_dir: Path, report: ValidationReport) -> Non
             )
 
 
-def resolve_python_target(repo_root: Path, implementation: str) -> tuple[Path | None, str | None]:
-    if ":" not in implementation:
-        return None, None
-    module_path, symbol = implementation.split(":", 1)
+def resolve_module_file(repo_root: Path, module_path: str) -> Path | None:
     module_parts = module_path.split(".")
     candidates = [
         repo_root.joinpath(*module_parts).with_suffix(".py"),
@@ -236,8 +254,133 @@ def resolve_python_target(repo_root: Path, implementation: str) -> tuple[Path | 
     ]
     for candidate in candidates:
         if candidate.exists():
-            return candidate, symbol
-    return None, symbol
+            return candidate
+    return None
+
+
+def extract_console_scripts(repo_root: Path) -> list[tuple[str, str]]:
+    pyproject_path = repo_root / "pyproject.toml"
+    if not pyproject_path.exists():
+        return []
+    text = pyproject_path.read_text(encoding="utf-8")
+    match = re.search(r"^\[project\.scripts\]\s*$([\s\S]*?)(?=^\[|\Z)", text, re.MULTILINE)
+    if not match:
+        return []
+
+    scripts: list[tuple[str, str]] = []
+    for line in match.group(1).splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        name, value = line.split("=", 1)
+        scripts.append((name.strip(), value.strip().strip("\"'")))
+    return scripts
+
+
+def collect_live_legacy_dependencies(repo_root: Path) -> list[Path]:
+    legacy_paths: set[Path] = set()
+    for path in repo_root.rglob("*.py"):
+        if any(part.startswith(".") for part in path.parts):
+            continue
+        text = path.read_text(encoding="utf-8")
+        for module_name in re.findall(r"^\s*from\s+([A-Za-z0-9_\.]+)\s+import\s+", text, re.MULTILINE):
+            if "legacy" not in module_name.lower():
+                continue
+            resolved = resolve_module_file(repo_root, module_name)
+            if resolved is not None:
+                legacy_paths.add(resolved)
+        for module_name in re.findall(r"^\s*import\s+([A-Za-z0-9_\.]+)", text, re.MULTILINE):
+            if "legacy" not in module_name.lower():
+                continue
+            primary_name = module_name.split(",", 1)[0].strip()
+            resolved = resolve_module_file(repo_root, primary_name)
+            if resolved is not None:
+                legacy_paths.add(resolved)
+    return sorted(legacy_paths)
+
+
+def validate_impact_summary_sections(path: Path, report: ValidationReport) -> None:
+    text = path.read_text(encoding="utf-8").lower()
+    aliases = {
+        "changed": ("## changed",),
+        "checked not changed": (
+            "## checked not changed",
+            "## checked-not-changed",
+            "## checked but did not need changes",
+        ),
+        "remaining drift": ("## remaining drift",),
+        "validator summary": ("## validator summary",),
+    }
+    missing = [section for section, options in aliases.items() if not any(option in text for option in options)]
+    if missing:
+        report.add_error(
+            "docs.impact_summary_incomplete",
+            "Impact summary is missing required sections: " + ", ".join(missing) + ".",
+            path,
+        )
+
+
+def extract_markdown_section(text: str, heading: str) -> str:
+    pattern = rf"^##\s+{re.escape(heading)}\s*$([\s\S]*?)(?=^##\s+|\Z)"
+    match = re.search(pattern, text, re.MULTILINE)
+    return match.group(1).strip() if match else ""
+
+
+def validate_current_state_visibility(current_state_path: Path, repo_root: Path, report: ValidationReport) -> None:
+    text = current_state_path.read_text(encoding="utf-8")
+    normalized_text = text.lower()
+    transitional_section = extract_markdown_section(text, "Transitional Facts").lower()
+    current_truth_section = extract_markdown_section(text, "Current Truth").lower()
+    visibility_sections = "\n".join(part for part in (transitional_section, current_truth_section) if part)
+
+    missing_console_scripts: list[str] = []
+    for script_name, target in extract_console_scripts(repo_root):
+        target_path = ""
+        if ":" in target:
+            module_name, _symbol = target.split(":", 1)
+            module_file = resolve_module_file(repo_root, module_name)
+            if module_file is not None:
+                target_path = module_file.relative_to(repo_root).as_posix().lower()
+        script_name_lc = script_name.lower()
+        if script_name_lc in normalized_text:
+            continue
+        if target.lower() in normalized_text:
+            continue
+        if target_path and target_path in normalized_text:
+            continue
+        missing_console_scripts.append(script_name)
+
+    if missing_console_scripts:
+        report.add_warning(
+            "docs.current_state_missing_console_script",
+            "Current state docs do not mention console script(s): " + ", ".join(sorted(missing_console_scripts)) + ".",
+            current_state_path,
+        )
+
+    unreported_legacy_paths: list[str] = []
+    for legacy_path in collect_live_legacy_dependencies(repo_root):
+        relative = legacy_path.relative_to(repo_root).as_posix().lower()
+        mentioned = relative in visibility_sections
+        has_visibility_hint = any(hint in visibility_sections for hint in LEGACY_VISIBILITY_HINTS)
+        is_negated = any(hint in visibility_sections for hint in NEGATING_HINTS)
+        if not mentioned or not has_visibility_hint or is_negated:
+            unreported_legacy_paths.append(relative)
+
+    if unreported_legacy_paths:
+        report.add_warning(
+            "docs.legacy_runtime_dependency_missing",
+            "Current state docs do not mention still-live legacy dependency path(s): "
+            + ", ".join(unreported_legacy_paths)
+            + " under explicit current-vs-legacy visibility sections.",
+            current_state_path,
+        )
+
+
+def resolve_python_target(repo_root: Path, implementation: str) -> tuple[Path | None, str | None]:
+    if ":" not in implementation:
+        return None, None
+    module_path, symbol = implementation.split(":", 1)
+    return resolve_module_file(repo_root, module_path), symbol
 
 
 def validate_implementation_link(implementation: object, report: ValidationReport, path: Path) -> None:
@@ -282,6 +425,10 @@ def validate_docs(repo_root: Path, report: ValidationReport) -> None:
             continue
         validate_doc_metadata(path, report)
         validate_markdown_refs(path, repo_root, report)
+        if name == "CURRENT_STATE.md":
+            validate_current_state_visibility(path, repo_root, report)
+        if name == "IMPACT_SUMMARY.md":
+            validate_impact_summary_sections(path, report)
 
     archive_dir = docs_dir / "archive"
     if archive_dir.exists():
@@ -411,6 +558,15 @@ def validate_intelligence(repo_root: Path, report: ValidationReport) -> None:
                 )
 
     for dataset_key, item in dataset_map.items():
+        canonical_shape = item.get("canonical_shape")
+        if canonical_shape:
+            canonical_shape_path = repo_root / str(canonical_shape)
+            if not canonical_shape_path.exists():
+                report.add_error(
+                    "datasets.canonical_shape_missing",
+                    f"Dataset `{dataset_key}` references missing canonical shape `{canonical_shape}`.",
+                    datasets_path,
+                )
         for action_key in item.get("used_by_actions") or []:
             if action_map and str(action_key) not in action_map:
                 report.add_error(
@@ -502,9 +658,8 @@ def validate_changed_files(repo_root: Path, changed_files_path: Path | None, rep
             repo_root,
         )
 
-    entrypoint_changed = any(
-        path.endswith(("cli.py", "main.py")) or path.startswith(("scripts/", "bin/")) for path in changed
-    )
+    entrypoint_names = ("cli.py", "main.py", "serve.py", "server.py", "app.py")
+    entrypoint_changed = any(path.endswith(entrypoint_names) or path.startswith(("scripts/", "bin/")) for path in changed)
     if entrypoint_changed and "docs/CURRENT_STATE.md" not in changed:
         report.add_warning(
             "drift.current_state_missing",

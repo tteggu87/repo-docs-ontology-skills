@@ -63,6 +63,16 @@ Before writing anything new, search for:
 - existing glossary or policy files
 
 Prefer reuse and relabeling over inventing a parallel structure.
+When entrypoints disagree, verify the canonical surface from live registration points first, such as:
+
+- `pyproject.toml` script entries
+- package CLI modules like `pkg/cli.py`
+- shell wrappers in `scripts/` or `bin/`
+- imports that show whether a wrapper is only delegating to a deeper entrypoint
+
+Do not promote a wrapper, bootstrap script, or operator convenience command to primary truth unless the repository actually treats it as canonical.
+Make the official CLI or package-owned command the primary entrypoint when package metadata, imports, or registration points show that it is the real canonical surface.
+Keep wrappers visible as a secondary transitional surface when operators still rely on them, but do not document them as the primary or canonical entrypoint.
 
 ### Impact Analysis First
 
@@ -74,6 +84,9 @@ Before changing docs, schema contracts, manifests, handlers, or graph/materializ
 4. note what the change will replace and what it will not replace
 
 Always leave an impact summary when structural changes are made.
+If a legacy path is still imported, delegated to, or required by the current runtime, record it as intentional legacy or transitional support rather than hiding it as dead code.
+Treat a still-live legacy path as visible current context even when it is no longer preferred, and never archive it away while it remains on the runtime path.
+If a dependency is still live in imports, runtime delegation, or operator workflows, say that it is still live and intentionally legacy instead of implying it has already been removed.
 
 ### Schema First
 
@@ -97,6 +110,10 @@ When a concept, action, boundary, or workflow changes, first update the smallest
 - then implementation and docs references
 
 The ontology should stay lightweight. Add only what reduces ambiguity, drift, or repeated mistakes.
+If an intelligence layer already exists, preserve current keys, term identities, dataset names, and capability bindings unless code evidence shows they are wrong.
+Preserve existing keys and do not rename canonical keys just to make the structure feel cleaner.
+Extend the existing layer in place before creating any new parallel manifest, glossary term, or replacement capability name.
+Do not recreate the intelligence layer under a second set of keys when the current structure already captures the same meaning.
 
 ### Treat Drift As A Bug
 
@@ -179,8 +196,10 @@ Always verify:
 - schema authority
 - whether legacy paths still exist
 - default graph materializer and retrieval provider behavior
+- whether imported legacy helpers are still on the live runtime path
 
 If the repo is transitional, say so directly.
+Do not archive, downplay, or relabel a still-imported path as historical just because it is no longer preferred.
 
 ### 4. Maintain Minimal Intelligence Artifacts
 
@@ -211,6 +230,7 @@ Recommended minimum pattern:
 
 Do not expand the ontology for completeness alone.
 Only add artifacts that reduce ambiguity, drift, or implementation mistakes.
+When an action already has Python implementation but lacks schema-first context, prefer filling the missing glossary, dataset, policy, or schema contracts around that action instead of inventing a new runtime abstraction.
 
 ### 5. Keep Python Linking Minimal
 
@@ -251,6 +271,7 @@ You must always check whether these files need updates:
 - `AGENTS.md` when working style, repository rules, or documentation expectations drift from current practice
 
 Do not finish a refactor after updating code only.
+If a repo already has current docs or intelligence artifacts, explicitly note which files were checked and intentionally left unchanged so the reader can distinguish stable truth from missed work.
 
 ### 7. Add Or Refresh AGENTS.md
 
@@ -276,6 +297,7 @@ python scripts/validate_repo_docs_intelligence.py --repo-root <path>
 If you can derive a changed-file list from the environment, pass it with `--changed-files <path>`.
 Do not claim success if the validator reports hard failures.
 If the validator reports warnings, surface them under remaining drift or cautions.
+If the validator cannot be run, say why and fall back to a manual drift check rather than implying validator-clean alignment.
 
 ### 9. Report Drift Status
 
@@ -299,14 +321,25 @@ Before ending the task, explicitly report:
 3. any remaining drift or legacy exceptions
 4. validator errors or warnings, or why the validator was not run
 
+Minimum impact summary content:
+
+- changed files or newly created artifacts
+- checked-but-unchanged files
+- current vs intentional legacy split
+- remaining drift, warnings, or follow-up work
+- validator status, including unresolved warnings
+
 ## Guardrails
 
 Do not:
 
 - claim a CLI or package surface exists if it does not
 - claim wrappers are thin if they still own logic
+- claim a wrapper is canonical when package metadata or direct imports show otherwise
 - silently hide legacy paths still used in production
+- archive or describe a still-imported path as dead, removed, or superseded
 - create speculative manifests for runtime features that do not exist
+- rename existing action, dataset, entity, glossary, or capability keys without code evidence
 - overdesign the intelligence layer
 - expand the ontology without a concrete ambiguity, drift, or reuse problem to solve
 - ignore validator warnings and still report the repository as fully aligned
