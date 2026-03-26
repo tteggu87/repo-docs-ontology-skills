@@ -558,6 +558,51 @@ The point of this repository is to avoid jumping straight into a heavy knowledge
 - `lg-ontology` only
   - Use when you already want graph-style inspection and comparison testing in the same pass.
 
+The default recommendation is:
+
+- structure a project or PRD first: `repo-docs`
+- standard ontology work: `repo-docs -> lightweight-ontology-core`
+- graph-style ontology work: `repo-docs -> lg-ontology`
+
+## Common Prompt Scenarios
+
+### 1. Structure only with repo-docs
+
+```text
+Use repo-docs to structure [<target project or PRD folder>](<path>).
+```
+
+### 2. Structure first, then canonical ontology
+
+```text
+Use repo-docs to structure things first, then use lightweight-ontology-core to ontologyize it.
+```
+
+### 3. Structure first, then graph-style ontology
+
+```text
+Use repo-docs to structure things first, then use lg-ontology to ontologyize and graph-project it.
+```
+
+### 4. Quick ontology with core only
+
+```text
+Use lightweight-ontology-core to ontologyize [<target file or folder>](<path>).
+```
+
+### 5. Quick graph-style ontology with lg only
+
+```text
+Use lg-ontology to ontologyize and graph-project [<target file or folder>](<path>).
+```
+
+## What We Learned From Experiments
+
+- `repo-docs` is valuable not only as ontology prep, but also as its original purpose: structuring projects, repositories, and PRDs around current truth.
+- `lightweight-ontology-core` is strongest at canonical truth and provenance discipline.
+- `lg-ontology` does not magically make answers smarter; it is strongest on multi-hop paths, neighborhoods, and graph-style inspection questions.
+- Simple counting or direct extraction questions are often already good enough with `core`, while person-topic-evidence linking and path explanation tend to fit `lg` better.
+
 ## What this repository is trying to fix
 
 Most existing repositories gradually end up in a state like this:
@@ -567,7 +612,7 @@ Most existing repositories gradually end up in a state like this:
 - different people describe the project differently, and every new agent session has to infer context from scratch
 - the project works, but docs and rules lag behind the implementation and drift accumulates
 
-These two skills approach that problem not as "write prettier docs," but as "make current repository truth explicit."
+These skills approach that problem not as "write prettier docs," but as "make current repository truth explicit."
 
 ## Core ideas
 
