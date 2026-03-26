@@ -1,4 +1,10 @@
-# Repo Bootstrap + Lightweight Ontology Skills
+<p align="center">
+  <img src="branding/doctology-logo.svg" alt="DocTology logo" width="820" />
+</p>
+
+# DocTology
+
+Repo Bootstrap + Lightweight Ontology Skills
 
 ## 한국어
 
