@@ -83,6 +83,46 @@ lightweight-ontology-core로 [<대상파일또는폴더>](<경로>) 온톨로지
 lg-ontology로 [<대상파일또는폴더>](<경로>) 온톨로지 그래프화 해줘.
 ```
 
+## 의존성 안내
+
+기본 판단은 이렇습니다.
+
+- `repo-docs-intelligence-bootstrap`가 가장 가볍습니다.
+- `lightweight-ontology-core`와 `lg-ontology`는 `PyYAML`이 사실상 공통 필수입니다.
+- `duckdb`, `chromadb`, `Ladybug`는 기능별 선택 의존성입니다.
+
+### 최소 설치
+
+```bash
+pip install pyyaml
+```
+
+### 선택 설치
+
+```bash
+pip install duckdb chromadb
+```
+
+### 스킬별 의존성
+
+- `repo-docs-intelligence-bootstrap`
+  - 보통 `PyYAML`만 있으면 충분합니다.
+- `lightweight-ontology-core`
+  - `PyYAML`: YAML manifests와 validator에 필요
+  - `duckdb`: ontology mirror 생성과 mirror 검증에 필요
+  - `chromadb`: retrieval sync와 retrieval query에 필요
+- `lg-ontology`
+  - `lightweight-ontology-core` 의존성을 그대로 가집니다
+  - graph projection export와 comparison 자체는 Ladybug 없이도 동작합니다
+  - `Ladybug`는 projection 산출물을 읽기 전용 graph query layer로 적재할 때만 필요합니다
+
+### 해석 기준
+
+- `duckdb`가 없으면 core/lg의 mirror 관련 기능만 빠집니다.
+- `chromadb`가 없으면 retrieval 관련 기능만 빠집니다.
+- `Ladybug`가 없으면 `lg-ontology`의 graph projection export와 comparison은 계속 사용할 수 있습니다.
+- 즉 `Ladybug`는 필수가 아니라, graph serving을 붙일 때만 고려하면 됩니다.
+
 ## 실험에서 확인한 점
 
 - `repo-docs`는 온톨로지 전처리용만이 아니라, 프로젝트/레포/PRD를 현재 기준으로 정리하는 본래 목적만으로도 충분히 가치가 있습니다.
@@ -620,6 +660,46 @@ Use lightweight-ontology-core to ontologyize [<target file or folder>](<path>).
 ```text
 Use lg-ontology to ontologyize and graph-project [<target file or folder>](<path>).
 ```
+
+## Dependencies
+
+The practical rule is:
+
+- `repo-docs-intelligence-bootstrap` is the lightest skill.
+- `lightweight-ontology-core` and `lg-ontology` effectively share `PyYAML` as the common baseline dependency.
+- `duckdb`, `chromadb`, and `Ladybug` are feature-dependent optional dependencies.
+
+### Minimal install
+
+```bash
+pip install pyyaml
+```
+
+### Optional install
+
+```bash
+pip install duckdb chromadb
+```
+
+### Dependency notes by skill
+
+- `repo-docs-intelligence-bootstrap`
+  - usually only needs `PyYAML`
+- `lightweight-ontology-core`
+  - `PyYAML`: required for YAML manifests and validators
+  - `duckdb`: required for ontology mirror creation and mirror validation
+  - `chromadb`: required for retrieval sync and retrieval queries
+- `lg-ontology`
+  - inherits the same dependencies as `lightweight-ontology-core`
+  - graph projection export and comparison work without Ladybug
+  - `Ladybug` is only needed if you want to load projection artifacts into a read-only graph query layer
+
+### How to interpret this
+
+- without `duckdb`, only mirror-related core/lg features are unavailable
+- without `chromadb`, only retrieval-related features are unavailable
+- without `Ladybug`, `lg-ontology` still supports graph projection export and baseline-vs-graph comparison
+- in other words, `Ladybug` is optional, not a baseline requirement
 
 ## What We Learned From Experiments
 
