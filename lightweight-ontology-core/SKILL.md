@@ -45,6 +45,7 @@ Canonical:
 - `intelligence/manifests/document_types.yaml`
 - `warehouse/jsonl/entities.jsonl`
 - `warehouse/jsonl/documents.jsonl`
+- `warehouse/jsonl/messages.jsonl` when the corpus is a chat log, sequential event stream, or conversation transcript
 - `warehouse/jsonl/claims.jsonl`
 - `warehouse/jsonl/claim_evidence.jsonl`
 
@@ -186,11 +187,15 @@ Create or update:
 - `claim_evidence.jsonl`
 
 Treat these JSONL files as canonical fact storage.
+If the source is conversational or sequential, also keep a full-fidelity `messages.jsonl` or equivalent event registry.
+Do not let `claims.jsonl` or top-N segment summaries become the activity or speaker-discovery source of truth.
 
 ### 3. Build Stable Segment References
 
 Generate `segments.jsonl` from registered text documents.
 Treat segments as stable text-reference units that bridge documents, evidence, and retrieval.
+If the source is a chat or event stream, preserve the full participant set or participant counts in segment metadata.
+Do not truncate canonical participant coverage down to presentation-friendly top-N lists.
 
 Run:
 
@@ -216,6 +221,8 @@ Do not treat retrieval results as accepted facts.
 
 Generate `derived_edges.jsonl` only from accepted claims and declared inference rules.
 Do not hand-edit derived edges as if they were source truth.
+If the corpus includes conversational interaction, preserve interaction edge families explicitly when they are part of the accepted contract,
+for example author, mention, reply, and co-occurrence edges.
 
 ### 6. Mirror To DuckDB
 
@@ -258,6 +265,7 @@ Do not:
 - silently ignore broken claim/evidence/entity/document links
 - silently ignore broken segment/evidence links or stale retrieval state
 - broaden the core relation set with domain-specific defaults before an adapter exists
+- let reports or downstream tooling regress from full registries back to claim-only fallback for speaker/activity analysis
 
 Use this skill as a reusable ontology core.
 Keep repo-specific governance in `repo-docs-intelligence-bootstrap`.

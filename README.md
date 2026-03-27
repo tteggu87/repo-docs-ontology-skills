@@ -11,6 +11,8 @@ Repo Bootstrap + Lightweight Ontology Skills
 > **기존 프로젝트와 문서를 먼저 정리하고, 필요할 때만 경량 온톨로지와 그래프 분석을 얹는 3-skill starter pack**
 > 이 레포는 `repo bootstrap -> canonical ontology -> optional graph projection` 흐름을 가볍게 시작하게 해줍니다.
 
+> 운영까지 같이 보려면 optional companion skill인 `ontology-pipeline-operator`를 얹을 수 있습니다.
+
 > TL;DR
 > 이 레포는 `풀 온톨로지 플랫폼`이나 `graph DB starter`가 아닙니다.
 > 대신 아래 같은 상황에서 바로 쓰기 좋은 실무형 starter pack입니다.
@@ -29,6 +31,11 @@ Repo Bootstrap + Lightweight Ontology Skills
 - `lg-ontology`
   - ontology 위에 graph projection과 graph-style inspection을 추가합니다.
 
+**운영 companion skill**
+
+- `ontology-pipeline-operator`
+  - 이미 DocTology 계열 구조가 있는 repo에서 refresh, report rebuild, graph regression check, docs sync를 single-entry 운영 모델로 다룹니다.
+
 이 레포의 기본값은 `repo-docs`부터 시작하는 것입니다.
 필요할 때만 `core`, 그 다음 `lg`를 단계적으로 얹는 흐름을 권장합니다.
 
@@ -40,16 +47,21 @@ Repo Bootstrap + Lightweight Ontology Skills
   - 구조를 먼저 정리한 뒤 canonical ontology만 만들고 싶을 때
 - `repo-docs -> lg-ontology`
   - 구조를 먼저 정리한 뒤 ontology와 graph projection까지 같이 보고 싶을 때
+- `repo-docs -> lightweight-ontology-core -> lg-ontology -> ontology-pipeline-operator`
+  - 구조화와 ontology를 만든 뒤, 운영/회귀검사/리포트 재생성까지 반복적으로 돌리고 싶을 때
 - `lightweight-ontology-core` 단독
   - 이미 폴더 구조가 괜찮고, 빠르게 문서/노트를 claim-evidence ontology로 바꾸고 싶을 때
 - `lg-ontology` 단독
   - 이미 ontology 감각이 있거나, graph-style inspection과 비교 실험까지 한 번에 보고 싶을 때
+- `ontology-pipeline-operator` 단독
+  - 이미 DocTology 스타일 구조가 있는 repo에서 single-entry refresh와 docs sync 운영만 필요할 때
 
 기본 추천은 이렇습니다.
 
 - 프로젝트나 PRD를 먼저 정리: `repo-docs`
 - 일반적인 온톨로지화: `repo-docs -> lightweight-ontology-core`
 - 그래프형 온톨로지화: `repo-docs -> lg-ontology`
+- 반복 운영/품질 유지: 기존 구조 위에 `ontology-pipeline-operator`
 
 ## 자주 쓰는 명령 시나리오
 
@@ -81,6 +93,12 @@ lightweight-ontology-core로 [<대상파일또는폴더>](<경로>) 온톨로지
 
 ```text
 lg-ontology로 [<대상파일또는폴더>](<경로>) 온톨로지 그래프화 해줘.
+```
+
+### 6. 운영 companion skill
+
+```text
+ontology-pipeline-operator로 이 repo의 ontology/report/graph refresh 경로를 정리하고 운영 체크까지 붙여줘.
 ```
 
 ## 의존성 안내

@@ -126,6 +126,7 @@ python scripts/validate_ontology_graph.py --repo-root <path>
 ```
 
 Do not add a graph layer on top of broken canonical registries.
+If the corpus is conversational or sequential, make sure a full-fidelity `messages.jsonl` or equivalent event registry exists before trusting graph-assisted report quality.
 
 ### 2. Export A Graph Projection
 
@@ -146,6 +147,7 @@ This writes graph projection artifacts under:
 - `warehouse/graph_projection/summary.json`
 
 Treat these files as derived outputs only.
+If a downstream report or explorer consumes the projection, verify that it still reads canonical messages plus derived edges rather than silently falling back to claim samples.
 
 ### 3. Compare Baseline Reasoning Vs Graph-Style Expansion
 
@@ -214,6 +216,7 @@ Project these edge families when useful:
 - claim-to-segment edges
 - segment-to-document edges
 - segment-to-entity mention edges
+- conversational interaction edges such as author, mention, reply, and topic co-occurrence when the source corpus supports them
 
 Keep `accepted` as the default fact graph.
 Include non-accepted claims only when explicitly investigating review state or conflicts.
@@ -229,6 +232,7 @@ Call the graph layer justified when at least one of these improves materially:
 - analyst ergonomics for ad-hoc exploration
 
 Do not call it justified just because it is visually pleasing or because the graph has many edges.
+Also do not call it justified if the graph layer only looks useful because the baseline consumer regressed to claim-only or top-N summary fallback.
 
 ## Guardrails
 
@@ -239,6 +243,7 @@ Do not:
 - hide unresolved contradictions behind graph traversals
 - replace the ontology core before comparison testing proves value
 - add domain-specific relation sprawl to the base skill before an adapter exists
+- let materializers collapse richer interaction edge families back into a narrower provenance-only graph without an explicit contract change
 
 Use this skill as a graph-oriented extension of `lightweight-ontology-core`.
 Keep canonical truth ownership in the ontology core.

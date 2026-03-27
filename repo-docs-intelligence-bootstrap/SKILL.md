@@ -45,6 +45,7 @@ The usual target output is:
 - `docs/archive/` for superseded material with a status banner
 - optional `docs/reviews/` and `docs/experiments/`
 - a minimal `intelligence/` directory with glossary, manifests, handlers, policies, schemas, and capabilities
+- optional `scripts/pipeline_refresh.py` and `scripts/sync_current_state.py` when the repo needs a single entry and doc-sync path
 - a root `AGENTS.md`
 - an impact summary describing what changed, what stayed legacy, and what drift still remains
 - a validator result summary when `scripts/validate_repo_docs_intelligence.py` is available
@@ -227,6 +228,7 @@ Recommended minimum pattern:
 - policies describe repository rules, gates, and stopping conditions
 - SQL files mirror current contract excerpts and point to the authoritative implementation
 - capability bindings connect action keys to Python execution points
+- if the repo already has multiple ontology/report scripts, add a single-entry pipeline contract instead of leaving operators to memorize command order
 
 Do not expand the ontology for completeness alone.
 Only add artifacts that reduce ambiguity, drift, or implementation mistakes.
@@ -248,6 +250,11 @@ Bad examples:
 - replacing the whole runtime with a new manifest executor
 - rewriting orchestration around YAML
 
+Good repo-level maintenance additions:
+
+- a thin `pipeline_refresh.py` that calls existing focused scripts in the canonical order
+- a thin `sync_current_state.py` that regenerates current-state and impact docs from live artifacts
+
 ### 6. Synchronize Code, Docs, And Guidance In The Same Task
 
 When code changes, update the corresponding docs and intelligence artifacts in the same task.
@@ -258,6 +265,7 @@ You must always check whether these files need updates:
 - `docs/ARCHITECTURE.md` when component roles, data flow, or storage responsibilities change
 - `docs/LAYERS.md` when boundaries between Raw/Core/Derived/Search/Graph/Serve change
 - `docs/SKILLS_INTEGRATION.md` when CLI, skill wrappers, or external entrypoints change
+- `docs/IMPACT_SUMMARY.md` and `docs/CURRENT_STATE.md` when ontology/report/graph counts or canonical execution paths change
 - `docs/ROADMAP.md` when phased cleanup or deferred drift changes materially
 - `docs/IMPACT_SUMMARY.md` when structural changes or validator findings need explicit reporting
 - `intelligence/glossary.yaml` when a new domain term or canonical concept is introduced or renamed
