@@ -5,8 +5,30 @@ description: Use this skill when an existing Obsidian-first LLM Wiki repository 
 
 # LLM Wiki Ontology Ingest
 
-Use this skill as a wiki-facing adapter on top of `lightweight-ontology-core`.
-The goal is to keep canonical ontology truth under `warehouse/jsonl/` while also maintaining human-facing markdown synthesis under `wiki/`.
+## Overview
+
+This is the user-facing ingest skill for an ontology-backed LLM Wiki.
+
+Use it when the repository already has:
+
+- `raw/`
+- `wiki/`
+- repo-local `AGENTS.md`
+- ideally `warehouse/jsonl/` and `intelligence/`
+
+This skill is the adapter between a repo-local wiki workflow and the reusable ontology engine.
+It should feel simple to the human:
+
+1. put a source in `raw/inbox/`
+2. run ingest
+3. ask questions from the improved wiki
+
+Internally, this skill should:
+
+1. honor the repo-local `AGENTS.md`
+2. use `lightweight-ontology-core` for canonical ontology extraction
+3. project the resulting structured truth back into `wiki/`
+4. refresh `wiki/_meta/index.md` and `wiki/_meta/log.md`
 
 ## Use This Skill For
 
@@ -26,6 +48,38 @@ The goal is to keep canonical ontology truth under `warehouse/jsonl/` while also
 For lower-level ontology work, use `lightweight-ontology-core` directly.
 For new repo setup, use `llm-wiki-bootstrap`.
 For graph-style inspection, layer `lg-ontology` on top of the canonical ontology outputs after the ingest path is stable.
+
+## Inputs
+
+- one or more new sources under `raw/inbox/`
+- repo-local operating contract from `AGENTS.md`
+- when present:
+  - `intelligence/glossary.yaml`
+  - `intelligence/manifests/datasets.yaml`
+  - `intelligence/manifests/actions.yaml`
+
+## Expected Outputs
+
+Canonical ontology outputs:
+
+- `warehouse/jsonl/messages.jsonl` when the source is conversational or sequential
+- `warehouse/jsonl/documents.jsonl`
+- `warehouse/jsonl/entities.jsonl`
+- `warehouse/jsonl/claims.jsonl`
+- `warehouse/jsonl/claim_evidence.jsonl`
+- `warehouse/jsonl/segments.jsonl`
+- `warehouse/jsonl/derived_edges.jsonl`
+
+Wiki outputs:
+
+- `wiki/sources/...`
+- affected `wiki/people/...`
+- affected `wiki/concepts/...`
+- affected `wiki/entities/...`
+- affected `wiki/projects/...`
+- optional `wiki/analyses/...` when the ingest naturally produces a durable synthesis memo
+- refreshed `wiki/_meta/index.md`
+- appended `wiki/_meta/log.md`
 
 ## Expected Repo Shape
 
@@ -61,7 +115,7 @@ This skill is an adapter, not a bootstrapper.
 Before doing anything:
 
 1. read repo-root `AGENTS.md`
-2. read `wiki/_meta/index.md` if it exists
+2. read `wiki/_meta/index.md`
 3. if present, read:
    - `intelligence/glossary.yaml`
    - `intelligence/manifests/datasets.yaml`
@@ -81,6 +135,7 @@ Important:
 - a local CLI `ingest` command may only be source registration
 - do not assume local CLI ingest already performs ontology-backed extraction
 - if the repo lacks a real `wiki/` layer, stop and ask for the wiki scaffold or equivalent structure first
+- the local CLI `python scripts/llm_wiki.py ingest ...` may still be source registration only
 
 ### 3. Build Canonical Ontology Truth
 
@@ -97,6 +152,7 @@ At minimum, preserve or create:
 
 Keep `warehouse/jsonl/...` canonical and machine-oriented.
 If the corpus is conversational or sequential, preserve full-fidelity message or event coverage.
+Do not let wiki summaries become the canonical truth layer.
 
 ### 4. Project Back Into The Wiki
 
@@ -109,6 +165,7 @@ Once canonical truth is updated:
 5. cite the relevant source page from claim-heavy pages
 
 Keep the wiki human-facing and easy to scan.
+Do not dump raw JSONL into markdown pages.
 
 ### 5. Refresh Meta Pages
 
@@ -117,16 +174,16 @@ After meaningful ingest work:
 1. refresh `wiki/_meta/index.md`
 2. append a clear log entry to `wiki/_meta/log.md`
 
-If the ingest changes how the repo should be interpreted, update `AGENTS.md` or a durable analysis page instead of leaving that insight only in chat.
+If the ingest changed how the repo should be interpreted, update `AGENTS.md` or a durable analysis page rather than leaving that insight only in chat.
 
 ## User-Facing Routine
 
 The normal human workflow should look like this:
 
-1. make sure the repo already has `raw/`, `wiki/`, and repo-local `AGENTS.md`
+1. scaffold once with `llm-wiki-bootstrap`, or confirm equivalent `raw/`, `wiki/`, and repo-local `AGENTS.md` layout already exists
 2. place a source in `raw/inbox/`
 3. run this ingest skill
-4. ask a question from the improved wiki
+4. ask a question from the wiki
 
 The human should not need to call `lightweight-ontology-core` directly for normal ingest.
 That lower-level skill remains available for advanced tuning, debugging, or operator workflows.
@@ -140,3 +197,9 @@ The ingest succeeded when:
 - affected wiki pages are refreshed or created
 - uncertainty is preserved
 - `wiki/_meta/index.md` and `wiki/_meta/log.md` reflect the new work
+
+## Notes
+
+- Prefer `ingest` language with the user; keep `adapter` or `bridge` as internal mental models only.
+- Prefer repo-local `AGENTS.md` over generic habits when they conflict.
+- If the repo does not yet have ontology-ready folders, fall back gracefully and say what is missing.

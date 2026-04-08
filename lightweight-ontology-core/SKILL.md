@@ -8,6 +8,10 @@ description: Use when documents, notes, research memos, story canon, or reposito
 Use this skill to build and maintain a lightweight claim-and-evidence ontology layer on top of documents.
 The purpose is to improve reasoning quality without turning authoring into a heavyweight graph engineering project.
 
+This skill owns canonical ontology generation.
+It does not own repo-specific wiki export or markdown page conventions.
+Those belong to downstream adapters.
+
 ## Use This Skill For
 
 - extracting entities, relations, claims, and evidence from documents
@@ -24,6 +28,7 @@ The purpose is to improve reasoning quality without turning authoring into a hea
 - AGENTS-only or docs-portal-only maintenance
 - full RDF/OWL/SPARQL platform design
 - automatic semantic contradiction detection beyond explicit v1 rules
+- repo-specific wiki projection logic for one markdown vault
 
 ## Operating Model
 
@@ -71,6 +76,33 @@ Retrieval:
 Templates live under `assets/...`.
 Generated ontology data lives under `intelligence/...`, `warehouse/jsonl/...`, and `vector/chroma/...`.
 Do not confuse template locations with generated output paths.
+
+## Adapter Boundary
+
+Keep this core repo-neutral.
+
+This skill should stop at canonical ontology artifacts such as:
+
+- `warehouse/jsonl/entities.jsonl`
+- `warehouse/jsonl/documents.jsonl`
+- `warehouse/jsonl/messages.jsonl`
+- `warehouse/jsonl/claims.jsonl`
+- `warehouse/jsonl/claim_evidence.jsonl`
+- `warehouse/jsonl/segments.jsonl`
+- `warehouse/jsonl/derived_edges.jsonl`
+
+Do not bake repo-local wiki rules into this core.
+For example, an Obsidian-first LLM Wiki may want:
+
+- `wiki/sources/...`
+- `wiki/people/...`
+- `wiki/concepts/...`
+- `wiki/projects/...`
+- repo-specific `AGENTS.md` behavior
+
+Those are adapter concerns, not ontology-core concerns.
+
+For LLM Wiki repositories, use a downstream ingest adapter such as `llm-wiki-ontology-ingest` to project canonical ontology truth back into markdown pages.
 
 ## Claim Lifecycle
 

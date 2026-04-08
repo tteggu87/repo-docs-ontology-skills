@@ -5,24 +5,20 @@ description: Use this skill when the user wants to scaffold a new Obsidian-first
 
 # LLM Wiki Bootstrap
 
+## Overview
+
 Create a fresh markdown-first LLM Wiki workspace that is ready for Codex-style maintenance.
 The skill scaffolds the folder structure, `AGENTS.md`, starter `README.md`, local CLI, template files, and meta pages so the next agent can operate the vault consistently.
 It supports both a plain wiki scaffold and an ontology-ready scaffold.
 
-## Use This Skill For
+## When To Use
 
-- creating a brand-new Obsidian-first LLM Wiki repo
-- setting up `raw/`, `wiki/`, and repo-local `AGENTS.md` conventions quickly
-- bootstrapping a reusable wiki workspace instead of copying files by hand
-- preparing a repo that future agents can reopen and maintain consistently
+- The user wants a new project that behaves like an Obsidian-first LLM Wiki.
+- The user wants `raw/`, `wiki/`, and repo-local `AGENTS.md` conventions set up quickly.
+- The user wants a reusable bootstrap for future wiki-style projects instead of copying files by hand.
+- The user wants a project-local operating contract that future agents can follow in new conversations.
 
-## Do Not Use This Skill For
-
-- ingesting a single source into an already existing wiki
-- retrofitting a mature repo without first deciding whether it should become an LLM Wiki
-- ontology schema tuning in isolation
-
-For repeated source processing inside an existing ontology-backed wiki, use `llm-wiki-ontology-ingest`.
+Do not use this skill when the user only wants to ingest one source into an existing wiki. In that case, work inside the existing repo and follow its local `AGENTS.md`.
 
 ## Workflow
 
