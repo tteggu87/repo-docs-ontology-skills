@@ -14,6 +14,9 @@ Repo Bootstrap + Lightweight Ontology Skills
 > 운영까지 같이 보려면 optional companion skill인 `ontology-pipeline-operator`를 얹을 수 있습니다.
 > Obsidian-first LLM Wiki처럼 사람용 markdown synthesis까지 같이 유지하려면 optional adapter skill인 `llm-wiki-ontology-ingest`를 얹을 수 있습니다.
 
+> 단, `llm-wiki-ontology-ingest`는 generic repo-docs repo를 곧바로 wiki repo로 바꾸는 bootstrap이 아닙니다.
+> 대상 repo에 이미 `raw/`, `wiki/`, `AGENTS.md` 같은 LLM Wiki 레이아웃이 있거나, 별도 scaffold가 먼저 끝난 상태를 전제로 합니다.
+
 > TL;DR
 > 이 레포는 `풀 온톨로지 플랫폼`이나 `graph DB starter`가 아닙니다.
 > 대신 아래 같은 상황에서 바로 쓰기 좋은 실무형 starter pack입니다.
@@ -41,6 +44,7 @@ Repo Bootstrap + Lightweight Ontology Skills
 
 - `llm-wiki-ontology-ingest`
   - Obsidian-first LLM Wiki repo에서 raw source를 canonical ontology와 wiki markdown 양쪽으로 같이 반영하는 user-facing ingest adapter입니다.
+  - `repo-docs`의 대체가 아니라, 이미 wiki 레이어가 있는 repo에 ontology 결과를 다시 사람용 markdown으로 투사하는 얇은 연결층입니다.
 
 이 레포의 기본값은 `repo-docs`부터 시작하는 것입니다.
 필요할 때만 `core`, 그 다음 `lg`를 단계적으로 얹는 흐름을 권장합니다.
@@ -52,7 +56,7 @@ Repo Bootstrap + Lightweight Ontology Skills
 - `repo-docs -> lightweight-ontology-core`
   - 구조를 먼저 정리한 뒤 canonical ontology만 만들고 싶을 때
 - `repo-docs -> lightweight-ontology-core -> llm-wiki-ontology-ingest`
-  - canonical ontology를 유지하면서 사람용 wiki synthesis도 같이 키우고 싶을 때
+  - 대상 repo에 이미 `raw/`, `wiki/`, `AGENTS.md`가 있고, canonical ontology를 유지하면서 사람용 wiki synthesis도 같이 키우고 싶을 때
 - `repo-docs -> lg-ontology`
   - 구조를 먼저 정리한 뒤 ontology와 graph projection까지 같이 보고 싶을 때
 - `repo-docs -> lightweight-ontology-core -> lg-ontology -> ontology-pipeline-operator`
@@ -69,6 +73,7 @@ Repo Bootstrap + Lightweight Ontology Skills
 - 프로젝트나 PRD를 먼저 정리: `repo-docs`
 - 일반적인 온톨로지화: `repo-docs -> lightweight-ontology-core`
 - wiki까지 같이 유지하는 온톨로지화: `repo-docs -> lightweight-ontology-core -> llm-wiki-ontology-ingest`
+  - 전제: 대상 repo에 이미 LLM Wiki 레이아웃이 있어야 합니다
 - 그래프형 온톨로지화: `repo-docs -> lg-ontology`
 - 반복 운영/품질 유지: 기존 구조 위에 `ontology-pipeline-operator`
 
@@ -97,6 +102,9 @@ repo-docs로 구조화 먼저하고 lg-ontology로 온톨로지 그래프화 해
 ```text
 repo-docs로 구조화 먼저하고 lightweight-ontology-core로 canonical ontology를 만든 뒤 llm-wiki-ontology-ingest로 wiki까지 같이 갱신해줘.
 ```
+
+이 경로는 대상 repo가 이미 `wiki/` 중심 구조를 갖고 있을 때만 맞습니다.
+plain repo-docs repo에는 먼저 LLM Wiki scaffold나 equivalent wiki layer가 있어야 합니다.
 
 ### 4. core 단독 빠른 온톨로지화
 

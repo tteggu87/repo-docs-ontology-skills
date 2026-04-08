@@ -18,6 +18,7 @@ The goal is to keep canonical ontology truth under `warehouse/jsonl/` while also
 ## Do Not Use This Skill For
 
 - scaffolding a brand-new repo from scratch
+- converting a plain DocTology repo with no existing `wiki/` layer into an LLM Wiki from zero
 - repo-only docs cleanup with no source ingest
 - ontology schema design or low-level validator debugging in isolation
 - answering a question when no new source ingest is needed
@@ -35,7 +36,9 @@ Use this skill when the repository already has most of these:
 - ideally `warehouse/jsonl/` and `intelligence/`
 
 If some ontology-ready folders are still missing, do not pretend the repo is already healthy.
-Report the gap and either create the minimum required structure or fall back carefully.
+Report the gap clearly.
+Create only small missing support artifacts inside an already wiki-shaped repo.
+Do not bootstrap a plain repository into an LLM Wiki from this skill.
 
 ## Operating Model
 
@@ -48,6 +51,7 @@ Treat these layers separately:
 
 Do not let wiki summaries become the canonical fact store.
 Do not dump canonical JSONL verbatim into wiki pages.
+This skill is an adapter, not a bootstrapper.
 
 ## Workflow
 
@@ -75,6 +79,7 @@ Important:
 
 - a local CLI `ingest` command may only be source registration
 - do not assume local CLI ingest already performs ontology-backed extraction
+- if the repo lacks a real `wiki/` layer, stop and ask for the wiki scaffold or equivalent structure first
 
 ### 3. Build Canonical Ontology Truth
 
@@ -117,9 +122,10 @@ If the ingest changes how the repo should be interpreted, update `AGENTS.md` or 
 
 The normal human workflow should look like this:
 
-1. place a source in `raw/inbox/`
-2. run this ingest skill
-3. ask a question from the improved wiki
+1. make sure the repo already has `raw/`, `wiki/`, and repo-local `AGENTS.md`
+2. place a source in `raw/inbox/`
+3. run this ingest skill
+4. ask a question from the improved wiki
 
 The human should not need to call `lightweight-ontology-core` directly for normal ingest.
 That lower-level skill remains available for advanced tuning, debugging, or operator workflows.
