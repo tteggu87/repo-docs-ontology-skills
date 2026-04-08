@@ -24,6 +24,7 @@ The goal is to keep canonical ontology truth under `warehouse/jsonl/` while also
 - answering a question when no new source ingest is needed
 
 For lower-level ontology work, use `lightweight-ontology-core` directly.
+For new repo setup, use `llm-wiki-bootstrap`.
 For graph-style inspection, layer `lg-ontology` on top of the canonical ontology outputs after the ingest path is stable.
 
 ## Expected Repo Shape

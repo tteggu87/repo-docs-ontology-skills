@@ -4,7 +4,7 @@
 
 # DocTology
 
-Repo Bootstrap + Lightweight Ontology Skills
+Repo Bootstrap + Lightweight Ontology + LLM Wiki Skills
 
 ## 한국어
 
@@ -12,7 +12,7 @@ Repo Bootstrap + Lightweight Ontology Skills
 > 이 레포는 `repo bootstrap -> canonical ontology -> optional graph projection` 흐름을 가볍게 시작하게 해줍니다.
 
 > 운영까지 같이 보려면 optional companion skill인 `ontology-pipeline-operator`를 얹을 수 있습니다.
-> Obsidian-first LLM Wiki처럼 사람용 markdown synthesis까지 같이 유지하려면 optional adapter skill인 `llm-wiki-ontology-ingest`를 얹을 수 있습니다.
+> Obsidian-first LLM Wiki 트랙을 쓰려면 optional scaffold skill인 `llm-wiki-bootstrap`로 레이아웃을 만들고, 이후 adapter skill인 `llm-wiki-ontology-ingest`를 얹을 수 있습니다.
 
 > 단, `llm-wiki-ontology-ingest`는 generic repo-docs repo를 곧바로 wiki repo로 바꾸는 bootstrap이 아닙니다.
 > 대상 repo에 이미 `raw/`, `wiki/`, `AGENTS.md` 같은 LLM Wiki 레이아웃이 있거나, 별도 scaffold가 먼저 끝난 상태를 전제로 합니다.
@@ -42,6 +42,8 @@ Repo Bootstrap + Lightweight Ontology Skills
 
 **wiki adapter skill**
 
+- `llm-wiki-bootstrap`
+  - 새 Obsidian-first LLM Wiki repo를 만들 때 `raw/`, `wiki/`, `AGENTS.md`, 그리고 optional `warehouse/jsonl/` starter layout을 생성합니다.
 - `llm-wiki-ontology-ingest`
   - Obsidian-first LLM Wiki repo에서 raw source를 canonical ontology와 wiki markdown 양쪽으로 같이 반영하는 user-facing ingest adapter입니다.
   - `repo-docs`의 대체가 아니라, 이미 wiki 레이어가 있는 repo에 ontology 결과를 다시 사람용 markdown으로 투사하는 얇은 연결층입니다.
@@ -57,6 +59,8 @@ Repo Bootstrap + Lightweight Ontology Skills
   - 구조를 먼저 정리한 뒤 canonical ontology만 만들고 싶을 때
 - `repo-docs -> lightweight-ontology-core -> llm-wiki-ontology-ingest`
   - 대상 repo에 이미 `raw/`, `wiki/`, `AGENTS.md`가 있고, canonical ontology를 유지하면서 사람용 wiki synthesis도 같이 키우고 싶을 때
+- `llm-wiki-bootstrap -> llm-wiki-ontology-ingest`
+  - 처음부터 Obsidian-first LLM Wiki repo를 만들고, 이후 반복 ingest를 통해 ontology와 wiki를 함께 키우고 싶을 때
 - `repo-docs -> lg-ontology`
   - 구조를 먼저 정리한 뒤 ontology와 graph projection까지 같이 보고 싶을 때
 - `repo-docs -> lightweight-ontology-core -> lg-ontology -> ontology-pipeline-operator`
@@ -74,6 +78,7 @@ Repo Bootstrap + Lightweight Ontology Skills
 - 일반적인 온톨로지화: `repo-docs -> lightweight-ontology-core`
 - wiki까지 같이 유지하는 온톨로지화: `repo-docs -> lightweight-ontology-core -> llm-wiki-ontology-ingest`
   - 전제: 대상 repo에 이미 LLM Wiki 레이아웃이 있어야 합니다
+- 새 wiki repo부터 바로 시작: `llm-wiki-bootstrap -> llm-wiki-ontology-ingest`
 - 그래프형 온톨로지화: `repo-docs -> lg-ontology`
 - 반복 운영/품질 유지: 기존 구조 위에 `ontology-pipeline-operator`
 
@@ -105,6 +110,12 @@ repo-docs로 구조화 먼저하고 lightweight-ontology-core로 canonical ontol
 
 이 경로는 대상 repo가 이미 `wiki/` 중심 구조를 갖고 있을 때만 맞습니다.
 plain repo-docs repo에는 먼저 LLM Wiki scaffold나 equivalent wiki layer가 있어야 합니다.
+
+### 3c. 새 LLM Wiki repo부터 만들기
+
+```text
+llm-wiki-bootstrap으로 새 Obsidian-first wiki를 만들고, 이후 llm-wiki-ontology-ingest로 반복 source ingest가 가능하게 준비해줘.
+```
 
 ### 4. core 단독 빠른 온톨로지화
 

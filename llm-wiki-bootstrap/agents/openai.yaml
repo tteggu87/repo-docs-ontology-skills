@@ -1,0 +1,4 @@
+interface:
+  display_name: "LLM Wiki Bootstrap"
+  short_description: "Scaffold an Obsidian-first LLM wiki vault"
+  default_prompt: "Use $llm-wiki-bootstrap to scaffold a new Obsidian-first LLM wiki workspace."
