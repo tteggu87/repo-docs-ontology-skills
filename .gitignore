@@ -4,3 +4,10 @@ __pycache__/
 *.pyd
 .DS_Store
 Thumbs.db
+
+# Frontend workbench artifacts
+apps/*/node_modules/
+apps/*/dist/
+apps/*/*.tsbuildinfo
+apps/*/vite.config.js
+apps/*/vite.config.d.ts
