@@ -47,8 +47,10 @@ It supports two profiles:
       actions.yaml
       datasets.yaml
       relations.yaml
+      routes.yaml
       source_families.yaml
     policies/
+      query-routing.yaml
       truth-boundaries.yaml
   raw/
     inbox/
@@ -58,6 +60,7 @@ It supports two profiles:
   scripts/
     llm_wiki.py
     ontology_refresh.py
+    query_route.py
   templates/
     source_page_template.md
   warehouse/
@@ -83,9 +86,10 @@ It supports two profiles:
 - `warehouse/jsonl/` is optional canonical structured truth for ontology-ready repos.
 - `AGENTS.md` is the repo-local contract for future agents.
 - `intelligence/` is optional repo-local vocabulary plus dataset/action contracts.
-- For ontology-ready repos, `intelligence/` also includes relation vocabulary, source-family hints, and truth-boundary policies.
+- For ontology-ready repos, `intelligence/` also includes route vocabulary, query-routing fallback policies, relation vocabulary, source-family hints, and truth-boundary policies.
 - `scripts/llm_wiki.py` handles lightweight maintenance tasks only.
 - `scripts/ontology_refresh.py` is the minimal ontology-ready refresh helper; it does not replace full ontology extraction.
+- `scripts/query_route.py` is a minimal route-receipt helper for durable query/task routing records.
 - The scaffold should be immediately usable without third-party Python dependencies.
 
 ## Safety Rules
@@ -106,3 +110,4 @@ After scaffolding:
 4. Register the source with the local CLI.
 5. If the repo uses `wiki-plus-ontology`, run ontology-backed ingest from there.
 6. Run `python scripts/ontology_refresh.py` to refresh minimal ontology-ready state.
+7. Run `python scripts/query_route.py --query "<question>"` when you want a durable route receipt for substantial query work.

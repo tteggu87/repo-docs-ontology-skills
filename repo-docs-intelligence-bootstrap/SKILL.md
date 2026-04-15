@@ -16,6 +16,7 @@ Bootstrap is only the starting point; the real goal is ongoing alignment that ke
 - creating or updating a root `AGENTS.md` aligned with current repository rules
 - introducing or maintaining a minimal schema-first intelligence layer
 - keeping glossary/manifests/handlers/policies/schemas/capabilities synchronized as the project evolves
+- introducing lightweight route manifests, query-routing policies, and durable query/task receipts when the repository needs explicit runtime routing receipts
 
 ## Do Not Use This Skill For
 
@@ -44,7 +45,7 @@ The usual target output is:
 - current-state architecture docs that reflect actual code
 - `docs/archive/` for superseded material with a status banner
 - optional `docs/reviews/` and `docs/experiments/`
-- a minimal `intelligence/` directory with glossary, manifests, handlers, policies, schemas, and capabilities
+- a minimal `intelligence/` directory with glossary, manifests, handlers, policies, schemas, capabilities, and optional route/query-routing contracts
 - optional `scripts/pipeline_refresh.py` and `scripts/sync_current_state.py` when the repo needs a single entry and doc-sync path
 - a root `AGENTS.md`
 - an impact summary describing what changed, what stayed legacy, and what drift still remains
@@ -213,8 +214,9 @@ The minimum useful set is:
 - `intelligence/manifests/actions.yaml`
 - `intelligence/manifests/entities.yaml`
 - `intelligence/manifests/datasets.yaml`
+- `intelligence/manifests/routes.yaml` when route families or routing semantics become durable repo-level contracts
 - `intelligence/handlers/*.yaml`
-- `intelligence/policies/*.yaml`
+- `intelligence/policies/*.yaml` including `query-routing.yaml` when route gates or fallback rules change
 - `intelligence/schemas/*.sql`
 - `intelligence/registry/capabilities.yaml`
 
@@ -223,9 +225,10 @@ Recommended minimum pattern:
 - glossary defines canonical terms, aliases, deprecations, and layer meanings
 - entities define the named things the repository reasons about
 - datasets define canonical data shapes, owners, and freshness expectations
+- routes define durable wiki/canonical/graph/operator routing choices when the repo needs explicit route receipts
 - actions map reusable contracts to current Python callables
 - handlers describe event chains and impact flow, even if they are documented-only
-- policies describe repository rules, gates, and stopping conditions
+- policies describe repository rules, gates, and stopping conditions, including route fallback behavior when needed
 - SQL files mirror current contract excerpts and point to the authoritative implementation
 - capability bindings connect action keys to Python execution points
 - if the repo already has multiple ontology/report scripts, add a single-entry pipeline contract instead of leaving operators to memorize command order
@@ -272,8 +275,9 @@ You must always check whether these files need updates:
 - `intelligence/manifests/actions.yaml` when an action is added, removed, renamed, or its contract changes
 - `intelligence/manifests/entities.yaml` when the set of named entities changes
 - `intelligence/manifests/datasets.yaml` when a canonical dataset or shape changes
+- `intelligence/manifests/routes.yaml` when durable query/task routes change
 - `intelligence/handlers/*.yaml` when event chains or orchestration flow changes
-- `intelligence/policies/*.yaml` when gate, policy, or rule semantics change
+- `intelligence/policies/*.yaml` when gate, policy, or rule semantics change, including query-routing fallback rules
 - `intelligence/registry/capabilities.yaml` when Python capability bindings change
 - `intelligence/schemas/*.sql` when canonical schema, views, or materialization logic changes
 - `AGENTS.md` when working style, repository rules, or documentation expectations drift from current practice
@@ -368,6 +372,8 @@ Use these bundled files when useful:
 - `assets/intelligence/actions.template.yaml`
 - `assets/intelligence/entities.template.yaml`
 - `assets/intelligence/datasets.template.yaml`
+- `assets/intelligence/routes.template.yaml`
+- `assets/intelligence/query-routing.template.yaml`
 - `assets/intelligence/handler.template.yaml`
 - `assets/intelligence/policy.template.yaml`
 - `assets/intelligence/capabilities.template.yaml`

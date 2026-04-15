@@ -38,10 +38,12 @@ You must check whether these files need updates:
 - `intelligence/manifests/actions.yaml` when an action is added, removed, renamed, or its contract changes
 - `intelligence/manifests/entities.yaml` when canonical entities change
 - `intelligence/manifests/datasets.yaml` when canonical datasets or shapes change
+- `intelligence/manifests/routes.yaml` when durable route families or route semantics change
 - `intelligence/handlers/*.yaml` when event chains or orchestration flow changes
-- `intelligence/policies/*.yaml` when gate/policy/rule semantics change
+- `intelligence/policies/*.yaml` when gate/policy/rule semantics change, including query-routing fallback rules
 - `intelligence/registry/capabilities.yaml` when Python capability bindings change
 - `intelligence/schemas/*.sql` when canonical schema, views, or materialization logic changes
+- `warehouse/jsonl/query_receipts.jsonl` when durable route/intent receipts become part of repo-local operations
 - `AGENTS.md` when working rules or repo guidance drift from actual practice
 
 Before finishing, report:

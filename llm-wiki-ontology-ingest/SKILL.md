@@ -58,7 +58,9 @@ For graph-style inspection, layer `lg-ontology` on top of the canonical ontology
   - `intelligence/manifests/datasets.yaml`
   - `intelligence/manifests/actions.yaml`
   - `intelligence/manifests/relations.yaml`
+  - `intelligence/manifests/routes.yaml`
   - `intelligence/manifests/source_families.yaml`
+  - `intelligence/policies/query-routing.yaml`
   - `intelligence/policies/truth-boundaries.yaml`
 
 ## Expected Outputs
@@ -73,6 +75,7 @@ Canonical ontology outputs:
 - `warehouse/jsonl/claim_evidence.jsonl`
 - `warehouse/jsonl/segments.jsonl`
 - `warehouse/jsonl/derived_edges.jsonl`
+- `warehouse/jsonl/query_receipts.jsonl` when route receipts are enabled for substantial query or ingest analysis work
 
 Wiki outputs:
 
@@ -125,7 +128,9 @@ Before doing anything:
    - `intelligence/manifests/datasets.yaml`
    - `intelligence/manifests/actions.yaml`
    - `intelligence/manifests/relations.yaml`
+   - `intelligence/manifests/routes.yaml`
    - `intelligence/manifests/source_families.yaml`
+   - `intelligence/policies/query-routing.yaml`
    - `intelligence/policies/truth-boundaries.yaml`
 
 Treat the repo-local contract as authoritative for page style, truth priority, and save behavior.
@@ -149,6 +154,8 @@ Important:
 Use `lightweight-ontology-core` concepts and conventions to update canonical truth.
 
 Read the compact contract layer first when it exists:
+- `intelligence/manifests/routes.yaml` for durable wiki/canonical/graph/operator route choices
+- `intelligence/policies/query-routing.yaml` for route fallback and gating rules
 - `intelligence/manifests/relations.yaml` for stable relation vocabulary and graph-like hop hints
 - `intelligence/manifests/source_families.yaml` for recurring source identity and incremental-ingest assumptions
 - `intelligence/policies/truth-boundaries.yaml` for source/canonical/wiki/derived layer separation
@@ -185,7 +192,8 @@ After meaningful ingest work:
 
 1. refresh `wiki/_meta/index.md`
 2. append a clear log entry to `wiki/_meta/log.md`
-3. if the repo has `scripts/ontology_refresh.py`, run it to:
+3. if the repo has `scripts/query_route.py`, use it for substantial query/task routing receipts when the route choice itself matters to future operators
+4. if the repo has `scripts/ontology_refresh.py`, run it to:
    - ensure canonical registry files exist
    - emit a compact refresh summary
    - rebuild lightweight repo state after ontology changes
@@ -216,6 +224,7 @@ The ingest succeeded when:
 - affected wiki pages are refreshed or created
 - uncertainty is preserved
 - `wiki/_meta/index.md` and `wiki/_meta/log.md` reflect the new work
+- if `scripts/query_route.py` exists, route receipts can be written cleanly to `warehouse/jsonl/query_receipts.jsonl`
 - if `scripts/ontology_refresh.py` exists, its refresh summary runs cleanly and reports the expected registry presence
 
 ## Notes

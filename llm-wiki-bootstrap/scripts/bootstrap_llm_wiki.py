@@ -250,7 +250,7 @@ There are four layers:
 1. `raw/` contains immutable source material. Never modify source contents.
 2. `warehouse/jsonl/` contains canonical structured ontology truth.
 3. `wiki/` contains LLM-maintained human-facing synthesis pages.
-4. `AGENTS.md` plus `intelligence/` define the operating rules, vocabulary, dataset boundaries, action contracts, and lightweight relation/source-family hints.
+4. `AGENTS.md` plus `intelligence/` define the operating rules, vocabulary, dataset boundaries, action contracts, lightweight route policies, and relation/source-family hints.
 
 ## Core Rules
 
@@ -278,7 +278,7 @@ The ontology registries are the default machine-truth surface for provenance, co
 ## Folder Semantics
 
 - `raw/`: immutable source storage
-- `warehouse/jsonl/`: canonical ontology outputs such as `messages.jsonl`, `documents.jsonl`, `source_versions.jsonl`, `entities.jsonl`, `claims.jsonl`, `claim_evidence.jsonl`, `segments.jsonl`, and `derived_edges.jsonl`
+- `warehouse/jsonl/`: canonical ontology outputs such as `messages.jsonl`, `documents.jsonl`, `source_versions.jsonl`, `entities.jsonl`, `claims.jsonl`, `claim_evidence.jsonl`, `segments.jsonl`, `derived_edges.jsonl`, and operational receipts such as `query_receipts.jsonl`
 - `wiki/sources/`: one page per source, including source metadata, summary, key claims, and links to affected pages
 - `wiki/concepts/`: concepts, frameworks, recurring ideas, terminology
 - `wiki/entities/`: organizations, products, systems, places, or domain objects
@@ -287,7 +287,7 @@ The ontology registries are the default machine-truth surface for provenance, co
 - `wiki/timelines/`: chronological pages
 - `wiki/analyses/`: saved answers, comparison memos, synthesis notes, decision memos
 - `wiki/_meta/`: dashboard, index, log, and other operational pages
-- `intelligence/`: glossary, manifests, and policies that stabilize repo-local vocabulary, datasets, action boundaries, relation vocabulary, and source-family assumptions
+- `intelligence/`: glossary, manifests, and policies that stabilize repo-local vocabulary, datasets, action boundaries, route policies, relation vocabulary, and source-family assumptions
 
 ## Page Conventions
 
@@ -346,18 +346,20 @@ When the user asks a question:
 1. Read `wiki/_meta/index.md` first.
 2. Identify likely relevant pages.
 3. Read the smallest set of pages that can answer well.
-4. Use `intelligence/` as a compact routing and boundary layer when terminology, dataset ownership, relation vocabulary, or source-family assumptions matter.
-5. Use `warehouse/jsonl/...` for provenance checks, contradiction checks, claim validation, or exact source coverage when wiki pages are too thin or uncertain.
-6. Synthesize an answer grounded in the wiki, with ontology-backed verification when needed.
-7. If the answer is durable, save it into `wiki/analyses/`.
-8. Cross-link that analysis page from relevant pages if appropriate.
-9. Append a `query` log entry for substantial work.
+4. Use `intelligence/` as a compact routing and boundary layer when terminology, dataset ownership, route choice, relation vocabulary, or source-family assumptions matter.
+5. If `scripts/query_route.py` exists, use it to leave a durable route receipt before or during substantial query work.
+6. Use `warehouse/jsonl/...` for provenance checks, contradiction checks, claim validation, or exact source coverage when wiki pages are too thin or uncertain.
+7. Synthesize an answer grounded in the wiki, with ontology-backed verification when needed.
+8. If the answer is durable, save it into `wiki/analyses/`.
+9. Cross-link that analysis page from relevant pages if appropriate.
+10. Append a `query` log entry for substantial work.
 
 ## Ontology-Aware Ingest And Query Defaults
 
 - New source material enters through `raw/inbox/`.
 - Repeated source processing should prefer an ontology-backed ingest skill over ad hoc manual steps.
 - `intelligence/manifests/source_families.yaml` may provide recurring-corpus identity hints when the same source family appears across multiple exports.
+- `intelligence/manifests/routes.yaml` plus `intelligence/policies/query-routing.yaml` may provide compact route and fallback guidance before deeper runtime automation exists.
 - `intelligence/manifests/relations.yaml` may provide compact graph-like relation vocabulary for schema-level hop reasoning before derived graph artifacts exist.
 - Direct ontology-core operation is reserved for tuning, debugging, or operator workflows.
 - Important answers should still land in `wiki/analyses/` even when the ontology layer did most of the structured work.
@@ -463,7 +465,7 @@ This project gives you:
 - A practical folder layout for raw sources, canonical ontology registries, and generated wiki pages
 - A small local CLI for `ingest`, `reindex`, `lint`, `status`, and `log`
 - An `AGENTS.md` file that tells Codex how to maintain the wiki
-- Minimal intelligence manifests and policies that define vocabulary, dataset roles, action contracts, relation vocabulary, and truth boundaries
+- Minimal intelligence manifests and policies that define vocabulary, dataset roles, action contracts, route/fallback guidance, relation vocabulary, and truth boundaries
 - Obsidian-friendly markdown pages, wikilinks, and stable metadata
 
 ## What This System Is
@@ -489,11 +491,13 @@ The LLM ingests, structures, cross-links, updates, and keeps the wiki healthy.
 ├── intelligence/
 │   ├── glossary.yaml
 │   ├── policies/
+│   │   ├── query-routing.yaml
 │   │   └── truth-boundaries.yaml
 │   └── manifests/
 │       ├── actions.yaml
 │       ├── datasets.yaml
 │       ├── relations.yaml
+│       ├── routes.yaml
 │       └── source_families.yaml
 ├── raw/
 │   ├── inbox/
@@ -502,11 +506,13 @@ The LLM ingests, structures, cross-links, updates, and keeps the wiki healthy.
 │   └── notes/
 ├── scripts/
 │   ├── llm_wiki.py
-│   └── ontology_refresh.py
+│   ├── ontology_refresh.py
+│   └── query_route.py
 ├── templates/
 │   └── source_page_template.md
 ├── warehouse/
 │   └── jsonl/
+│       └── query_receipts.jsonl
 └── wiki/
     ├── _meta/
     │   ├── dashboard.md
@@ -574,13 +580,31 @@ If you install `llm-wiki-ontology-ingest` later, use that skill after source reg
 The ontology-ready scaffold also includes a compact YAML contract layer so future agents can read:
 
 - truth boundaries
+- route families and routing fallback rules
 - relation vocabulary
 - source-family hints
 - dataset and action ownership
 
 without needing a full repo-docs alignment pass first.
 
-### 6. Run Minimal Ontology Refresh
+### 6. Record Query Routing Receipts
+
+The ontology-ready scaffold also gives you a small helper for durable route receipts:
+
+```bash
+python scripts/query_route.py --query "show the evidence for this claim"
+```
+
+This helper:
+- chooses a bounded route such as `wiki_lookup`, `canonical_lookup`, `graph_expand`, `refresh_operator`, or `mixed_lookup`
+- writes a receipt row to `warehouse/jsonl/query_receipts.jsonl`
+- records fallback reasons when a preferred route is blocked
+- gives future operators and agents a compact audit trail for why a query took a certain path
+
+The receipts are operational records, not canonical truth.
+Use them to explain and evaluate routing choices, not to replace ontology registries or wiki pages.
+
+### 7. Run Minimal Ontology Refresh
 
 The ontology-ready scaffold also gives you a local helper:
 
@@ -598,7 +622,7 @@ This minimal workflow:
 It does not replace full ontology extraction.
 It is the smallest repeatable operator loop for the scaffold itself.
 
-### 7. Ask Me To Maintain The Wiki
+### 8. Ask Me To Maintain The Wiki
 
 Use prompts like:
 
@@ -611,9 +635,10 @@ Use prompts like:
 1. Put a source into `raw/inbox/`
 2. Register it with the CLI
 3. Run ontology-backed ingest if available
-4. Run `python scripts/ontology_refresh.py` to refresh minimal ontology state
-5. Review changed wiki pages in Obsidian
-6. Move the raw file into `raw/processed/` when you are happy
+4. Optionally run `python scripts/query_route.py --query "<your question>"` for durable route receipts on important queries
+5. Run `python scripts/ontology_refresh.py` to refresh minimal ontology state
+6. Review changed wiki pages in Obsidian
+7. Move the raw file into `raw/processed/` when you are happy
 
 ## Scaling Later
 
@@ -624,6 +649,7 @@ You can later add:
 - ontology extraction skills
 - graph projection
 - semantic retrieval
+- richer route receipts and intent analysis
 - git-based review workflows
 
 The ontology-ready scaffold already includes a small YAML contract layer that can support schema-level graph-like hop reasoning before a full graph runtime exists.
@@ -944,6 +970,11 @@ def datasets_yaml() -> str:
     role: derived graph-style edges
     truth_class: derived
     owner: ontology
+  - id: warehouse_query_receipts
+    path: warehouse/jsonl/query_receipts.jsonl
+    role: operational route and intent receipts for substantial queries or tasks
+    truth_class: audit
+    owner: operator
   - id: wiki_sources
     path: wiki/sources
     role: human-facing source synthesis pages
@@ -1029,6 +1060,20 @@ def actions_yaml() -> str:
       - wiki/_meta/log.md
     notes:
       - This is the intended repeated user-facing ingest workflow once the ontology-backed ingest skill exists.
+  - id: route_query
+    description: Leave a compact route receipt before or during substantial query work so future operators can see why a route was chosen.
+    inputs:
+      - user question or task description
+    reads:
+      - intelligence/manifests/routes.yaml
+      - intelligence/policies/query-routing.yaml
+      - intelligence/manifests/datasets.yaml
+      - intelligence/policies/truth-boundaries.yaml
+      - warehouse/jsonl
+    writes:
+      - warehouse/jsonl/query_receipts.jsonl
+    notes:
+      - This is an operational audit layer, not canonical truth.
   - id: answer_query
     description: Answer using wiki pages first, with ontology-backed verification when provenance or contradictions matter.
     inputs:
@@ -1039,12 +1084,16 @@ def actions_yaml() -> str:
       - warehouse/jsonl
       - intelligence/glossary.yaml
       - intelligence/manifests/datasets.yaml
+      - intelligence/manifests/routes.yaml
+      - intelligence/policies/query-routing.yaml
       - intelligence/manifests/relations.yaml
     writes:
+      - warehouse/jsonl/query_receipts.jsonl
       - wiki/analyses
       - wiki/_meta/log.md
     notes:
       - Prefer wiki as the human-facing answer surface and use ontology registries for provenance, contradictions, and coverage checks.
+      - For substantial work, leave a route receipt before or during the answer flow.
   - id: inspect_graph_neighborhood
     description: Follow lightweight relation vocabulary and canonical registries to inspect a bounded neighborhood around a seed concept, entity, claim, or source.
     inputs:
@@ -1059,6 +1108,63 @@ def actions_yaml() -> str:
     writes: []
     notes:
       - Use this as bounded graph-like hop guidance, not as canonical truth replacement.
+"""
+
+
+def routes_yaml() -> str:
+    return """routes:
+  - route_key: wiki_lookup
+    purpose: Use the human-facing wiki as the default reading surface for summary-oriented or page-oriented questions.
+    preferred_layers: [wiki]
+    typical_signals: [summary, wiki, page, explain]
+    fallback_route: mixed_lookup
+  - route_key: canonical_lookup
+    purpose: Use canonical ontology truth for provenance, evidence, contradiction, or claim-state questions.
+    preferred_layers: [canonical_ontology]
+    typical_signals: [evidence, provenance, citation, contradiction, claim]
+    fallback_route: mixed_lookup
+  - route_key: graph_expand
+    purpose: Use graph-style neighborhood or path inspection on top of canonical truth when relation traversal matters.
+    preferred_layers: [canonical_ontology, graph_projection]
+    typical_signals: [path, neighborhood, hop, relation, connected]
+    fallback_route: canonical_lookup
+  - route_key: refresh_operator
+    purpose: Use repair, rebuild, validation, or refresh workflows instead of answer-only lookup.
+    preferred_layers: [operator, canonical_ontology]
+    typical_signals: [refresh, rebuild, validate, repair, drift]
+    fallback_route: canonical_lookup
+  - route_key: mixed_lookup
+    purpose: Blend readable wiki synthesis with canonical verification when both matter.
+    preferred_layers: [wiki, canonical_ontology]
+    typical_signals: [compare, verify, check, trace, uncertainty]
+    fallback_route: wiki_lookup
+"""
+
+
+def query_routing_yaml() -> str:
+    return """policies:
+  - policy_key: graph_requires_canonical_truth
+    applies_to_routes: [graph_expand]
+    condition: Block graph expansion when canonical ontology registries needed for graph-style exploration are missing.
+    block_on_fail: true
+    fallback_route: canonical_lookup
+    notes:
+      - Never pretend graph exploration exists when the ontology substrate is missing.
+  - policy_key: prefer_wiki_for_readable_summary
+    applies_to_routes: [wiki_lookup, mixed_lookup]
+    condition: Prefer wiki lookup when the request is page-oriented, summary-oriented, or primarily for human reading.
+    block_on_fail: false
+    fallback_route: mixed_lookup
+  - policy_key: prefer_canonical_for_provenance
+    applies_to_routes: [canonical_lookup, mixed_lookup]
+    condition: Prefer canonical lookup when the request asks for evidence, provenance, citations, contradictions, or claim state.
+    block_on_fail: false
+    fallback_route: mixed_lookup
+  - policy_key: route_repairs_to_operator
+    applies_to_routes: [refresh_operator]
+    condition: Route repair, rebuild, validation, missing-output, or drift requests to the operator path.
+    block_on_fail: false
+    fallback_route: canonical_lookup
 """
 
 
@@ -1179,7 +1285,9 @@ INTELLIGENCE_FILES = [
     ROOT / "intelligence" / "manifests" / "datasets.yaml",
     ROOT / "intelligence" / "manifests" / "actions.yaml",
     ROOT / "intelligence" / "manifests" / "relations.yaml",
+    ROOT / "intelligence" / "manifests" / "routes.yaml",
     ROOT / "intelligence" / "manifests" / "source_families.yaml",
+    ROOT / "intelligence" / "policies" / "query-routing.yaml",
     ROOT / "intelligence" / "policies" / "truth-boundaries.yaml",
 ]
 REGISTRY_FILES = [
@@ -1191,6 +1299,7 @@ REGISTRY_FILES = [
     ROOT / "warehouse" / "jsonl" / "claim_evidence.jsonl",
     ROOT / "warehouse" / "jsonl" / "segments.jsonl",
     ROOT / "warehouse" / "jsonl" / "derived_edges.jsonl",
+    ROOT / "warehouse" / "jsonl" / "query_receipts.jsonl",
 ]
 SUMMARY_PATH = ROOT / "warehouse" / "ontology_refresh_summary.json"
 GRAPH_DIR = ROOT / "warehouse" / "graph_projection"
@@ -1260,6 +1369,143 @@ def main() -> int:
         check=True,
     )
     print(json.dumps(summary, ensure_ascii=False, indent=2))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
+'''
+
+
+def query_route_py() -> str:
+    return '''#!/usr/bin/env python3
+"""Minimal query-route receipt helper for ontology-ready LLM Wiki scaffolds."""
+
+from __future__ import annotations
+
+import argparse
+import datetime as dt
+import hashlib
+import json
+from pathlib import Path
+
+try:
+    import yaml
+except Exception:  # pragma: no cover
+    yaml = None
+
+ROOT = Path(__file__).resolve().parent.parent
+ROUTES_PATH = ROOT / "intelligence" / "manifests" / "routes.yaml"
+POLICY_PATH = ROOT / "intelligence" / "policies" / "query-routing.yaml"
+RECEIPTS_PATH = ROOT / "warehouse" / "jsonl" / "query_receipts.jsonl"
+
+DEFAULT_ROUTES = {
+    "wiki_lookup": {"preferred_layers": ["wiki"], "fallback_route": "mixed_lookup"},
+    "canonical_lookup": {"preferred_layers": ["canonical_ontology"], "fallback_route": "mixed_lookup"},
+    "graph_expand": {"preferred_layers": ["canonical_ontology", "graph_projection"], "fallback_route": "canonical_lookup"},
+    "refresh_operator": {"preferred_layers": ["operator", "canonical_ontology"], "fallback_route": "canonical_lookup"},
+    "mixed_lookup": {"preferred_layers": ["wiki", "canonical_ontology"], "fallback_route": "wiki_lookup"},
+}
+
+
+def load_yaml(path: Path) -> dict:
+    if yaml is None or not path.exists():
+        return {}
+    loaded = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    return loaded if isinstance(loaded, dict) else {}
+
+
+def load_routes() -> dict[str, dict]:
+    data = load_yaml(ROUTES_PATH)
+    routes: dict[str, dict] = {}
+    items = data.get("routes", []) if isinstance(data.get("routes"), list) else []
+    for item in items:
+        if isinstance(item, dict) and item.get("route_key"):
+            routes[str(item["route_key"])] = item
+    return routes or DEFAULT_ROUTES
+
+
+def load_policies() -> list[dict]:
+    data = load_yaml(POLICY_PATH)
+    policies = data.get("policies", []) if isinstance(data, dict) else []
+    return [item for item in policies if isinstance(item, dict)]
+
+
+def detect_route(query: str, intent_family: str | None) -> tuple[str, float, list[str]]:
+    lowered = query.lower()
+    if intent_family:
+        lowered = f"{intent_family.lower()} {lowered}"
+
+    buckets = [
+        ("refresh_operator", 0.97, ["refresh", "rebuild", "validate", "repair", "missing", "drift"]),
+        ("graph_expand", 0.92, ["path", "neighborhood", "hop", "relation", "connected"]),
+        ("canonical_lookup", 0.9, ["evidence", "provenance", "citation", "claim", "contradiction"]),
+        ("wiki_lookup", 0.86, ["wiki", "page", "summary", "summarize", "explain simply"]),
+    ]
+    for route, confidence, signals in buckets:
+        matched = [signal for signal in signals if signal in lowered]
+        if matched:
+            return route, confidence, matched
+    return "mixed_lookup", 0.7, []
+
+
+def graph_route_ready() -> bool:
+    required = [
+        ROOT / "warehouse" / "jsonl" / "entities.jsonl",
+        ROOT / "warehouse" / "jsonl" / "claims.jsonl",
+        ROOT / "warehouse" / "jsonl" / "claim_evidence.jsonl",
+        ROOT / "warehouse" / "jsonl" / "segments.jsonl",
+    ]
+    return all(path.exists() for path in required)
+
+
+def apply_policy(route_key: str, routes: dict[str, dict], policies: list[dict]) -> tuple[str, str | None]:
+    if route_key != "graph_expand":
+        return route_key, None
+    if graph_route_ready():
+        return route_key, None
+    fallback = str(routes.get(route_key, {}).get("fallback_route") or "canonical_lookup")
+    for policy in policies:
+        applies = policy.get("applies_to_routes") or []
+        if route_key in applies and policy.get("block_on_fail"):
+            fallback = str(policy.get("fallback_route") or fallback)
+            break
+    return fallback, "graph route blocked because canonical ontology files required for graph expansion are missing"
+
+
+def append_receipt(payload: dict) -> None:
+    RECEIPTS_PATH.parent.mkdir(parents=True, exist_ok=True)
+    with RECEIPTS_PATH.open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps(payload, ensure_ascii=False) + "\\n")
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="Record a minimal query routing receipt.")
+    parser.add_argument("--query", required=True, help="Question or task text to route.")
+    parser.add_argument("--intent-family", help="Optional preclassified intent family.")
+    args = parser.parse_args()
+
+    routes = load_routes()
+    policies = load_policies()
+    preferred_route, confidence, seed_terms = detect_route(args.query, args.intent_family)
+    final_route, fallback_reason = apply_policy(preferred_route, routes, policies)
+    receipt = {
+        "receipt_id": hashlib.sha256(f"{dt.datetime.utcnow().isoformat()}::{args.query}".encode("utf-8")).hexdigest()[:16],
+        "created_at": dt.datetime.utcnow().replace(microsecond=0).isoformat() + "Z",
+        "query_text": args.query,
+        "intent_family": args.intent_family or "unspecified",
+        "route_key": final_route,
+        "preferred_route_key": preferred_route,
+        "affected_layers": list(routes.get(final_route, {}).get("preferred_layers", [])),
+        "seed_terms": seed_terms,
+        "fallback_route_key": final_route if final_route != preferred_route else None,
+        "fallback_reason": fallback_reason,
+        "confidence": confidence,
+        "used_graph_expansion": final_route == "graph_expand",
+        "notes": [],
+    }
+    append_receipt(receipt)
+    print(json.dumps(receipt, ensure_ascii=False, indent=2))
     return 0
 
 
@@ -1758,6 +2004,7 @@ def scaffold(target: Path, force: bool, profile: str) -> None:
     write_text(target / "scripts" / "llm_wiki.py", llm_wiki_py())
     if profile == "wiki-plus-ontology":
         write_text(target / "scripts" / "ontology_refresh.py", ontology_refresh_py())
+        write_text(target / "scripts" / "query_route.py", query_route_py())
     write_text(target / "templates" / "source_page_template.md", source_template())
     write_text(target / "wiki" / "_meta" / "dashboard.md", dashboard_md(date))
     write_text(target / "wiki" / "_meta" / "index.md", index_md(date))
@@ -1767,8 +2014,11 @@ def scaffold(target: Path, force: bool, profile: str) -> None:
         write_text(target / "intelligence" / "manifests" / "datasets.yaml", datasets_yaml())
         write_text(target / "intelligence" / "manifests" / "actions.yaml", actions_yaml())
         write_text(target / "intelligence" / "manifests" / "relations.yaml", relations_yaml())
+        write_text(target / "intelligence" / "manifests" / "routes.yaml", routes_yaml())
         write_text(target / "intelligence" / "manifests" / "source_families.yaml", source_families_yaml())
+        write_text(target / "intelligence" / "policies" / "query-routing.yaml", query_routing_yaml())
         write_text(target / "intelligence" / "policies" / "truth-boundaries.yaml", truth_boundaries_yaml())
+        write_text(target / "warehouse" / "jsonl" / "query_receipts.jsonl", "")
 
 
 def build_parser() -> argparse.ArgumentParser:

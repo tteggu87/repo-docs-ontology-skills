@@ -35,7 +35,7 @@ Do not use this skill when the user only wants to ingest one source into an exis
    - `raw/`
    - `wiki/`
    - `scripts/llm_wiki.py`
-   - for `wiki-plus-ontology`, also verify `scripts/ontology_refresh.py`
+   - for `wiki-plus-ontology`, also verify `scripts/ontology_refresh.py` and `scripts/query_route.py`
    - `templates/source_page_template.md`
    - `wiki/_meta/index.md`, `dashboard.md`, `log.md`
    - for `wiki-plus-ontology`, also verify:
@@ -43,9 +43,11 @@ Do not use this skill when the user only wants to ingest one source into an exis
      - `intelligence/manifests/datasets.yaml`
      - `intelligence/manifests/actions.yaml`
      - `intelligence/manifests/relations.yaml`
+     - `intelligence/manifests/routes.yaml`
      - `intelligence/manifests/source_families.yaml`
+     - `intelligence/policies/query-routing.yaml`
      - `intelligence/policies/truth-boundaries.yaml`
-     - `warehouse/jsonl/`
+     - `warehouse/jsonl/` including `query_receipts.jsonl`
 6. Spot-check the generated repo contract:
    - `AGENTS.md` includes a startup ritual for future agents
    - `AGENTS.md` keeps `wiki/_meta/index.md` and `wiki/_meta/log.md` central
@@ -72,10 +74,10 @@ Add `--force` only when the user explicitly wants overwrites.
 - repo-local `AGENTS.md`
 - starter `README.md`
 - minimal CLI for `ingest`, `reindex`, `lint`, `status`, `log`
-- for ontology-ready scaffolds, a minimal `scripts/ontology_refresh.py` helper
+- for ontology-ready scaffolds, minimal `scripts/ontology_refresh.py` and `scripts/query_route.py` helpers
 - source-page template
 - starter dashboard, index, and log pages
-- optional ontology-ready `warehouse/jsonl/` and `intelligence/` starter files with compact YAML contracts for vocabulary, datasets, actions, relations, source families, and truth boundaries
+- optional ontology-ready `warehouse/jsonl/` and `intelligence/` starter files with compact YAML contracts for vocabulary, datasets, actions, routes, relations, source families, query-routing fallback rules, and truth boundaries
 
 ## Generated Contract Expectations
 
@@ -101,6 +103,7 @@ After changes to this skill:
 4. Verify the expected files exist for both profiles.
 5. Spot-check `AGENTS.md`, `README.md`, and `scripts/llm_wiki.py`.
 6. For `wiki-plus-ontology`, run `python scripts/ontology_refresh.py` in the temporary scaffold and confirm it emits a summary plus appends a log entry.
-7. Confirm the generated wording does not imply markdown pages are canonical truth in ontology-ready repos.
+7. Run `python scripts/query_route.py --query "show the evidence for this claim"` and confirm it writes `warehouse/jsonl/query_receipts.jsonl`.
+8. Confirm the generated wording does not imply markdown pages are canonical truth in ontology-ready repos.
 
 Prefer deterministic script validation over vague chat-only claims.

@@ -1,0 +1,12 @@
+routes:
+  - route_key: wiki_lookup
+    purpose: "Readable wiki-first lookup."
+    preferred_layers:
+      - wiki
+    fallback_route: mixed_lookup
+  - route_key: mixed_lookup
+    purpose: "Blend wiki and canonical verification."
+    preferred_layers:
+      - wiki
+      - canonical_ontology
+    fallback_route: wiki_lookup

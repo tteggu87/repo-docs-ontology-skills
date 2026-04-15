@@ -1,0 +1,8 @@
+policies:
+  - policy_key: prefer_wiki_for_readable_summary
+    applies_to_routes:
+      - wiki_lookup
+      - mixed_lookup
+    condition: "Prefer wiki for summary-oriented prompts."
+    block_on_fail: false
+    fallback_route: mixed_lookup

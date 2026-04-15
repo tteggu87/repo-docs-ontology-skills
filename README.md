@@ -22,6 +22,7 @@ DocTology는 처음부터 거대한 graph platform을 강요하지 않습니다.
 - Start with `llm-wiki-bootstrap` when you want a fresh Obsidian-first LLM Wiki repository.
 - Use the `wiki-plus-ontology` profile when you want `raw/`, `wiki/`, `AGENTS.md`, `warehouse/jsonl/`, and a compact `intelligence/` layer from day one.
 - Use `llm-wiki-ontology-ingest` when new raw sources should update both canonical JSONL registries and the human-facing wiki.
+- Use route manifests plus query receipts when you want durable explanations of why a query went to wiki, canonical truth, graph expansion, or operator repair flow.
 - Add `lightweight-ontology-core` and `lg-ontology` only when you actually need stronger provenance or multi-hop graph-style inspection.
 - Keep the wiki as the front surface; treat ontology and graph layers as support structure, not the product face.
 
@@ -85,9 +86,12 @@ DocTology는 이 문제를
 - `intelligence/manifests/datasets.yaml`
 - `intelligence/manifests/actions.yaml`
 - `intelligence/manifests/relations.yaml`
+- `intelligence/manifests/routes.yaml`
 - `intelligence/manifests/source_families.yaml`
+- `intelligence/policies/query-routing.yaml`
 - `intelligence/policies/truth-boundaries.yaml`
 - `scripts/ontology_refresh.py`
+- `scripts/query_route.py`
 
 즉, “새 Obsidian-first LLM Wiki를 여는 버튼”이면서,
 필요하면 ontology-ready scaffold까지 한 번에 여는 시작점입니다.
@@ -112,14 +116,17 @@ Use the wiki-plus-ontology profile so the project starts with raw, wiki, AGENTS.
 - `intelligence/manifests/datasets.yaml`
 - `intelligence/manifests/actions.yaml`
 - `intelligence/manifests/relations.yaml`
+- `intelligence/manifests/routes.yaml`
 - `intelligence/manifests/source_families.yaml`
+- `intelligence/policies/query-routing.yaml`
 - `intelligence/policies/truth-boundaries.yaml`
 
 즉 새 source가 들어오면:
 - `warehouse/jsonl/`을 갱신하고
 - 관련 `wiki/` 페이지를 갱신하고
 - `wiki/_meta/index.md`, `wiki/_meta/log.md`도 갱신하고
-- 필요하면 `scripts/ontology_refresh.py`로 최소 ontology maintenance 루프를 다시 맞추는
+- 필요하면 `scripts/query_route.py`로 route receipt를 남기고
+- `scripts/ontology_refresh.py`로 최소 ontology maintenance 루프를 다시 맞추는
 반복 ingest용 스킬입니다.
 
 예시 프롬프트:
@@ -349,7 +356,7 @@ So the default mental model is:
 
 `llm-wiki-bootstrap -> llm-wiki-ontology-ingest -> lightweight-ontology-core tuning (optional) -> lg-ontology (optional) -> ontology-pipeline-operator (optional)`
 
-For a stronger ontology-ready start, prefer the `wiki-plus-ontology` profile. It includes starter JSONL registries, compact intelligence manifests (`glossary`, `datasets`, `actions`, `relations`, `source_families`, `truth-boundaries`), and `scripts/ontology_refresh.py` for a minimal maintenance loop.
+For a stronger ontology-ready start, prefer the `wiki-plus-ontology` profile. It includes starter JSONL registries, compact intelligence manifests (`glossary`, `datasets`, `actions`, `routes`, `relations`, `source_families`, `query-routing`, `truth-boundaries`), `scripts/query_route.py` for route receipts, and `scripts/ontology_refresh.py` for a minimal maintenance loop.
 
 ### Example prompts
 

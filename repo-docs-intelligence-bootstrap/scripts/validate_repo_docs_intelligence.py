@@ -473,7 +473,10 @@ def validate_intelligence(repo_root: Path, report: ValidationReport) -> None:
     actions_path = intelligence_dir / "manifests" / "actions.yaml"
     entities_path = intelligence_dir / "manifests" / "entities.yaml"
     datasets_path = intelligence_dir / "manifests" / "datasets.yaml"
+    routes_path = intelligence_dir / "manifests" / "routes.yaml"
+    query_routing_path = intelligence_dir / "policies" / "query-routing.yaml"
     capabilities_path = intelligence_dir / "registry" / "capabilities.yaml"
+    query_receipts_path = repo_root / "warehouse" / "jsonl" / "query_receipts.jsonl"
 
     actions = load_list_section(actions_path, "actions", report) if actions_path.exists() else None
     if actions is None and not actions_path.exists():
@@ -487,6 +490,31 @@ def validate_intelligence(repo_root: Path, report: ValidationReport) -> None:
     if datasets is None and not datasets_path.exists():
         report.add_warning("intelligence.datasets_missing", "Missing `intelligence/manifests/datasets.yaml`.", datasets_path)
     dataset_map = keyed_items(datasets, "dataset_key", report, datasets_path)
+
+    routes = load_list_section(routes_path, "routes", report) if routes_path.exists() else None
+    route_map = keyed_items(routes, "route_key", report, routes_path)
+
+    query_routing = load_list_section(query_routing_path, "policies", report) if query_routing_path.exists() else None
+    query_routing_map = keyed_items(query_routing, "policy_key", report, query_routing_path)
+
+    if route_map and not query_routing_path.exists():
+        report.add_error(
+            "routing.policy_missing",
+            "`intelligence/manifests/routes.yaml` exists but `intelligence/policies/query-routing.yaml` is missing.",
+            query_routing_path,
+        )
+    if query_routing_map and not routes_path.exists():
+        report.add_error(
+            "routing.routes_missing",
+            "`intelligence/policies/query-routing.yaml` exists but `intelligence/manifests/routes.yaml` is missing.",
+            routes_path,
+        )
+    if (route_map or query_routing_map) and not query_receipts_path.exists():
+        report.add_error(
+            "routing.receipts_missing",
+            "Route contracts exist but `warehouse/jsonl/query_receipts.jsonl` is missing.",
+            query_receipts_path,
+        )
 
     capabilities = load_list_section(capabilities_path, "capabilities", report) if capabilities_path.exists() else None
     if capabilities is None and not capabilities_path.exists():
@@ -574,6 +602,39 @@ def validate_intelligence(repo_root: Path, report: ValidationReport) -> None:
                     f"Dataset `{dataset_key}` references unknown action `{action_key}`.",
                     datasets_path,
                 )
+
+    for route_key, item in route_map.items():
+        fallback_route = item.get("fallback_route")
+        if fallback_route and route_map and str(fallback_route) not in route_map:
+            report.add_error(
+                "routes.unknown_fallback",
+                f"Route `{route_key}` references unknown fallback route `{fallback_route}`.",
+                routes_path,
+            )
+
+    for policy_key, item in query_routing_map.items():
+        applies_to_routes = item.get("applies_to_routes") or []
+        if not isinstance(applies_to_routes, list):
+            report.add_error(
+                "routing.invalid_applies_to_routes",
+                f"Routing policy `{policy_key}` must declare `applies_to_routes` as a list.",
+                query_routing_path,
+            )
+            continue
+        for route_key in applies_to_routes:
+            if route_map and str(route_key) not in route_map:
+                report.add_error(
+                    "routing.unknown_route",
+                    f"Routing policy `{policy_key}` references unknown route `{route_key}`.",
+                    query_routing_path,
+                )
+        fallback_route = item.get("fallback_route")
+        if fallback_route and route_map and str(fallback_route) not in route_map:
+            report.add_error(
+                "routing.unknown_fallback_route",
+                f"Routing policy `{policy_key}` references unknown fallback route `{fallback_route}`.",
+                query_routing_path,
+            )
 
     handlers_dir = intelligence_dir / "handlers"
     if handlers_dir.exists():
