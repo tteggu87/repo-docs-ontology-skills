@@ -4,7 +4,11 @@
 
 # DocTology
 
-Obsidian-first LLM Wiki를 중심에 두고, 필요할 때만 canonical ontology, graph projection, operator workflow를 단계적으로 붙이는 실무형 skill pack입니다.
+Obsidian-first LLM Wiki skill pack for building a human-readable wiki surface first, then layering canonical ontology, graph projection, and operator workflows only when they become useful.
+
+한국어로 짧게 말하면,
+DocTology는 사람이 계속 읽고 고칠 수 있는 wiki를 먼저 세우고,
+그 아래에 canonical JSONL truth layer와 선택적 graph/operator 레이어를 점진적으로 붙이는 실무형 skill pack입니다.
 
 DocTology는 처음부터 거대한 graph platform을 강요하지 않습니다.
 대신 사람이 읽는 wiki를 앞면에 두고, 그 아래에 기계가 다룰 수 있는 truth layer를 점진적으로 쌓게 해줍니다.
@@ -12,6 +16,14 @@ DocTology는 처음부터 거대한 graph platform을 강요하지 않습니다.
 기본 흐름은 이렇습니다.
 
 `LLM Wiki scaffold -> ontology-backed ingest -> optional graph projection -> optional operator workflow`
+
+## At a glance
+
+- Start with `llm-wiki-bootstrap` when you want a fresh Obsidian-first LLM Wiki repository.
+- Use the `wiki-plus-ontology` profile when you want `raw/`, `wiki/`, `AGENTS.md`, `warehouse/jsonl/`, and a compact `intelligence/` layer from day one.
+- Use `llm-wiki-ontology-ingest` when new raw sources should update both canonical JSONL registries and the human-facing wiki.
+- Add `lightweight-ontology-core` and `lg-ontology` only when you actually need stronger provenance or multi-hop graph-style inspection.
+- Keep the wiki as the front surface; treat ontology and graph layers as support structure, not the product face.
 
 ## 한국어
 
@@ -67,7 +79,18 @@ DocTology는 이 문제를
 - optional `warehouse/jsonl/`
 - optional minimal `intelligence/`
 
-즉, “새 Obsidian-first LLM Wiki를 여는 버튼”입니다.
+`wiki-plus-ontology` 프로파일을 고르면 특히 아래가 같이 생깁니다.
+- `warehouse/jsonl/*.jsonl` starter registries
+- `intelligence/glossary.yaml`
+- `intelligence/manifests/datasets.yaml`
+- `intelligence/manifests/actions.yaml`
+- `intelligence/manifests/relations.yaml`
+- `intelligence/manifests/source_families.yaml`
+- `intelligence/policies/truth-boundaries.yaml`
+- `scripts/ontology_refresh.py`
+
+즉, “새 Obsidian-first LLM Wiki를 여는 버튼”이면서,
+필요하면 ontology-ready scaffold까지 한 번에 여는 시작점입니다.
 
 예시 프롬프트:
 
@@ -84,10 +107,19 @@ Use the wiki-plus-ontology profile so the project starts with raw, wiki, AGENTS.
 
 `raw source -> canonical ontology -> wiki synthesis -> meta refresh`
 
+그리고 ingest 시 아래 compact contract layer를 함께 참고하는 방향으로 설계됩니다.
+- `intelligence/glossary.yaml`
+- `intelligence/manifests/datasets.yaml`
+- `intelligence/manifests/actions.yaml`
+- `intelligence/manifests/relations.yaml`
+- `intelligence/manifests/source_families.yaml`
+- `intelligence/policies/truth-boundaries.yaml`
+
 즉 새 source가 들어오면:
 - `warehouse/jsonl/`을 갱신하고
 - 관련 `wiki/` 페이지를 갱신하고
-- `wiki/_meta/index.md`, `wiki/_meta/log.md`도 갱신하는
+- `wiki/_meta/index.md`, `wiki/_meta/log.md`도 갱신하고
+- 필요하면 `scripts/ontology_refresh.py`로 최소 ontology maintenance 루프를 다시 맞추는
 반복 ingest용 스킬입니다.
 
 예시 프롬프트:
@@ -316,6 +348,8 @@ So the default mental model is:
 ### Recommended default path
 
 `llm-wiki-bootstrap -> llm-wiki-ontology-ingest -> lightweight-ontology-core tuning (optional) -> lg-ontology (optional) -> ontology-pipeline-operator (optional)`
+
+For a stronger ontology-ready start, prefer the `wiki-plus-ontology` profile. It includes starter JSONL registries, compact intelligence manifests (`glossary`, `datasets`, `actions`, `relations`, `source_families`, `truth-boundaries`), and `scripts/ontology_refresh.py` for a minimal maintenance loop.
 
 ### Example prompts
 

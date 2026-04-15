@@ -278,7 +278,7 @@ The ontology registries are the default machine-truth surface for provenance, co
 ## Folder Semantics
 
 - `raw/`: immutable source storage
-- `warehouse/jsonl/`: canonical ontology outputs such as `messages.jsonl`, `documents.jsonl`, `entities.jsonl`, `claims.jsonl`, `claim_evidence.jsonl`, `segments.jsonl`, and `derived_edges.jsonl`
+- `warehouse/jsonl/`: canonical ontology outputs such as `messages.jsonl`, `documents.jsonl`, `source_versions.jsonl`, `entities.jsonl`, `claims.jsonl`, `claim_evidence.jsonl`, `segments.jsonl`, and `derived_edges.jsonl`
 - `wiki/sources/`: one page per source, including source metadata, summary, key claims, and links to affected pages
 - `wiki/concepts/`: concepts, frameworks, recurring ideas, terminology
 - `wiki/entities/`: organizations, products, systems, places, or domain objects
@@ -501,7 +501,8 @@ The LLM ingests, structures, cross-links, updates, and keeps the wiki healthy.
 │   ├── assets/
 │   └── notes/
 ├── scripts/
-│   └── llm_wiki.py
+│   ├── llm_wiki.py
+│   └── ontology_refresh.py
 ├── templates/
 │   └── source_page_template.md
 ├── warehouse/
@@ -542,6 +543,7 @@ cd {root}
 python3 -m venv .venv
 source .venv/bin/activate
 python scripts/llm_wiki.py status
+python scripts/ontology_refresh.py
 ```
 
 No third-party Python packages are required for the local scaffold.
@@ -578,7 +580,25 @@ The ontology-ready scaffold also includes a compact YAML contract layer so futur
 
 without needing a full repo-docs alignment pass first.
 
-### 6. Ask Me To Maintain The Wiki
+### 6. Run Minimal Ontology Refresh
+
+The ontology-ready scaffold also gives you a local helper:
+
+```bash
+python scripts/ontology_refresh.py
+```
+
+This minimal workflow:
+- ensures canonical JSONL starter files exist
+- summarizes current ontology registry counts
+- rebuilds `wiki/_meta/index.md`
+- appends a refresh entry to `wiki/_meta/log.md`
+- keeps the repo state coherent between deeper ingest passes
+
+It does not replace full ontology extraction.
+It is the smallest repeatable operator loop for the scaffold itself.
+
+### 7. Ask Me To Maintain The Wiki
 
 Use prompts like:
 
@@ -591,8 +611,9 @@ Use prompts like:
 1. Put a source into `raw/inbox/`
 2. Register it with the CLI
 3. Run ontology-backed ingest if available
-4. Review changed wiki pages in Obsidian
-5. Move the raw file into `raw/processed/` when you are happy
+4. Run `python scripts/ontology_refresh.py` to refresh minimal ontology state
+5. Review changed wiki pages in Obsidian
+6. Move the raw file into `raw/processed/` when you are happy
 
 ## Scaling Later
 
@@ -893,6 +914,11 @@ def datasets_yaml() -> str:
     role: canonical document registry
     truth_class: canonical
     owner: ontology
+  - id: warehouse_source_versions
+    path: warehouse/jsonl/source_versions.jsonl
+    role: canonical export snapshot registry for recurring source families
+    truth_class: canonical
+    owner: ontology
   - id: warehouse_entities
     path: warehouse/jsonl/entities.jsonl
     role: canonical entity registry
@@ -1129,6 +1155,117 @@ priority_order:
   - wiki
   - derived
 """
+
+
+def ontology_refresh_py() -> str:
+    return '''#!/usr/bin/env python3
+"""Minimal ontology refresh helper for ontology-ready LLM Wiki scaffolds.
+
+This script does not perform ontology extraction by itself.
+It keeps the scaffold's canonical files and meta surfaces coherent between
+full ontology-backed ingest passes.
+"""
+
+from __future__ import annotations
+
+import json
+import subprocess
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+INTELLIGENCE_FILES = [
+    ROOT / "intelligence" / "glossary.yaml",
+    ROOT / "intelligence" / "manifests" / "datasets.yaml",
+    ROOT / "intelligence" / "manifests" / "actions.yaml",
+    ROOT / "intelligence" / "manifests" / "relations.yaml",
+    ROOT / "intelligence" / "manifests" / "source_families.yaml",
+    ROOT / "intelligence" / "policies" / "truth-boundaries.yaml",
+]
+REGISTRY_FILES = [
+    ROOT / "warehouse" / "jsonl" / "documents.jsonl",
+    ROOT / "warehouse" / "jsonl" / "source_versions.jsonl",
+    ROOT / "warehouse" / "jsonl" / "messages.jsonl",
+    ROOT / "warehouse" / "jsonl" / "entities.jsonl",
+    ROOT / "warehouse" / "jsonl" / "claims.jsonl",
+    ROOT / "warehouse" / "jsonl" / "claim_evidence.jsonl",
+    ROOT / "warehouse" / "jsonl" / "segments.jsonl",
+    ROOT / "warehouse" / "jsonl" / "derived_edges.jsonl",
+]
+SUMMARY_PATH = ROOT / "warehouse" / "ontology_refresh_summary.json"
+GRAPH_DIR = ROOT / "warehouse" / "graph_projection"
+LLM_WIKI_CLI = ROOT / "scripts" / "llm_wiki.py"
+
+
+def ensure_file(path: Path) -> bool:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if path.exists():
+        return False
+    path.write_text("", encoding="utf-8")
+    return True
+
+
+def count_jsonl_rows(path: Path) -> int:
+    if not path.exists():
+        return 0
+    with path.open(encoding="utf-8") as handle:
+        return sum(1 for line in handle if line.strip())
+
+
+def main() -> int:
+    created_registry_files: list[str] = []
+    missing_intelligence = [
+        path.relative_to(ROOT).as_posix()
+        for path in INTELLIGENCE_FILES
+        if not path.exists()
+    ]
+
+    for path in REGISTRY_FILES:
+        if ensure_file(path):
+            created_registry_files.append(path.relative_to(ROOT).as_posix())
+
+    registry_counts = {
+        path.stem: count_jsonl_rows(path)
+        for path in REGISTRY_FILES
+    }
+
+    graph_file_count = 0
+    if GRAPH_DIR.exists():
+        graph_file_count = sum(1 for path in GRAPH_DIR.rglob("*") if path.is_file())
+
+    summary = {
+        "root": str(ROOT),
+        "missing_intelligence_files": missing_intelligence,
+        "created_registry_files": created_registry_files,
+        "registry_counts": registry_counts,
+        "graph_projection_file_count": graph_file_count,
+        "notes": [
+            "This refresh keeps starter ontology state coherent but does not perform ontology extraction.",
+            "Use llm-wiki-ontology-ingest for ontology-backed source processing.",
+        ],
+    }
+
+    SUMMARY_PATH.parent.mkdir(parents=True, exist_ok=True)
+    SUMMARY_PATH.write_text(json.dumps(summary, ensure_ascii=False, indent=2) + "\\n", encoding="utf-8")
+
+    subprocess.run([sys.executable, str(LLM_WIKI_CLI), "reindex"], check=True)
+    log_details = [
+        f"Refreshed `{SUMMARY_PATH.relative_to(ROOT).as_posix()}`",
+        f"Missing intelligence files: {len(missing_intelligence)}",
+        f"Created registry files: {len(created_registry_files)}",
+        f"Graph projection files: {graph_file_count}",
+    ]
+    subprocess.run(
+        [sys.executable, str(LLM_WIKI_CLI), "log", "ontology-refresh", "Minimal ontology refresh", *log_details],
+        check=True,
+    )
+    print(json.dumps(summary, ensure_ascii=False, indent=2))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
+'''
 
 
 def source_template() -> str:
@@ -1619,6 +1756,8 @@ def scaffold(target: Path, force: bool, profile: str) -> None:
     write_text(target / "AGENTS.md", agents_md(profile))
     write_text(target / "README.md", readme(target, profile))
     write_text(target / "scripts" / "llm_wiki.py", llm_wiki_py())
+    if profile == "wiki-plus-ontology":
+        write_text(target / "scripts" / "ontology_refresh.py", ontology_refresh_py())
     write_text(target / "templates" / "source_page_template.md", source_template())
     write_text(target / "wiki" / "_meta" / "dashboard.md", dashboard_md(date))
     write_text(target / "wiki" / "_meta" / "index.md", index_md(date))

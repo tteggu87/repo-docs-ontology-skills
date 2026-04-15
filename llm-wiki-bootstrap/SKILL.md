@@ -35,6 +35,7 @@ Do not use this skill when the user only wants to ingest one source into an exis
    - `raw/`
    - `wiki/`
    - `scripts/llm_wiki.py`
+   - for `wiki-plus-ontology`, also verify `scripts/ontology_refresh.py`
    - `templates/source_page_template.md`
    - `wiki/_meta/index.md`, `dashboard.md`, `log.md`
    - for `wiki-plus-ontology`, also verify:
@@ -71,6 +72,7 @@ Add `--force` only when the user explicitly wants overwrites.
 - repo-local `AGENTS.md`
 - starter `README.md`
 - minimal CLI for `ingest`, `reindex`, `lint`, `status`, `log`
+- for ontology-ready scaffolds, a minimal `scripts/ontology_refresh.py` helper
 - source-page template
 - starter dashboard, index, and log pages
 - optional ontology-ready `warehouse/jsonl/` and `intelligence/` starter files with compact YAML contracts for vocabulary, datasets, actions, relations, source families, and truth boundaries
@@ -98,6 +100,7 @@ After changes to this skill:
 3. Run the bootstrap script in a second temporary directory for `wiki-plus-ontology`.
 4. Verify the expected files exist for both profiles.
 5. Spot-check `AGENTS.md`, `README.md`, and `scripts/llm_wiki.py`.
-6. Confirm the generated wording does not imply markdown pages are canonical truth in ontology-ready repos.
+6. For `wiki-plus-ontology`, run `python scripts/ontology_refresh.py` in the temporary scaffold and confirm it emits a summary plus appends a log entry.
+7. Confirm the generated wording does not imply markdown pages are canonical truth in ontology-ready repos.
 
 Prefer deterministic script validation over vague chat-only claims.

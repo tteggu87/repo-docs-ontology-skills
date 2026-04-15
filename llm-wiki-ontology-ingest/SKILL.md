@@ -57,6 +57,9 @@ For graph-style inspection, layer `lg-ontology` on top of the canonical ontology
   - `intelligence/glossary.yaml`
   - `intelligence/manifests/datasets.yaml`
   - `intelligence/manifests/actions.yaml`
+  - `intelligence/manifests/relations.yaml`
+  - `intelligence/manifests/source_families.yaml`
+  - `intelligence/policies/truth-boundaries.yaml`
 
 ## Expected Outputs
 
@@ -64,6 +67,7 @@ Canonical ontology outputs:
 
 - `warehouse/jsonl/messages.jsonl` when the source is conversational or sequential
 - `warehouse/jsonl/documents.jsonl`
+- `warehouse/jsonl/source_versions.jsonl` when the source family is recurring or export-based
 - `warehouse/jsonl/entities.jsonl`
 - `warehouse/jsonl/claims.jsonl`
 - `warehouse/jsonl/claim_evidence.jsonl`
@@ -120,6 +124,9 @@ Before doing anything:
    - `intelligence/glossary.yaml`
    - `intelligence/manifests/datasets.yaml`
    - `intelligence/manifests/actions.yaml`
+   - `intelligence/manifests/relations.yaml`
+   - `intelligence/manifests/source_families.yaml`
+   - `intelligence/policies/truth-boundaries.yaml`
 
 Treat the repo-local contract as authoritative for page style, truth priority, and save behavior.
 
@@ -140,6 +147,11 @@ Important:
 ### 3. Build Canonical Ontology Truth
 
 Use `lightweight-ontology-core` concepts and conventions to update canonical truth.
+
+Read the compact contract layer first when it exists:
+- `intelligence/manifests/relations.yaml` for stable relation vocabulary and graph-like hop hints
+- `intelligence/manifests/source_families.yaml` for recurring source identity and incremental-ingest assumptions
+- `intelligence/policies/truth-boundaries.yaml` for source/canonical/wiki/derived layer separation
 
 At minimum, preserve or create:
 
@@ -167,12 +179,19 @@ Once canonical truth is updated:
 Keep the wiki human-facing and easy to scan.
 Do not dump raw JSONL into markdown pages.
 
-### 5. Refresh Meta Pages
+### 5. Refresh Meta Pages And Minimal Derived State
 
 After meaningful ingest work:
 
 1. refresh `wiki/_meta/index.md`
 2. append a clear log entry to `wiki/_meta/log.md`
+3. if the repo has `scripts/ontology_refresh.py`, run it to:
+   - ensure canonical registry files exist
+   - emit a compact refresh summary
+   - rebuild lightweight repo state after ontology changes
+
+This refresh step is intentionally minimal.
+It does not replace full ontology extraction, graph export, or validator-heavy operator workflows.
 
 If the ingest changed how the repo should be interpreted, update `AGENTS.md` or a durable analysis page rather than leaving that insight only in chat.
 
@@ -197,6 +216,7 @@ The ingest succeeded when:
 - affected wiki pages are refreshed or created
 - uncertainty is preserved
 - `wiki/_meta/index.md` and `wiki/_meta/log.md` reflect the new work
+- if `scripts/ontology_refresh.py` exists, its refresh summary runs cleanly and reports the expected registry presence
 
 ## Notes
 
