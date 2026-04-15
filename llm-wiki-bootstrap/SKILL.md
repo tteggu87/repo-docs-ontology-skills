@@ -7,9 +7,10 @@ description: Use this skill when the user wants to scaffold a new Obsidian-first
 
 ## Overview
 
-Create a fresh markdown-first LLM Wiki workspace that is ready for Codex-style maintenance.
-The skill scaffolds the folder structure, `AGENTS.md`, starter `README.md`, local CLI, template files, and meta pages so the next agent can operate the vault consistently.
-It supports both a plain wiki scaffold and an ontology-ready scaffold.
+Create a fresh markdown-first LLM Wiki workspace that is ready for Codex-style maintenance. The skill scaffolds the folder structure, `AGENTS.md`, starter `README.md`, local CLI, template files, and meta pages so the next agent can operate the vault consistently. It now supports both a plain wiki scaffold and an ontology-ready scaffold.
+
+The generated repo-local `AGENTS.md` is the primary contract for future agents.
+Do not introduce a competing top-level wiki schema file as a peer to `AGENTS.md`.
 
 ## When To Use
 
@@ -27,7 +28,7 @@ Do not use this skill when the user only wants to ingest one source into an exis
 3. Choose the profile:
    - `wiki-only` for a plain Obsidian-first wiki
    - `wiki-plus-ontology` when the repo should also start with `warehouse/jsonl/` and minimal intelligence manifests
-4. Run `scripts/bootstrap_llm_wiki.py <target-dir> --profile <profile>` from this skill directory.
+4. Run `scripts/bootstrap_llm_wiki.py <target-dir> --profile <profile>` from this skill.
 5. Inspect the generated tree and verify that these exist:
    - `AGENTS.md`
    - `README.md`
@@ -40,21 +41,26 @@ Do not use this skill when the user only wants to ingest one source into an exis
      - `intelligence/glossary.yaml`
      - `intelligence/manifests/datasets.yaml`
      - `intelligence/manifests/actions.yaml`
+     - `intelligence/manifests/relations.yaml`
+     - `intelligence/manifests/source_families.yaml`
+     - `intelligence/policies/truth-boundaries.yaml`
      - `warehouse/jsonl/`
-6. Tell the user what was created and what the next maintenance prompt should look like.
+6. Spot-check the generated repo contract:
+   - `AGENTS.md` includes a startup ritual for future agents
+   - `AGENTS.md` keeps `wiki/_meta/index.md` and `wiki/_meta/log.md` central
+   - ontology-ready scaffolds describe `warehouse/jsonl/` as canonical truth
+7. Tell the user what was created and what the next maintenance prompt should look like.
 
-## Default Commands
-
-Plain scaffold:
+## Default Command
 
 ```bash
-python3 scripts/bootstrap_llm_wiki.py /absolute/path/to/new-project --profile wiki-only
+python3 /Users/hoyasung007hotmail.com/.codex/skills/llm-wiki-bootstrap/scripts/bootstrap_llm_wiki.py /absolute/path/to/new-project --profile wiki-only
 ```
 
-Ontology-ready scaffold:
+For an ontology-ready scaffold:
 
 ```bash
-python3 scripts/bootstrap_llm_wiki.py /absolute/path/to/new-project --profile wiki-plus-ontology
+python3 /Users/hoyasung007hotmail.com/.codex/skills/llm-wiki-bootstrap/scripts/bootstrap_llm_wiki.py /absolute/path/to/new-project --profile wiki-plus-ontology
 ```
 
 Add `--force` only when the user explicitly wants overwrites.
@@ -67,7 +73,14 @@ Add `--force` only when the user explicitly wants overwrites.
 - minimal CLI for `ingest`, `reindex`, `lint`, `status`, `log`
 - source-page template
 - starter dashboard, index, and log pages
-- optional ontology-ready `warehouse/jsonl/` and `intelligence/` starter files
+- optional ontology-ready `warehouse/jsonl/` and `intelligence/` starter files with compact YAML contracts for vocabulary, datasets, actions, relations, source families, and truth boundaries
+
+## Generated Contract Expectations
+
+- The scaffold should teach future agents to read `AGENTS.md`, `wiki/_meta/index.md`, and recent `wiki/_meta/log.md` before substantial work.
+- The scaffold should teach page-threshold discipline so passing mentions do not immediately become standalone pages.
+- If the scaffold is ontology-ready, it should describe `warehouse/jsonl/` as canonical structured truth and `wiki/` as human-facing synthesis.
+- If a later wiki-local conventions page is ever added, it must remain subordinate to `AGENTS.md`.
 
 ## Customization Guidance
 
@@ -80,10 +93,11 @@ Add `--force` only when the user explicitly wants overwrites.
 
 After changes to this skill:
 
-1. Run a quick skill validation if your environment provides one.
+1. Run quick validation.
 2. Run the bootstrap script in a temporary directory for `wiki-only`.
 3. Run the bootstrap script in a second temporary directory for `wiki-plus-ontology`.
 4. Verify the expected files exist for both profiles.
-5. Spot-check `AGENTS.md`, `README.md`, `scripts/llm_wiki.py`, and the ontology starter manifests.
+5. Spot-check `AGENTS.md`, `README.md`, and `scripts/llm_wiki.py`.
+6. Confirm the generated wording does not imply markdown pages are canonical truth in ontology-ready repos.
 
 Prefer deterministic script validation over vague chat-only claims.

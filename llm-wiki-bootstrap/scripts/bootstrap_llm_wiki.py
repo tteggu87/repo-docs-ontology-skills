@@ -250,7 +250,7 @@ There are four layers:
 1. `raw/` contains immutable source material. Never modify source contents.
 2. `warehouse/jsonl/` contains canonical structured ontology truth.
 3. `wiki/` contains LLM-maintained human-facing synthesis pages.
-4. `AGENTS.md` plus `intelligence/` define the operating rules, vocabulary, dataset boundaries, and action contracts.
+4. `AGENTS.md` plus `intelligence/` define the operating rules, vocabulary, dataset boundaries, action contracts, and lightweight relation/source-family hints.
 
 ## Core Rules
 
@@ -287,7 +287,7 @@ The ontology registries are the default machine-truth surface for provenance, co
 - `wiki/timelines/`: chronological pages
 - `wiki/analyses/`: saved answers, comparison memos, synthesis notes, decision memos
 - `wiki/_meta/`: dashboard, index, log, and other operational pages
-- `intelligence/`: glossary and manifests that stabilize repo-local vocabulary, datasets, and action boundaries
+- `intelligence/`: glossary, manifests, and policies that stabilize repo-local vocabulary, datasets, action boundaries, relation vocabulary, and source-family assumptions
 
 ## Page Conventions
 
@@ -346,16 +346,19 @@ When the user asks a question:
 1. Read `wiki/_meta/index.md` first.
 2. Identify likely relevant pages.
 3. Read the smallest set of pages that can answer well.
-4. Use `warehouse/jsonl/...` for provenance checks, contradiction checks, claim validation, or exact source coverage when wiki pages are too thin or uncertain.
-5. Synthesize an answer grounded in the wiki, with ontology-backed verification when needed.
-6. If the answer is durable, save it into `wiki/analyses/`.
-7. Cross-link that analysis page from relevant pages if appropriate.
-8. Append a `query` log entry for substantial work.
+4. Use `intelligence/` as a compact routing and boundary layer when terminology, dataset ownership, relation vocabulary, or source-family assumptions matter.
+5. Use `warehouse/jsonl/...` for provenance checks, contradiction checks, claim validation, or exact source coverage when wiki pages are too thin or uncertain.
+6. Synthesize an answer grounded in the wiki, with ontology-backed verification when needed.
+7. If the answer is durable, save it into `wiki/analyses/`.
+8. Cross-link that analysis page from relevant pages if appropriate.
+9. Append a `query` log entry for substantial work.
 
 ## Ontology-Aware Ingest And Query Defaults
 
 - New source material enters through `raw/inbox/`.
 - Repeated source processing should prefer an ontology-backed ingest skill over ad hoc manual steps.
+- `intelligence/manifests/source_families.yaml` may provide recurring-corpus identity hints when the same source family appears across multiple exports.
+- `intelligence/manifests/relations.yaml` may provide compact graph-like relation vocabulary for schema-level hop reasoning before derived graph artifacts exist.
 - Direct ontology-core operation is reserved for tuning, debugging, or operator workflows.
 - Important answers should still land in `wiki/analyses/` even when the ontology layer did most of the structured work.
 
@@ -460,7 +463,7 @@ This project gives you:
 - A practical folder layout for raw sources, canonical ontology registries, and generated wiki pages
 - A small local CLI for `ingest`, `reindex`, `lint`, `status`, and `log`
 - An `AGENTS.md` file that tells Codex how to maintain the wiki
-- Minimal intelligence manifests that define vocabulary, dataset roles, and action contracts
+- Minimal intelligence manifests and policies that define vocabulary, dataset roles, action contracts, relation vocabulary, and truth boundaries
 - Obsidian-friendly markdown pages, wikilinks, and stable metadata
 
 ## What This System Is
@@ -485,9 +488,13 @@ The LLM ingests, structures, cross-links, updates, and keeps the wiki healthy.
 ├── README.md
 ├── intelligence/
 │   ├── glossary.yaml
+│   ├── policies/
+│   │   └── truth-boundaries.yaml
 │   └── manifests/
 │       ├── actions.yaml
-│       └── datasets.yaml
+│       ├── datasets.yaml
+│       ├── relations.yaml
+│       └── source_families.yaml
 ├── raw/
 │   ├── inbox/
 │   ├── processed/
@@ -562,6 +569,15 @@ If you install `llm-wiki-ontology-ingest` later, use that skill after source reg
 - refresh affected wiki pages
 - keep provenance-aware structured truth aligned with human-facing synthesis
 
+The ontology-ready scaffold also includes a compact YAML contract layer so future agents can read:
+
+- truth boundaries
+- relation vocabulary
+- source-family hints
+- dataset and action ownership
+
+without needing a full repo-docs alignment pass first.
+
 ### 6. Ask Me To Maintain The Wiki
 
 Use prompts like:
@@ -588,6 +604,8 @@ You can later add:
 - graph projection
 - semantic retrieval
 - git-based review workflows
+
+The ontology-ready scaffold already includes a small YAML contract layer that can support schema-level graph-like hop reasoning before a full graph runtime exists.
 
 Until then, the repo-local contracts and folder structure are enough to start compounding knowledge.
 """
@@ -964,6 +982,9 @@ def actions_yaml() -> str:
       - intelligence/glossary.yaml
       - intelligence/manifests/datasets.yaml
       - intelligence/manifests/actions.yaml
+      - intelligence/manifests/relations.yaml
+      - intelligence/manifests/source_families.yaml
+      - intelligence/policies/truth-boundaries.yaml
     writes:
       - warehouse/jsonl/messages.jsonl
       - warehouse/jsonl/documents.jsonl
@@ -990,11 +1011,123 @@ def actions_yaml() -> str:
       - wiki/_meta/index.md
       - wiki
       - warehouse/jsonl
+      - intelligence/glossary.yaml
+      - intelligence/manifests/datasets.yaml
+      - intelligence/manifests/relations.yaml
     writes:
       - wiki/analyses
       - wiki/_meta/log.md
     notes:
       - Prefer wiki as the human-facing answer surface and use ontology registries for provenance, contradictions, and coverage checks.
+  - id: inspect_graph_neighborhood
+    description: Follow lightweight relation vocabulary and canonical registries to inspect a bounded neighborhood around a seed concept, entity, claim, or source.
+    inputs:
+      - seed term or stable id
+    reads:
+      - intelligence/glossary.yaml
+      - intelligence/manifests/relations.yaml
+      - intelligence/manifests/datasets.yaml
+      - wiki
+      - warehouse/jsonl
+      - warehouse/graph_projection
+    writes: []
+    notes:
+      - Use this as bounded graph-like hop guidance, not as canonical truth replacement.
+"""
+
+
+def relations_yaml() -> str:
+    return """relations:
+  - key: about
+    description: Connects a source, note, claim, or analysis to the concept, person, project, or entity it is mainly about.
+    subject_types: [source_page, analysis_page, claim, segment]
+    object_types: [entity, person, project, concept]
+    hop_hint: content-to-topic
+  - key: mentions
+    description: Lightweight mention relation when a page or segment references an entity without stronger claim semantics.
+    subject_types: [wiki_page, source_page, segment]
+    object_types: [entity, person, project, concept]
+    hop_hint: weak-association
+  - key: supports
+    description: Indicates that a claim, source, or analysis provides support for another claim or page-level conclusion.
+    subject_types: [source_page, claim, analysis_page]
+    object_types: [claim, concept, project, entity]
+    hop_hint: evidence-positive
+  - key: contradicts
+    description: Indicates explicit conflict between claims, sources, or competing interpretations.
+    subject_types: [claim, source_page, analysis_page]
+    object_types: [claim, concept, project, entity]
+    hop_hint: evidence-conflict
+  - key: discussed_in
+    description: Connects an entity, concept, or project to a source or timeline where it is materially discussed.
+    subject_types: [entity, person, project, concept]
+    object_types: [source_page, timeline, document]
+    hop_hint: topic-to-context
+  - key: authored_by
+    description: Connects a source, note, or message-like artifact to the person or actor that produced it when known.
+    subject_types: [source_page, document, message]
+    object_types: [person, entity]
+    hop_hint: provenance-author
+  - key: supersedes
+    description: Indicates that a newer source, claim, or export version replaces an older one.
+    subject_types: [source_page, claim, export_version]
+    object_types: [source_page, claim, export_version]
+    hop_hint: lifecycle-forward
+"""
+
+
+def source_families_yaml() -> str:
+    return """source_families:
+  - key: manual-single-source
+    description: Default family for one-off manually ingested sources that do not recur as cumulative exports.
+    typical_inputs:
+      - article markdown
+      - note export
+      - transcript
+      - memo
+    default_workflow: register_source_then_llm_ingest
+  - key: recurring-chat-or-export
+    description: Family for repeated exports of the same underlying corpus, such as one chat room or periodic note dump.
+    typical_inputs:
+      - chat CSV export
+      - recurring markdown note export
+      - mailbox or thread snapshot
+    default_workflow: ontology_backed_incremental_ingest
+
+defaults:
+  unknown_family_policy: ask-or-treat-as-manual-single-source
+  family_identity_rule: one recurring corpus per family, many snapshots per family
+"""
+
+
+def truth_boundaries_yaml() -> str:
+    return """truth_boundaries:
+  raw:
+    path: raw/
+    truth_class: source
+    owner: human
+    rule: immutable unless the user explicitly asks for mutation
+  canonical_ontology:
+    path: warehouse/jsonl/
+    truth_class: canonical
+    owner: ontology
+    rule: machine-truth surface for provenance, review state, and stable semantic records
+  wiki:
+    path: wiki/
+    truth_class: human_facing
+    owner: wiki
+    rule: primary human-reading and synthesis surface maintained by the LLM
+  derived:
+    path: warehouse/graph_projection/
+    truth_class: derived
+    owner: graph
+    rule: read-only aid for inspection, retrieval support, and graph-like exploration; never canonical truth
+
+priority_order:
+  - raw
+  - canonical_ontology
+  - wiki
+  - derived
 """
 
 
@@ -1475,6 +1608,7 @@ def scaffold(target: Path, force: bool, profile: str) -> None:
         directories.extend(
             [
                 target / "intelligence" / "manifests",
+                target / "intelligence" / "policies",
                 target / "warehouse" / "jsonl",
             ]
         )
@@ -1493,6 +1627,9 @@ def scaffold(target: Path, force: bool, profile: str) -> None:
         write_text(target / "intelligence" / "glossary.yaml", glossary_yaml())
         write_text(target / "intelligence" / "manifests" / "datasets.yaml", datasets_yaml())
         write_text(target / "intelligence" / "manifests" / "actions.yaml", actions_yaml())
+        write_text(target / "intelligence" / "manifests" / "relations.yaml", relations_yaml())
+        write_text(target / "intelligence" / "manifests" / "source_families.yaml", source_families_yaml())
+        write_text(target / "intelligence" / "policies" / "truth-boundaries.yaml", truth_boundaries_yaml())
 
 
 def build_parser() -> argparse.ArgumentParser:
