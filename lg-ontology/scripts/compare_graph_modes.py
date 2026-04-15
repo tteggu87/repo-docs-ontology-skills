@@ -26,17 +26,46 @@ def load_bundle(repo_root: Path) -> dict[str, list[dict[str, object]]]:
     }
 
 
-def find_seed_entities(bundle: dict[str, list[dict[str, object]]], query: str) -> list[dict[str, object]]:
-    q = normalize(query)
+def entity_candidates(rows: list[dict[str, object]]) -> list[dict[str, object]]:
+    candidates: list[dict[str, object]] = []
+    for row in rows:
+        aliases = row.get("aliases", [])
+        candidates.append(
+            {
+                "entity_id": str(row.get("entity_id", "")).strip(),
+                "label": str(row.get("label", "")).strip(),
+                "aliases": [str(item).strip() for item in aliases if isinstance(item, str)] if isinstance(aliases, list) else [],
+                "entity_type": str(row.get("entity_type", "")).strip(),
+                "status": str(row.get("status", "")).strip(),
+            }
+        )
+    return candidates
+
+
+def find_entity_by_id(bundle: dict[str, list[dict[str, object]]], entity_id: str) -> list[dict[str, object]]:
+    target = normalize(entity_id)
+    return [row for row in bundle["entities"] if normalize(row.get("entity_id")) == target]
+
+
+def find_entity_by_label(bundle: dict[str, list[dict[str, object]]], label: str) -> list[dict[str, object]]:
+    target = normalize(label)
+    matches: list[dict[str, object]] = []
+    for row in bundle["entities"]:
+        row_label = normalize(row.get("label"))
+        aliases = [normalize(item) for item in row.get("aliases", []) if isinstance(item, str)] if isinstance(row.get("aliases"), list) else []
+        if target and (target == row_label or target in aliases):
+            matches.append(row)
+    return matches
+
+
+def discover_entity_candidates(bundle: dict[str, list[dict[str, object]]], text: str) -> list[dict[str, object]]:
+    target = normalize(text)
     matches: list[dict[str, object]] = []
     for row in bundle["entities"]:
         entity_id = normalize(row.get("entity_id"))
         label = normalize(row.get("label"))
         aliases = [normalize(item) for item in row.get("aliases", []) if isinstance(item, str)] if isinstance(row.get("aliases"), list) else []
-        if q in {entity_id, label} or q in aliases:
-            matches.append(row)
-            continue
-        if q and (q in entity_id or q in label or any(q in alias for alias in aliases)):
+        if target and (target in entity_id or target in label or any(target in alias for alias in aliases)):
             matches.append(row)
     return matches
 
@@ -209,32 +238,97 @@ def graph_view(bundle: dict[str, list[dict[str, object]]], seed_ids: set[str], m
     }
 
 
+def render_text_report(report: dict[str, object]) -> None:
+    print(f"Seed mode: {report['seed_mode']}")
+    print(f"Seed input: {report['seed_input']}")
+    print(f"Seed entities: {', '.join(report['seed_entities'])}")
+    print("Baseline direct lookup:")
+    for key, value in report["baseline"]["counts"].items():
+        print(f"  - {key}: {value}")
+    print("Graph-style expansion:")
+    for key, value in report["graph"]["counts"].items():
+        print(f"  - {key}: {value}")
+    print("Uplift:")
+    for key, value in report["uplift"].items():
+        print(f"  - {key}: {value}")
+    if report["graph"]["sample_paths"]:
+        print("Sample paths:")
+        for value in report["graph"]["sample_paths"]:
+            print(f"  - {value}")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Compare direct ontology lookup against graph-style neighborhood expansion.")
     parser.add_argument("--repo-root", required=True, help="Repository root containing ontology files.")
-    parser.add_argument("--query", required=True, help="Entity id or label to inspect.")
     parser.add_argument("--max-hops", type=int, default=3, help="Maximum graph traversal depth.")
     parser.add_argument("--format", choices=["text", "json"], default="text")
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument("--entity-id", help="Exact entity id to inspect.")
+    group.add_argument("--entity-label", help="Exact entity label or exact alias to inspect.")
+    group.add_argument("--find", help="Discovery-only mode: list candidate entities for a partial string and exit.")
     args = parser.parse_args()
 
     repo_root = Path(args.repo_root).resolve()
     try:
         bundle = load_bundle(repo_root)
-        seeds = find_seed_entities(bundle, args.query)
     except Exception as exc:
         print(f"Failed to build comparison bundle: {exc}", file=sys.stderr)
         return 1
 
+    if args.find:
+        candidates = entity_candidates(discover_entity_candidates(bundle, args.find))
+        payload = {
+            "mode": "discovery",
+            "query": args.find,
+            "count": len(candidates),
+            "candidates": candidates,
+        }
+        if args.format == "json":
+            print(json.dumps(payload, ensure_ascii=False, indent=2))
+        else:
+            print(f"Discovery query: {args.find}")
+            print(f"Candidates: {len(candidates)}")
+            for row in candidates:
+                alias_text = ", ".join(row.get("aliases", [])) if isinstance(row.get("aliases"), list) else ""
+                print(f"  - {row['entity_id']} | {row['label']} | aliases: {alias_text}")
+        return 0 if candidates else 2
+
+    if args.entity_id:
+        seeds = find_entity_by_id(bundle, args.entity_id)
+        seed_mode = "exact_entity_id"
+        seed_input = args.entity_id
+    else:
+        seeds = find_entity_by_label(bundle, args.entity_label or "")
+        seed_mode = "exact_entity_label"
+        seed_input = args.entity_label or ""
+
     if not seeds:
-        print(f"No entity matched query: {args.query}", file=sys.stderr)
+        print(f"No entity matched the exact seed input: {seed_input}", file=sys.stderr)
         return 2
+
+    if len(seeds) > 1:
+        payload = {
+            "mode": "ambiguous",
+            "seed_mode": seed_mode,
+            "seed_input": seed_input,
+            "count": len(seeds),
+            "candidates": entity_candidates(seeds),
+        }
+        if args.format == "json":
+            print(json.dumps(payload, ensure_ascii=False, indent=2))
+        else:
+            print(f"Ambiguous seed input: {seed_input}")
+            for row in payload["candidates"]:
+                alias_text = ", ".join(row.get("aliases", [])) if isinstance(row.get("aliases"), list) else ""
+                print(f"  - {row['entity_id']} | {row['label']} | aliases: {alias_text}")
+        return 3
 
     seed_ids = {str(row.get("entity_id")) for row in seeds if row.get("entity_id")}
     baseline = baseline_view(bundle, seed_ids)
     graph = graph_view(bundle, seed_ids, args.max_hops)
-
     report = {
-        "query": args.query,
+        "seed_mode": seed_mode,
+        "seed_input": seed_input,
         "seed_entities": sorted(seed_ids),
         "baseline": baseline,
         "graph": graph,
@@ -250,21 +344,7 @@ def main() -> int:
     if args.format == "json":
         print(json.dumps(report, ensure_ascii=False, indent=2))
     else:
-        print(f"Query: {report['query']}")
-        print(f"Seed entities: {', '.join(report['seed_entities'])}")
-        print("Baseline direct lookup:")
-        for key, value in baseline["counts"].items():
-            print(f"  - {key}: {value}")
-        print("Graph-style expansion:")
-        for key, value in graph["counts"].items():
-            print(f"  - {key}: {value}")
-        print("Uplift:")
-        for key, value in report["uplift"].items():
-            print(f"  - {key}: {value}")
-        if graph["sample_paths"]:
-            print("Sample paths:")
-            for value in graph["sample_paths"]:
-                print(f"  - {value}")
+        render_text_report(report)
     return 0
 
 

@@ -153,10 +153,17 @@ If a downstream report or explorer consumes the projection, verify that it still
 
 Use the comparison script before deciding a graph layer is worth keeping.
 
-Run:
+Preferred exact-seed commands:
 
 ```bash
-python scripts/compare_graph_modes.py --repo-root <path> --query "<entity id or label>"
+python scripts/compare_graph_modes.py --repo-root <path> --entity-id <entity-id>
+python scripts/compare_graph_modes.py --repo-root <path> --entity-label "<Exact Label>"
+```
+
+Discovery-only mode for operator assistance:
+
+```bash
+python scripts/compare_graph_modes.py --repo-root <path> --find "<partial text>"
 ```
 
 Use this to compare:
@@ -165,6 +172,8 @@ Use this to compare:
 - graph-style neighborhood expansion
 - extra reachable entities, claims, evidence rows, segments, and documents
 
+Keep `--find` as discovery-only.
+Do not treat substring candidate discovery as the comparison seed itself.
 Prefer this lightweight comparison before introducing Ladybug.
 
 ### 4. Add Ladybug Only If The Projection Proves Useful
