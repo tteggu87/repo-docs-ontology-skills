@@ -192,7 +192,7 @@ After meaningful ingest work:
 
 1. refresh `wiki/_meta/index.md`
 2. append a clear log entry to `wiki/_meta/log.md`
-3. if the repo has `scripts/query_route.py`, use it for substantial query/task routing receipts when the route choice itself matters to future operators
+3. if the repo has `scripts/query_route.py`, use it to record the route already chosen by the agent when that routing decision matters to future operators
 4. if the repo has `scripts/ontology_refresh.py`, run it to:
    - ensure canonical registry files exist
    - emit a compact refresh summary
@@ -224,7 +224,7 @@ The ingest succeeded when:
 - affected wiki pages are refreshed or created
 - uncertainty is preserved
 - `wiki/_meta/index.md` and `wiki/_meta/log.md` reflect the new work
-- if `scripts/query_route.py` exists, route receipts can be written cleanly to `warehouse/jsonl/query_receipts.jsonl`
+- if `scripts/query_route.py` exists, agent-chosen route receipts can be written cleanly to `warehouse/jsonl/query_receipts.jsonl`
 - if `scripts/ontology_refresh.py` exists, its refresh summary runs cleanly and reports the expected registry presence
 
 ## Notes

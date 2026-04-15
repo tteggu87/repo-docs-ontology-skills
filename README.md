@@ -22,7 +22,7 @@ DocTology는 처음부터 거대한 graph platform을 강요하지 않습니다.
 - Start with `llm-wiki-bootstrap` when you want a fresh Obsidian-first LLM Wiki repository.
 - Use the `wiki-plus-ontology` profile when you want `raw/`, `wiki/`, `AGENTS.md`, `warehouse/jsonl/`, and a compact `intelligence/` layer from day one.
 - Use `llm-wiki-ontology-ingest` when new raw sources should update both canonical JSONL registries and the human-facing wiki.
-- Use route manifests plus query receipts when you want durable explanations of why a query went to wiki, canonical truth, graph expansion, or operator repair flow.
+- Use route manifests plus query receipts when you want durable explanations of an agent-chosen route across wiki, canonical truth, graph expansion, or operator repair flow.
 - Add `lightweight-ontology-core` and `lg-ontology` only when you actually need stronger provenance or multi-hop graph-style inspection.
 - Keep the wiki as the front surface; treat ontology and graph layers as support structure, not the product face.
 
@@ -125,7 +125,7 @@ Use the wiki-plus-ontology profile so the project starts with raw, wiki, AGENTS.
 - `warehouse/jsonl/`을 갱신하고
 - 관련 `wiki/` 페이지를 갱신하고
 - `wiki/_meta/index.md`, `wiki/_meta/log.md`도 갱신하고
-- 필요하면 `scripts/query_route.py`로 route receipt를 남기고
+- 필요하면 `scripts/query_route.py`로 에이전트가 고른 route receipt를 남기고
 - `scripts/ontology_refresh.py`로 최소 ontology maintenance 루프를 다시 맞추는
 반복 ingest용 스킬입니다.
 

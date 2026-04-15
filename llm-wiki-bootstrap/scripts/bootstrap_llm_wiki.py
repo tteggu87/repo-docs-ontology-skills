@@ -347,7 +347,7 @@ When the user asks a question:
 2. Identify likely relevant pages.
 3. Read the smallest set of pages that can answer well.
 4. Use `intelligence/` as a compact routing and boundary layer when terminology, dataset ownership, route choice, relation vocabulary, or source-family assumptions matter.
-5. If `scripts/query_route.py` exists, use it to leave a durable route receipt before or during substantial query work.
+5. If `scripts/query_route.py` exists, use it only to record the route chosen by the agent and to apply deterministic impossible-route guards.
 6. Use `warehouse/jsonl/...` for provenance checks, contradiction checks, claim validation, or exact source coverage when wiki pages are too thin or uncertain.
 7. Synthesize an answer grounded in the wiki, with ontology-backed verification when needed.
 8. If the answer is durable, save it into `wiki/analyses/`.
@@ -592,15 +592,17 @@ without needing a full repo-docs alignment pass first.
 The ontology-ready scaffold also gives you a small helper for durable route receipts:
 
 ```bash
-python scripts/query_route.py --query "show the evidence for this claim"
+python scripts/query_route.py --route canonical_lookup --query "show the evidence for this claim" --rationale "The question asks for provenance-backed evidence"
 ```
 
 This helper:
-- chooses a bounded route such as `wiki_lookup`, `canonical_lookup`, `graph_expand`, `refresh_operator`, or `mixed_lookup`
+- records the route already chosen by the agent or operator
+- validates that the route exists in repo-local contracts or the built-in route set
+- applies deterministic impossible-route guards such as blocking graph expansion when usable graph artifacts are missing
 - writes a receipt row to `warehouse/jsonl/query_receipts.jsonl`
-- records fallback reasons when a preferred route is blocked
 - gives future operators and agents a compact audit trail for why a query took a certain path
 
+It does not act as the primary semantic route chooser.
 The receipts are operational records, not canonical truth.
 Use them to explain and evaluate routing choices, not to replace ontology registries or wiki pages.
 
@@ -635,7 +637,7 @@ Use prompts like:
 1. Put a source into `raw/inbox/`
 2. Register it with the CLI
 3. Run ontology-backed ingest if available
-4. Optionally run `python scripts/query_route.py --query "<your question>"` for durable route receipts on important queries
+4. Optionally run `python scripts/query_route.py --route <chosen-route> --query "<your question>"` to record an agent-chosen route receipt on important queries
 5. Run `python scripts/ontology_refresh.py` to refresh minimal ontology state
 6. Review changed wiki pages in Obsidian
 7. Move the raw file into `raw/processed/` when you are happy
@@ -1379,7 +1381,7 @@ if __name__ == "__main__":
 
 def query_route_py() -> str:
     return '''#!/usr/bin/env python3
-"""Minimal query-route receipt helper for ontology-ready LLM Wiki scaffolds."""
+"""Record a query-route receipt chosen by the agent, with deterministic guard checks."""
 
 from __future__ import annotations
 
@@ -1415,62 +1417,80 @@ def load_yaml(path: Path) -> dict:
     return loaded if isinstance(loaded, dict) else {}
 
 
-def load_routes() -> dict[str, dict]:
+def load_routes() -> tuple[dict[str, dict], list[str]]:
+    notes: list[str] = []
+    if yaml is None:
+        notes.append("PyYAML missing; route validation used built-in defaults instead of repo-local YAML contracts.")
     data = load_yaml(ROUTES_PATH)
     routes: dict[str, dict] = {}
     items = data.get("routes", []) if isinstance(data.get("routes"), list) else []
     for item in items:
         if isinstance(item, dict) and item.get("route_key"):
             routes[str(item["route_key"])] = item
-    return routes or DEFAULT_ROUTES
+    if not routes:
+        if not ROUTES_PATH.exists():
+            notes.append("Route manifest missing; route validation used built-in defaults.")
+        routes = DEFAULT_ROUTES
+    return routes, notes
 
 
-def load_policies() -> list[dict]:
+def load_policies() -> tuple[list[dict], list[str]]:
+    notes: list[str] = []
+    if yaml is None:
+        notes.append("PyYAML missing; policy validation used built-in fallback behavior only.")
     data = load_yaml(POLICY_PATH)
     policies = data.get("policies", []) if isinstance(data, dict) else []
-    return [item for item in policies if isinstance(item, dict)]
+    if not policies and not POLICY_PATH.exists():
+        notes.append("Query-routing policy missing; only deterministic built-in guards were applied.")
+    return [item for item in policies if isinstance(item, dict)], notes
 
 
-def detect_route(query: str, intent_family: str | None) -> tuple[str, float, list[str]]:
-    lowered = query.lower()
-    if intent_family:
-        lowered = f"{intent_family.lower()} {lowered}"
-
-    buckets = [
-        ("refresh_operator", 0.97, ["refresh", "rebuild", "validate", "repair", "missing", "drift"]),
-        ("graph_expand", 0.92, ["path", "neighborhood", "hop", "relation", "connected"]),
-        ("canonical_lookup", 0.9, ["evidence", "provenance", "citation", "claim", "contradiction"]),
-        ("wiki_lookup", 0.86, ["wiki", "page", "summary", "summarize", "explain simply"]),
-    ]
-    for route, confidence, signals in buckets:
-        matched = [signal for signal in signals if signal in lowered]
-        if matched:
-            return route, confidence, matched
-    return "mixed_lookup", 0.7, []
+def count_jsonl_rows(path: Path) -> int:
+    if not path.exists():
+        return 0
+    with path.open(encoding="utf-8") as handle:
+        return sum(1 for line in handle if line.strip())
 
 
 def graph_route_ready() -> bool:
-    required = [
+    required_rows = [
         ROOT / "warehouse" / "jsonl" / "entities.jsonl",
         ROOT / "warehouse" / "jsonl" / "claims.jsonl",
         ROOT / "warehouse" / "jsonl" / "claim_evidence.jsonl",
         ROOT / "warehouse" / "jsonl" / "segments.jsonl",
     ]
+    if not all(path.exists() and count_jsonl_rows(path) > 0 for path in required_rows):
+        return False
+    graph_dir = ROOT / "warehouse" / "graph_projection"
+    if not graph_dir.exists():
+        return False
+    return any(path.is_file() for path in graph_dir.rglob("*"))
+
+
+def canonical_route_ready() -> bool:
+    required = [
+        ROOT / "warehouse" / "jsonl" / "entities.jsonl",
+        ROOT / "warehouse" / "jsonl" / "claims.jsonl",
+        ROOT / "warehouse" / "jsonl" / "claim_evidence.jsonl",
+    ]
     return all(path.exists() for path in required)
 
 
-def apply_policy(route_key: str, routes: dict[str, dict], policies: list[dict]) -> tuple[str, str | None]:
-    if route_key != "graph_expand":
-        return route_key, None
-    if graph_route_ready():
-        return route_key, None
-    fallback = str(routes.get(route_key, {}).get("fallback_route") or "canonical_lookup")
-    for policy in policies:
-        applies = policy.get("applies_to_routes") or []
-        if route_key in applies and policy.get("block_on_fail"):
-            fallback = str(policy.get("fallback_route") or fallback)
-            break
-    return fallback, "graph route blocked because canonical ontology files required for graph expansion are missing"
+def apply_guards(route_key: str, routes: dict[str, dict], policies: list[dict]) -> tuple[str, str | None]:
+    if route_key == "graph_expand":
+        if graph_route_ready():
+            return route_key, None
+        fallback = str(routes.get(route_key, {}).get("fallback_route") or "canonical_lookup")
+        for policy in policies:
+            applies = policy.get("applies_to_routes") or []
+            if route_key in applies and policy.get("block_on_fail"):
+                fallback = str(policy.get("fallback_route") or fallback)
+                break
+        return fallback, "graph route blocked because usable canonical rows or graph projection artifacts are missing"
+    if route_key == "canonical_lookup" and not canonical_route_ready():
+        fallback = str(routes.get(route_key, {}).get("fallback_route") or "mixed_lookup")
+        return fallback, "canonical route downgraded because canonical ontology files are not ready"
+    return route_key, None
 
 
 def append_receipt(payload: dict) -> None:
@@ -1480,29 +1500,42 @@ def append_receipt(payload: dict) -> None:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Record a minimal query routing receipt.")
-    parser.add_argument("--query", required=True, help="Question or task text to route.")
-    parser.add_argument("--intent-family", help="Optional preclassified intent family.")
+    parser = argparse.ArgumentParser(description="Record a query routing receipt chosen by the agent.")
+    parser.add_argument("--query", required=True, help="Question or task text being routed.")
+    parser.add_argument("--route", required=True, help="Route chosen by the agent or operator.")
+    parser.add_argument("--intent-family", help="Optional intent family chosen by the agent.")
+    parser.add_argument("--rationale", help="Optional short explanation for why this route was chosen.")
+    parser.add_argument("--confidence", type=float, help="Optional confidence provided by the agent.")
+    parser.add_argument("--seed-term", action="append", default=[], help="Optional seed term to store in the receipt; repeatable.")
+    parser.add_argument("--note", action="append", default=[], help="Optional extra note to append to the receipt; repeatable.")
     args = parser.parse_args()
 
-    routes = load_routes()
-    policies = load_policies()
-    preferred_route, confidence, seed_terms = detect_route(args.query, args.intent_family)
-    final_route, fallback_reason = apply_policy(preferred_route, routes, policies)
+    routes, route_notes = load_routes()
+    policies, policy_notes = load_policies()
+    requested_route = str(args.route)
+    if requested_route not in routes:
+        available = ", ".join(sorted(routes))
+        raise SystemExit(f"Unknown route `{requested_route}`. Available routes: {available}")
+
+    effective_route, fallback_reason = apply_guards(requested_route, routes, policies)
+    notes = route_notes + policy_notes + list(args.note)
+    if fallback_reason:
+        notes.append("Requested route was adjusted by a deterministic guard.")
+
     receipt = {
-        "receipt_id": hashlib.sha256(f"{dt.datetime.utcnow().isoformat()}::{args.query}".encode("utf-8")).hexdigest()[:16],
+        "receipt_id": hashlib.sha256(f"{dt.datetime.utcnow().isoformat()}::{requested_route}::{args.query}".encode("utf-8")).hexdigest()[:16],
         "created_at": dt.datetime.utcnow().replace(microsecond=0).isoformat() + "Z",
         "query_text": args.query,
         "intent_family": args.intent_family or "unspecified",
-        "route_key": final_route,
-        "preferred_route_key": preferred_route,
-        "affected_layers": list(routes.get(final_route, {}).get("preferred_layers", [])),
-        "seed_terms": seed_terms,
-        "fallback_route_key": final_route if final_route != preferred_route else None,
+        "route_key": effective_route,
+        "requested_route_key": requested_route,
+        "affected_layers": list(routes.get(effective_route, {}).get("preferred_layers", [])),
+        "seed_terms": list(args.seed_term),
+        "fallback_route_key": effective_route if effective_route != requested_route else None,
         "fallback_reason": fallback_reason,
-        "confidence": confidence,
-        "used_graph_expansion": final_route == "graph_expand",
-        "notes": [],
+        "confidence": args.confidence,
+        "rationale": args.rationale,
+        "notes": notes,
     }
     append_receipt(receipt)
     print(json.dumps(receipt, ensure_ascii=False, indent=2))

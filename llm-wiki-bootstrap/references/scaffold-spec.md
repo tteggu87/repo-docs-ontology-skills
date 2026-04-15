@@ -89,7 +89,7 @@ It supports two profiles:
 - For ontology-ready repos, `intelligence/` also includes route vocabulary, query-routing fallback policies, relation vocabulary, source-family hints, and truth-boundary policies.
 - `scripts/llm_wiki.py` handles lightweight maintenance tasks only.
 - `scripts/ontology_refresh.py` is the minimal ontology-ready refresh helper; it does not replace full ontology extraction.
-- `scripts/query_route.py` is a minimal route-receipt helper for durable query/task routing records.
+- `scripts/query_route.py` is a minimal route-receipt recorder plus deterministic guard checker for durable query/task routing records.
 - The scaffold should be immediately usable without third-party Python dependencies.
 
 ## Safety Rules
@@ -110,4 +110,4 @@ After scaffolding:
 4. Register the source with the local CLI.
 5. If the repo uses `wiki-plus-ontology`, run ontology-backed ingest from there.
 6. Run `python scripts/ontology_refresh.py` to refresh minimal ontology-ready state.
-7. Run `python scripts/query_route.py --query "<question>"` when you want a durable route receipt for substantial query work.
+7. Run `python scripts/query_route.py --route <chosen-route> --query "<question>"` when you want a durable route receipt for substantial query work.

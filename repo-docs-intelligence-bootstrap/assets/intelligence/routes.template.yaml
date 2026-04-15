@@ -2,45 +2,40 @@ metadata:
   status: Active
   source_of_truth: false
   last_updated: YYYY-MM-DD
-  purpose: "Preferred query and task routing contracts across wiki, canonical ontology, graph, and repair flows."
+  purpose: "Allowed query and task route families across wiki, canonical ontology, graph, and repair flows."
 
 routes:
   - route_key: wiki_lookup
     purpose: "Use the human-facing wiki as the primary reading surface."
     preferred_layers:
       - wiki
-    typical_signals:
-      - summary
-      - wiki
-      - page
-      - explain simply
+    common_uses:
+      - summary-oriented answers
+      - page-first reading
+      - human-readable synthesis
     fallback_route: mixed_lookup
     notes:
-      - "Prefer this when the user mainly wants a readable synthesis or page-oriented answer."
+      - "Describe when the agent should choose this route after reading repo context."
   - route_key: canonical_lookup
     purpose: "Use canonical ontology truth for provenance, claim state, and evidence checks."
     preferred_layers:
       - canonical_ontology
-    typical_signals:
-      - evidence
-      - provenance
-      - citation
-      - contradiction
-      - claim
+    common_uses:
+      - provenance checks
+      - evidence tracing
+      - contradiction checks
     fallback_route: mixed_lookup
     notes:
-      - "Prefer this when exact traceability matters more than readability."
+      - "Use this when exact traceability matters more than readability."
   - route_key: graph_expand
     purpose: "Use graph-style neighborhood or path exploration on top of canonical truth."
     preferred_layers:
       - canonical_ontology
       - graph_projection
-    typical_signals:
-      - path
-      - neighborhood
-      - hop
-      - relation
-      - connected
+    common_uses:
+      - neighborhood inspection
+      - multi-hop path exploration
+      - relation tracing
     fallback_route: canonical_lookup
     notes:
       - "Only use when graph-style expansion is actually supported and canonical truth is present."
@@ -49,26 +44,22 @@ routes:
     preferred_layers:
       - operator
       - canonical_ontology
-    typical_signals:
-      - refresh
-      - rebuild
-      - validate
-      - repair
-      - drift
+    common_uses:
+      - rebuilds
+      - validation
+      - missing-output repair
     fallback_route: canonical_lookup
     notes:
-      - "Prefer this when the user's request is operational rather than informational."
+      - "Use this when the user's request is operational rather than informational."
   - route_key: mixed_lookup
     purpose: "Blend wiki readability with canonical verification when both matter."
     preferred_layers:
       - wiki
       - canonical_ontology
-    typical_signals:
-      - compare
-      - verify
-      - check
-      - trace
-      - uncertainty
+    common_uses:
+      - readable answer plus traceability
+      - compare and verify tasks
+      - uncertainty-heavy questions
     fallback_route: wiki_lookup
     notes:
       - "Use when one layer alone would be too weak or too opaque."

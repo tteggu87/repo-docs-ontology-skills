@@ -103,7 +103,7 @@ After changes to this skill:
 4. Verify the expected files exist for both profiles.
 5. Spot-check `AGENTS.md`, `README.md`, and `scripts/llm_wiki.py`.
 6. For `wiki-plus-ontology`, run `python scripts/ontology_refresh.py` in the temporary scaffold and confirm it emits a summary plus appends a log entry.
-7. Run `python scripts/query_route.py --query "show the evidence for this claim"` and confirm it writes `warehouse/jsonl/query_receipts.jsonl`.
+7. Run `python scripts/query_route.py --route canonical_lookup --query "show the evidence for this claim" --rationale "The question asks for provenance-backed evidence"` and confirm it writes `warehouse/jsonl/query_receipts.jsonl`.
 8. Confirm the generated wording does not imply markdown pages are canonical truth in ontology-ready repos.
 
 Prefer deterministic script validation over vague chat-only claims.
