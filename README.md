@@ -132,6 +132,25 @@ Both matter, but the initial bootstrap should be only one.
 - `repo-docs-intelligence-bootstrap`
   - bootstrap project-specific memory / repo intelligence
 
+## Three-layer operating model
+
+For longer-lived wiki systems, the recommended layering is:
+
+1. **files as canonical truth**
+   - markdown, yaml, and jsonl remain the durable truth surface
+2. **SQLite as operational index**
+   - backlinks, unresolved links, aliases, memories, and jobs
+3. **DuckDB as analytical warehouse**
+   - claims, entities, relations, coverage snapshots, and audit-oriented inspection
+
+The intended rollout is:
+
+- v0: file-first wiki
+- v1: SQLite operational index
+- v2: DuckDB analytical warehouse
+
+This keeps the wiki readable for humans, trustworthy for agents, and rebuildable when derived layers fail.
+
 ## About the checked-in reference runtime
 
 The workbench included in this repository is currently closer to a read-and-review surface than a freeform conversational LLM app.

@@ -72,6 +72,22 @@ Add `--force` only when the user explicitly wants overwrites.
 - starter dashboard, index, and log pages
 - optional ontology-ready `warehouse/jsonl/` and `intelligence/` starter files
 
+## Three-Layer Follow-On Guidance
+
+If the user wants to evolve the generated wiki into a longer-lived operating model, the next preferred path is:
+
+1. keep files canonical
+2. add SQLite later as an operational index
+3. add DuckDB later as an analytical warehouse
+
+Use these repo-local materials for that transition:
+
+- `references/three-layer-taxonomy.md`
+- `references/three-layer-file-contract.md`
+- `templates/llm-wiki-three-layer/`
+
+These are follow-on contracts and templates, not a claim that the bootstrap already generates a full SQLite/DuckDB runtime.
+
 ## Generated Contract Expectations
 
 - The scaffold should teach future agents to read `AGENTS.md`, `wiki/_meta/index.md`, and recent `wiki/_meta/log.md` before substantial work.
