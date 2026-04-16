@@ -14,6 +14,12 @@ tags:
 
 # Rebuild Matrix: LLM Wiki Three-Layer Architecture
 
+> Superseded for current active paths by:
+> - `docs/prd/2026-04-17-llm-wiki-bootstrap-canonical-path-design.md`
+> - `docs/flows/2026-04-17-llm-wiki-ingest-query-rebuild-flow.md`
+>
+> Keep this file as historical rebuild planning context unless it is updated to the current canonical contract.
+
 ## Canonical principle
 
 - files are canonical
@@ -53,4 +59,3 @@ tags:
 ## Recovery rule
 
 No operator action should require SQLite or DuckDB to remain the sole surviving copy of knowledge truth.
-

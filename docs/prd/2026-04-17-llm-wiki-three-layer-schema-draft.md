@@ -16,6 +16,12 @@ tags:
 
 # Schema Draft: LLM Wiki Three-Layer Architecture
 
+> Superseded for current canonical path decisions by:
+> - `docs/prd/2026-04-17-llm-wiki-bootstrap-canonical-path-design.md`
+> - `.agents/skills/llm-wiki-bootstrap/references/three-layer-file-contract.md`
+>
+> Keep this file as historical schema exploration, not as the current source of truth for active bootstrap/runtime paths.
+
 This document translates the three-layer PRD into concrete storage contracts.
 
 ## 1. Canonical file-layer contract
@@ -517,4 +523,3 @@ Suggested columns:
 2. should `analytics.duckdb` live under `state/` or `warehouse/`?
 3. what exact formulas define `freshness_score` and `coverage_score`?
 4. which relation types are allowed at v0 versus v1?
-

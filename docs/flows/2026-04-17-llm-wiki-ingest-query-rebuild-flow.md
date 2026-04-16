@@ -32,63 +32,73 @@ Input:
 Writes:
 
 - file layer only
-  - `wiki/sources/raw/...`
-  - `wiki/sources/manifests/source_manifest.jsonl`
+  - `raw/inbox/...`
+  - `wiki/sources/...` source page stub
+  - `wiki/_meta/index.md`
+  - `wiki/_meta/log.md`
 
 Rules:
 
 - raw source should not be destructively overwritten
-- source gets a stable `source_id`
+- registration is lighter than ontology-backed ingest
 
-## Step 2 — extract claims and entities
+## Step 2 — ontology-backed extraction
 
 Input:
 
 - raw source
+- repo-local glossary / manifests
 - extraction policy
 
 Writes:
 
-- file layer only
-  - `wiki/exports/claims.jsonl`
-  - `wiki/exports/entities.jsonl`
-  - `wiki/exports/relations.jsonl`
-  - `wiki/exports/ingest_runs.jsonl`
+- canonical file layer only
+  - `warehouse/jsonl/messages.jsonl`
+  - `warehouse/jsonl/documents.jsonl`
+  - `warehouse/jsonl/entities.jsonl`
+  - `warehouse/jsonl/claims.jsonl`
+  - `warehouse/jsonl/claim_evidence.jsonl`
+  - `warehouse/jsonl/segments.jsonl`
+  - `warehouse/jsonl/derived_edges.jsonl`
 
 Rules:
 
 - extracted claims are not pages
-- relations must carry provenance through claims
+- structured truth stays under `warehouse/jsonl/`
+- relations must carry provenance through claims and evidence
 
-## Step 3 — update page layer
+## Step 3 — update wiki synthesis layer
 
 Input:
 
-- existing pages
-- source manifest
-- extracted claims/entities/relations
+- existing wiki pages
+- canonical JSONL truth
 
 Writes:
 
-- markdown pages under `wiki/pages/...`
-- page frontmatter updates
+- markdown pages under:
+  - `wiki/sources/`
+  - `wiki/concepts/`
+  - `wiki/entities/`
+  - `wiki/people/`
+  - `wiki/projects/`
+  - `wiki/timelines/`
+  - `wiki/analyses/`
 
 Rules:
 
 - pages remain synthesis surfaces
-- page edits should reference sources and canonical claim ids where useful
+- page edits should reference sources and canonical claim surfaces where useful
 
 ## Step 4 — refresh SQLite operational index
 
 Input:
 
-- markdown pages
-- source manifest
-- policies
+- markdown pages under `wiki/...`
 
 Writes:
 
-- `wiki/state/wiki_index.sqlite`
+- `state/wiki_index.sqlite`
 
 Derived outputs:
 
@@ -105,30 +115,28 @@ Derived outputs:
 
 Input:
 
-- source manifest
-- exports jsonl
-- optional SQLite runtime events
+- canonical JSONL truth under `warehouse/jsonl/...`
 
 Writes:
 
-- `wiki/state/analytics.duckdb`
+- `state/analytics.duckdb`
 
 Derived outputs:
 
-- sources/chunks/claims/entities/relations warehouse
-- page coverage snapshots
-- audit events
+- sources/chunks/claims/entities/relations mirror
+- analytical inspection surfaces
+- audit-oriented tables when available
 
 ## 2. Query flow
 
 ## Query path priority
 
-1. page-first lookup
+1. wiki-first lookup
 2. SQLite operational assists
-3. JSONL exact verification
-4. DuckDB analytical health / audit queries
+3. canonical JSONL verification
+4. DuckDB analytical inspection
 
-## Page-first lookup
+## Wiki-first lookup
 
 Use when:
 
@@ -137,8 +145,7 @@ Use when:
 
 Reads:
 
-- `wiki/pages/...`
-- page frontmatter
+- `wiki/...`
 
 ## SQLite operational assists
 
@@ -152,9 +159,9 @@ Use when:
 
 Reads:
 
-- `wiki_index.sqlite`
+- `state/wiki_index.sqlite`
 
-## JSONL exact verification
+## Canonical JSONL verification
 
 Use when:
 
@@ -164,22 +171,24 @@ Use when:
 
 Reads:
 
-- `claims.jsonl`
-- `relations.jsonl`
-- `entities.jsonl`
-- `source_manifest.jsonl`
+- `warehouse/jsonl/documents.jsonl`
+- `warehouse/jsonl/entities.jsonl`
+- `warehouse/jsonl/claims.jsonl`
+- `warehouse/jsonl/claim_evidence.jsonl`
+- `warehouse/jsonl/segments.jsonl`
+- `warehouse/jsonl/derived_edges.jsonl`
 
 ## DuckDB analytical reads
 
 Use when:
 
-- checking page health at scale
+- checking coverage or health at scale
 - looking for stale or contradiction candidates
 - comparing extraction quality across runs
 
 Reads:
 
-- `analytics.duckdb`
+- `state/analytics.duckdb`
 
 Rules:
 
@@ -199,51 +208,45 @@ Trigger:
 
 Rebuild source:
 
-- markdown pages
-- frontmatter
-- source manifest
-- policies
+- markdown pages under `wiki/...`
 
 Output:
 
-- fully regenerated `wiki_index.sqlite`
+- fully regenerated `state/wiki_index.sqlite`
 
 ## DuckDB rebuild
 
 Trigger:
 
-- export schema changes
-- extraction rerun
+- canonical JSONL changes
+- ontology-backed ingest rerun
 - analytical drift
 - damaged/missing DuckDB file
 
 Rebuild source:
 
-- source manifest
-- claims/entities/relations exports
-- ingest run logs
-- optional SQLite events if required for ops analysis
+- `warehouse/jsonl/...`
 
 Output:
 
-- fully regenerated `analytics.duckdb`
+- fully regenerated `state/analytics.duckdb`
 
 ## 4. Failure handling
 
 ## If SQLite is lost
 
 - file layer remains canonical
-- rebuild SQLite from files and manifests
+- rebuild SQLite from `wiki/...`
 
 ## If DuckDB is lost
 
-- file layer and JSONL exports remain canonical
-- rebuild DuckDB from manifests and exports
+- canonical file surfaces remain intact
+- rebuild DuckDB from `warehouse/jsonl/...`
 
-## If exports drift from pages
+## If wiki and JSONL drift
 
 - run drift verification
-- re-extract or re-export before analytical refresh
+- fix canonical JSONL or wiki synthesis depending on the truth surface at fault
 
 ## 5. Guardrails
 
@@ -252,4 +255,3 @@ Output:
 3. DuckDB remains analytical and rebuildable
 4. source, claim, page, relation, and memory must not collapse into one object class
 5. raw source should not be overwritten except by explicit policy
-

@@ -82,6 +82,14 @@ The flow is simple:
 - run `llm-wiki-ontology-ingest`
 - keep growing the wiki through question and analysis workflows
 
+Current ontology-profile bootstrap behavior now also ships lightweight local rebuild helpers and state paths for longer-lived repos:
+
+- `state/wiki_index.sqlite`
+- `state/analytics.duckdb`
+- `scripts/reindex_sqlite_operational.py`
+- `scripts/refresh_duckdb_analytics.py`
+- `scripts/verify_three_layer_drift.py`
+
 In other words, the first step is always **wiki-first**.
 
 ### 2) Do you want to redefine ontology relationships inside the generated wiki?

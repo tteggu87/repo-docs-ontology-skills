@@ -14,6 +14,11 @@ tags:
 
 # Execution Plan: LLM Wiki Three-Layer Architecture
 
+> Superseded for active bootstrap/runtime sequencing by:
+> - `docs/plans/2026-04-17-llm-wiki-bootstrap-three-layer-upgrade-plan.md`
+>
+> Keep this file as historical planning context, not as the current implementation order for bootstrap path alignment.
+
 This plan turns the PRD, issue breakdown, schema draft, and flow draft into an execution sequence.
 
 ## Strategic principle
@@ -218,4 +223,3 @@ If implementation starts immediately, prioritize:
 5. SQLite schema and rebuild
 
 DuckDB should come only after the operational pressure is real.
-

@@ -15,6 +15,12 @@ tags:
 
 # PRD: LLM Wiki Three-Layer Architecture
 
+> Superseded for current bootstrap/runtime path decisions by:
+> - `docs/prd/2026-04-17-llm-wiki-bootstrap-canonical-path-design.md`
+> - `docs/plans/2026-04-17-llm-wiki-bootstrap-three-layer-upgrade-plan.md`
+>
+> Keep this file as historical product/design context, not as the current operational path contract.
+
 ## 1. Problem
 
 Many LLM Wiki systems fail for one of two opposite reasons:
@@ -342,4 +348,3 @@ The next concrete step after this PRD should be one of:
 Preferred next step:
 
 - **actual schema draft first**
-
