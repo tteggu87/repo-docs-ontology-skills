@@ -36,7 +36,7 @@
         "Verification evidence is recorded"
       ],
       "priority": "medium",
-      "passes": false
+      "passes": true
     },
     {
       "id": "TLR-4",

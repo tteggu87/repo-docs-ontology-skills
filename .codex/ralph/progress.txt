@@ -22,3 +22,10 @@
   - `python3 -m py_compile .agent/skills/llm-wiki-bootstrap/scripts/reindex_sqlite_operational.py` -> pass
   - `git diff --check` -> pass
 ---
+## [2026-04-17 14:10 KST] - TLR-3
+- Added DuckDB analytical refresh script stub under llm-wiki-bootstrap.
+- Files changed: .agent/skills/llm-wiki-bootstrap/scripts/refresh_duckdb_analytics.py
+- Quality checks run and result
+  - `python3 -m py_compile .agent/skills/llm-wiki-bootstrap/scripts/refresh_duckdb_analytics.py` -> pass
+  - `git diff --check` -> pass
+---
