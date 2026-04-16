@@ -11,6 +11,15 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[4]
 SCHEMA_PATH = ROOT / "templates" / "llm-wiki-three-layer" / "sqlite_operational.schema.sql"
+PAGE_TYPE_BY_DIR = {
+    "concepts": "concept",
+    "entities": "entity",
+    "people": "person",
+    "projects": "project",
+    "timelines": "timeline",
+    "analyses": "analysis",
+    "sources": "source",
+}
 
 
 def parse_args() -> argparse.Namespace:
@@ -60,7 +69,7 @@ def page_records(repo_root: Path) -> list[tuple[str, str, str, str, str, str]]:
         text = read_text(path)
         page_id = frontmatter_value(text, "page_id") or f"page-{path.stem}"
         title = frontmatter_value(text, "title") or extract_title(path, text)
-        page_type = frontmatter_value(text, "page_type") or path.parent.name.rstrip("s")
+        page_type = frontmatter_value(text, "page_type") or PAGE_TYPE_BY_DIR.get(path.parent.name, "page")
         updated_at = frontmatter_value(text, "updated_at") or ""
         checksum = file_checksum(path)
         rel_path = path.relative_to(repo_root).as_posix()

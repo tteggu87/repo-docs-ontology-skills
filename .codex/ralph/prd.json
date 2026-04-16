@@ -61,6 +61,18 @@
       ],
       "priority": "medium",
       "passes": true
+    },
+    {
+      "id": "TLR-6",
+      "title": "Address code review findings for runtime stubs",
+      "description": "Fix page_type inference and DuckDB row-to-schema mapping so the runtime stubs are not obviously broken on first use.",
+      "acceptanceCriteria": [
+        "SQLite page_type inference no longer corrupts common section names",
+        "DuckDB refresh maps JSONL rows into schema-compatible columns",
+        "Verification evidence is recorded"
+      ],
+      "priority": "high",
+      "passes": true
     }
   ]
 }

@@ -43,3 +43,11 @@
   - `rg -n "Three-layer operating model|files as canonical truth|SQLite as operational index|DuckDB as analytical warehouse" README.md README.ko.md` -> pass
   - `git diff --check` -> pass
 ---
+## [2026-04-17 14:40 KST] - TLR-6
+- Fixed code review issues in runtime stubs.
+- Files changed: reindex_sqlite_operational.py, refresh_duckdb_analytics.py
+- Quality checks run and result
+  - `python3 -m py_compile ...` -> pass
+  - `git diff --check` -> pass
+  - temporary repo smoke test for SQLite and DuckDB stubs -> pass
+---
