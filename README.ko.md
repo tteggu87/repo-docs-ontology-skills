@@ -2,19 +2,19 @@
 
 [English](README.md) | [한국어](README.ko.md)
 
-DocTology는 Obsidian-first, evidence-grounded 지식 시스템을 빠르게 시작하기 위한 오픈소스 starter kit입니다.
+DocTology는 Obsidian-first LLM Wiki와 canonical ontology layer를 결합한 오픈소스 starter kit입니다.
 
-이 레포 하나로 다음 세 가지를 같이 제공합니다.
+즉, 이런 방향을 원하는 사람을 위한 레포입니다.
+
+- wiki-first 읽기와 synthesis
+- JSONL registry 기반의 ontology-backed canonical truth
+- 재사용 가능한 skill pack + 실제로 실행 가능한 로컬 reference runtime
+
+이 레포 하나로 DocTology는 다음을 같이 제공합니다.
 
 - bootstrap, ontology, operator 워크플로를 담은 portable `.agent/skills/` 팩
 - LLM Wiki CLI와 선택형 workbench UI가 포함된 로컬 reference runtime
-- 개인 코퍼스를 공개 레포에 넣지 않고도 내 워크스페이스를 시작할 수 있는 깔끔한 기준선
-
-특히 이런 경우에 맞습니다.
-
-- 재사용 가능한 지식/온톨로지 skill pack이 필요한 사람
-- 로컬에서 바로 실행해볼 수 있는 공개 reference implementation이 필요한 팀
-- 더 깔끔한 공개 baseline에서 개인 워크스페이스를 부트스트랩하고 싶은 사용자
+- 개인 코퍼스를 공개 레포에 넣지 않고도 private workspace를 시작할 수 있는 깔끔한 baseline
 
 ## 먼저 어디서 시작하면 되나
 
@@ -50,33 +50,6 @@ DocTology/
 ├── run_windows_workbench.bat
 └── install_windows.bat
 ```
-
-## 왜 루트 runtime 파일들을 유지하나
-
-이 파일들은 보기 좋으라고 둔 게 아니라, 실제 reference runtime이 직접 의존합니다.
-
-- `apps/workbench/`는 `scripts/workbench_api.py`에 의존합니다.
-- `scripts/llm_wiki.py`는 `templates/source_page_template.md`를 읽습니다.
-- `scripts/incremental_ingest.py`는 `intelligence/manifests/source_families.yaml`를 읽습니다.
-- `scripts/workbench/server.py`는 `intelligence/manifests/workbench.yaml`를 가리킵니다.
-- `scripts/workbench/repository.py`는 `wikiconfig.json`을 읽습니다.
-- 실행 파일들은 루트 runtime layout을 전제로 합니다.
-
-즉 `intelligence/`, `templates/`, `scripts/`, launcher 파일은 장식용 문서가 아니라 현재 공개 reference runtime의 실제 계약 일부입니다.
-
-## 반대로 의도적으로 넣지 않는 것
-
-이 공개 레포는 개인 실데이터를 넣는 곳이 아닙니다.
-다음은 기본적으로 커밋 대상이 아닙니다.
-
-- 개인 `raw/`
-- 개인 `wiki/`
-- 개인 `warehouse/`
-- vector store
-- 캐시와 스크래치 산출물
-- 개인 Obsidian vault 내용물
-
-실제 데이터는 본인 워크스페이스에 두고, 이 레포는 공개 기준선 또는 부트스트랩 소스로 쓰는 편이 맞습니다.
 
 ## Quick Start
 

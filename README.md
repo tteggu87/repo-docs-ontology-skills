@@ -2,19 +2,19 @@
 
 [English](README.md) | [한국어](README.ko.md)
 
-DocTology is an open-source starter kit for building Obsidian-first, evidence-grounded knowledge systems.
+DocTology is an open-source starter kit that combines an Obsidian-first LLM Wiki with a canonical ontology layer.
 
-It gives you three things in one repository:
+It is designed for people who want:
+
+- wiki-first reading and synthesis
+- ontology-backed canonical truth in JSONL registries
+- a reusable skill pack plus a runnable local reference runtime
+
+In one repository, DocTology gives you:
 
 - a portable `.agent/skills/` pack for bootstrap, ontology, and operator workflows
 - a runnable local reference runtime with an LLM Wiki CLI and optional workbench UI
-- a clean starting point for your own workspace without committing private corpus data
-
-Best fit for:
-
-- builders who want a reusable knowledge/ontology skill pack
-- teams who want a public reference implementation they can run locally
-- users who want to bootstrap a private workspace from a cleaner public baseline
+- a clean baseline for bootstrapping your own private workspace without committing corpus data
 
 ## Start Here
 
@@ -50,32 +50,6 @@ DocTology/
 ├── run_windows_workbench.bat
 └── install_windows.bat
 ```
-
-## Why These Root Runtime Files Stay
-
-These are intentionally committed because the reference runtime actually depends on them:
-
-- `apps/workbench/` depends on `scripts/workbench_api.py`
-- `scripts/llm_wiki.py` reads `templates/source_page_template.md`
-- `scripts/incremental_ingest.py` reads `intelligence/manifests/source_families.yaml`
-- `scripts/workbench/server.py` points to `intelligence/manifests/workbench.yaml`
-- `scripts/workbench/repository.py` reads `wikiconfig.json`
-- launcher files assume the root runtime layout
-
-In other words, `intelligence/`, `templates/`, `scripts/`, and the launchers are not decorative docs here. They are part of the runnable reference contract.
-
-## What Is Intentionally Excluded
-
-Do not treat this repo as the place to commit your private runtime data:
-
-- personal `raw/`
-- personal `wiki/`
-- personal `warehouse/`
-- vector stores
-- caches and scratch artifacts
-- private Obsidian vault contents
-
-Use the repo root as a public baseline or bootstrap source. Put your real corpus in your own workspace.
 
 ## Quick Start
 
