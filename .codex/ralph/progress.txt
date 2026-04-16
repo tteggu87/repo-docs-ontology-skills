@@ -1,5 +1,5 @@
 ## Codebase Patterns
-- `.agent/skills/llm-wiki-bootstrap/references/` is the natural place for reusable architecture references.
+- `.agents/skills/llm-wiki-bootstrap/references/` is the natural place for reusable architecture references.
 - `templates/llm-wiki-three-layer/` is the natural place for reusable schema and row-shape examples.
 - `docs/` currently holds the architecture package: PRD, issue breakdown, schema draft, flow draft, execution plan, rebuild matrix.
 
@@ -10,30 +10,30 @@
 ---
 ## [2026-04-17 13:45 KST] - TLR-1
 - Integrated three-layer references into llm-wiki-bootstrap docs.
-- Files changed: .agent/skills/llm-wiki-bootstrap/SKILL.md, .agent/skills/llm-wiki-bootstrap/references/scaffold-spec.md
+- Files changed: .agents/skills/llm-wiki-bootstrap/SKILL.md, .agents/skills/llm-wiki-bootstrap/references/scaffold-spec.md
 - Quality checks run and result
   - `git diff --check` -> pass
   - `rg -n "three-layer-taxonomy|three-layer-file-contract|templates/llm-wiki-three-layer" ...` -> pass
 ---
 ## [2026-04-17 14:00 KST] - TLR-2
 - Added SQLite operational reindex script stub under llm-wiki-bootstrap.
-- Files changed: .agent/skills/llm-wiki-bootstrap/scripts/reindex_sqlite_operational.py
+- Files changed: .agents/skills/llm-wiki-bootstrap/scripts/reindex_sqlite_operational.py
 - Quality checks run and result
-  - `python3 -m py_compile .agent/skills/llm-wiki-bootstrap/scripts/reindex_sqlite_operational.py` -> pass
+  - `python3 -m py_compile .agents/skills/llm-wiki-bootstrap/scripts/reindex_sqlite_operational.py` -> pass
   - `git diff --check` -> pass
 ---
 ## [2026-04-17 14:10 KST] - TLR-3
 - Added DuckDB analytical refresh script stub under llm-wiki-bootstrap.
-- Files changed: .agent/skills/llm-wiki-bootstrap/scripts/refresh_duckdb_analytics.py
+- Files changed: .agents/skills/llm-wiki-bootstrap/scripts/refresh_duckdb_analytics.py
 - Quality checks run and result
-  - `python3 -m py_compile .agent/skills/llm-wiki-bootstrap/scripts/refresh_duckdb_analytics.py` -> pass
+  - `python3 -m py_compile .agents/skills/llm-wiki-bootstrap/scripts/refresh_duckdb_analytics.py` -> pass
   - `git diff --check` -> pass
 ---
 ## [2026-04-17 14:20 KST] - TLR-4
 - Added three-layer drift verification stub under llm-wiki-bootstrap.
-- Files changed: .agent/skills/llm-wiki-bootstrap/scripts/verify_three_layer_drift.py
+- Files changed: .agents/skills/llm-wiki-bootstrap/scripts/verify_three_layer_drift.py
 - Quality checks run and result
-  - `python3 -m py_compile .agent/skills/llm-wiki-bootstrap/scripts/verify_three_layer_drift.py` -> pass
+  - `python3 -m py_compile .agents/skills/llm-wiki-bootstrap/scripts/verify_three_layer_drift.py` -> pass
   - `git diff --check` -> pass
 ---
 ## [2026-04-17 14:20 KST] - TLR-5

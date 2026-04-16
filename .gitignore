@@ -12,6 +12,6 @@ continue.json
 RESEARCH/
 
 # Agent-local runtime artifacts
-.agent/tmp/
-.agent/context/
-.agent/skills/**/.agent/
+.agents/tmp/
+.agents/context/
+.agents/skills/**/.agents/
