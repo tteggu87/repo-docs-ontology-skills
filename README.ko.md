@@ -22,6 +22,10 @@ _DocTology 워크벤치 질문 작업공간 — 현재 위키를 확인하고, r
 
 현재 workbench의 실제 성격은 자유 대화형 LLM 작업공간이라기보다, 생성된 위키와 관련 preview를 읽고 검토하는 화면에 가깝습니다. 즉, 아직 능동적인 conversational chat 면은 아닙니다.
 
+![참고 예시: 지식이 위키로 자라나는 모습](assets/readme/doctology-reference-obsidian-notes-forming-a-wiki.jpg)
+
+_참고 예시 — 서로 거의 연결되지 않았던 Obsidian 노트들이 점차 구조와 neighborhood를 형성하며 위키처럼 자라나는 모습을 보여줍니다._
+
 ## 먼저 어디서 시작하면 되나
 
 목적에 따라 시작점이 다릅니다.
