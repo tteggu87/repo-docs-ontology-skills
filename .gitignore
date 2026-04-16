@@ -1,13 +1,19 @@
+.venv/
 __pycache__/
 *.pyc
-*.pyo
-*.pyd
 .DS_Store
-Thumbs.db
+.codex/skills/**/.codex/
+.gstack/
+.omx/
+continue.json
 
-# Frontend workbench artifacts
-apps/*/node_modules/
-apps/*/dist/
-apps/*/*.tsbuildinfo
-apps/*/vite.config.js
-apps/*/vite.config.d.ts
+# Local operator/runtime artifacts
+.codex/context/whiplash-state.json
+RESEARCH/
+vector/
+warehouse/ontology.duckdb
+warehouse/graph_projection/*.jsonl
+warehouse/graph_projection/summary.json
+warehouse/graph_projection/edges/
+warehouse/graph_projection/nodes/
+raw/inbox/TEST.MD
