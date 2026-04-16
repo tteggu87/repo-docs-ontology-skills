@@ -6,20 +6,45 @@
 
 [English](README.md) | [한국어](README.ko.md)
 
-DocTology는 단순 LLM Wiki가 아니라, Obsidian-first 위키 위에 canonical ontology layer와 repo-intelligence contract를 결합한 개인 지식관리 starter kit입니다.
+DocTology는 **사람과 에이전트를 위한 wiki-first knowledge operating system** 입니다.
 
-핵심 방향은 다음 네 가지입니다.
+이 프로젝트는 다음이 가능한 저장소를 만들게 해줍니다.
 
-- 노트가 늘어나도 위키만 직접 훑는 대신 ontology layer를 함께 두어 에이전트의 읽기 범위와 토큰 팽창을 더 잘 제어
-- 필요할 때는 ontology graph / neighborhood 확장까지 이어갈 수 있는 구조
-- 에이전트가 읽을 프로젝트 메모리를 wiki page, JSONL ontology registry, intelligence contract로 함께 제공
-- 재사용 가능한 skill pack + 로컬 reference runtime + private workspace bootstrap baseline을 한 레포에 제공
+- 사람은 읽고 고칠 수 있는 durable wiki를 유지하고
+- 에이전트는 canonical JSONL truth를 바탕으로 claim과 provenance를 검증하며
+- graph/operator workflow는 필요할 때만 붙는 support layer로 유지합니다
 
-이 레포 하나로 DocTology는 다음을 같이 제공합니다.
+핵심 아이디어는 단순합니다.
 
-- bootstrap, ontology, operator 워크플로를 담은 portable `.agent/skills/` 팩
+- 먼저 사람이 실제로 읽을 수 있는 Obsidian-first wiki를 세웁니다
+- provenance, contradiction, review state가 필요해질 때 canonical ontology truth를 붙입니다
+- graph나 operator workflow는 깊은 구조나 반복 운영이 정말 필요할 때만 확장합니다
+
+이 레포 하나로 DocTology는 다음을 제공합니다.
+
+- bootstrap, ontology, operator 워크플로를 담은 portable skill pack
 - LLM Wiki CLI와 선택형 workbench UI가 포함된 로컬 reference runtime
-- 개인 코퍼스를 공개 레포에 넣지 않고도 private workspace를 시작할 수 있는 깔끔한 baseline
+- 개인 코퍼스를 공개 레포에 넣지 않고도 private workspace를 시작할 수 있는 baseline
+
+## 이것이 무엇인가
+
+DocTology는 단순한 노트 저장소도 아니고, ontology toolkit만도 아니며, graph 실험 레포만도 아닙니다.
+
+이 프로젝트는 다음 구조를 가진 지식 시스템을 만들기 위한 프레임입니다.
+
+- **wiki** = 사람이 읽는 front surface
+- **canonical JSONL** = 기계가 검증하는 provenance / truth / review surface
+- **graph/operator layer** = 필요할 때만 붙는 optional extension
+
+## 누가 써야 하나
+
+다음이 필요하면 DocTology가 맞습니다.
+
+- vector index나 raw context dump가 아니라 실제로 읽을 수 있는 knowledge base
+- plain notes보다 강한 provenance
+- personal wiki -> ontology-backed verification -> optional graph/operator workflow로 점진적으로 자라는 구조
+
+즉 이 레포는 **사람에게는 읽기 쉬우면서, 에이전트에게는 신뢰 가능한 지식 시스템**을 원하는 사용자에게 가장 잘 맞습니다.
 
 ![DocTology 워크벤치 질문 작업공간](assets/readme/doctology-workbench-question-workspace.jpg)
 
@@ -30,6 +55,22 @@ _DocTology 워크벤치 질문 작업공간 — 현재 위키를 확인하고, r
 ![참고 예시: 지식이 위키로 자라나는 모습](assets/readme/doctology-reference-obsidian-notes-forming-a-wiki.jpg)
 
 _참고 예시 — 서로 거의 연결되지 않았던 Obsidian 노트들이 점차 구조와 neighborhood를 형성하며 위키처럼 자라나는 모습을 보여줍니다._
+
+## 기본 시작 경로
+
+어디서 시작해야 할지 애매하다면 기본 경로는 이렇습니다.
+
+1. wiki-first workspace를 bootstrap
+2. source를 wiki + canonical ontology로 ingest
+3. complexity가 커질 때만 route receipts와 operator workflow를 붙임
+
+즉 DocTology의 기본 약속은:
+
+- 먼저 readable wiki
+- 그다음 verifiable truth
+- 마지막에만 graph/operator complexity
+
+입니다.
 
 ## 어디서 시작할지 먼저 고르세요
 

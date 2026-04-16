@@ -6,20 +6,45 @@
 
 [English](README.md) | [한국어](README.ko.md)
 
-DocTology is not just an LLM Wiki. It is a personal knowledge-management starter kit that combines an Obsidian-first wiki with a canonical ontology layer and repo-intelligence contracts.
+DocTology is a **wiki-first knowledge operating system for humans and agents**.
 
-Its core direction is:
+It helps you build a repository where:
 
-- keep note growth more manageable for agents by pairing the wiki with an ontology layer instead of forcing everything through raw page reading
-- support ontology graph and neighborhood expansion when deeper structure is needed
-- provide agent-readable project memory through wiki pages, JSONL ontology registries, and intelligence contracts
-- package a reusable skill pack, a local reference runtime, and a private-workspace bootstrap baseline in one repository
+- humans read and maintain a durable wiki
+- agents verify claims against canonical JSONL truth
+- graph and operator workflows remain optional support layers instead of becoming the product face
+
+The core idea is simple:
+
+- start with an Obsidian-first wiki that people can actually read
+- add canonical ontology truth only when stronger provenance or contradiction handling becomes useful
+- add graph or operator workflows only when deeper structure or repeated maintenance really earns its keep
 
 In one repository, DocTology gives you:
 
-- a portable `.agent/skills/` pack for bootstrap, ontology, and operator workflows
+- a portable skill pack for bootstrap, ontology, and operator workflows
 - a runnable local reference runtime with an LLM Wiki CLI and optional workbench UI
 - a clean baseline for bootstrapping your own private workspace without committing corpus data
+
+## What this is
+
+DocTology is not just a notes repo, not just an ontology toolkit, and not just a graph experiment.
+
+It is a way to build a knowledge system where:
+
+- the **wiki** is the front surface for human reading and synthesis
+- **canonical JSONL** is the back surface for machine-truth, provenance, and review state
+- **graph/operator layers** are optional extensions, not mandatory complexity on day one
+
+## Who this is for
+
+Use DocTology if you want:
+
+- a readable knowledge base, not just a vector index or raw context dump
+- stronger provenance than plain notes
+- a system that can grow from personal wiki -> ontology-backed verification -> optional graph/operator workflows
+
+This repository is best for teams or individuals who want their knowledge system to stay readable for humans **and** reliable for agents.
 
 ![DocTology workbench question workspace](assets/readme/doctology-workbench-question-workspace.jpg)
 
@@ -30,6 +55,20 @@ Current workbench reality: this is primarily a read-and-review surface for the g
 ![Reference example: knowledge growing into a wiki](assets/readme/doctology-reference-obsidian-notes-forming-a-wiki.jpg)
 
 _Reference example — a view of knowledge growing into a wiki as previously unlinked Obsidian notes begin to form visible structure and neighborhoods._
+
+## Default path
+
+If you are unsure where to start, use the default DocTology path:
+
+1. bootstrap a wiki-first workspace
+2. ingest sources into wiki + canonical ontology
+3. use route receipts and operator workflows only as complexity grows
+
+That default path is the main product promise:
+
+- readable wiki first
+- verifiable truth second
+- graph/operator complexity only when it becomes genuinely useful
 
 ## Choose your starting path first
 
