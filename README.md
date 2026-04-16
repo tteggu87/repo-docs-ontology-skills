@@ -16,6 +16,10 @@ In one repository, DocTology gives you:
 - a runnable local reference runtime with an LLM Wiki CLI and optional workbench UI
 - a clean baseline for bootstrapping your own private workspace without committing corpus data
 
+![DocTology workbench question workspace](assets/readme/doctology-workbench-question-workspace.jpg)
+
+_DocTology workbench question workspace — ask the wiki, inspect evidence, and save durable answers._
+
 ## Start Here
 
 Choose the path that matches your goal:
