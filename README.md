@@ -2,13 +2,14 @@
 
 [English](README.md) | [한국어](README.ko.md)
 
-DocTology is an open-source starter kit that combines an Obsidian-first LLM Wiki with a canonical ontology layer.
+DocTology is not just an LLM Wiki. It is a personal knowledge-management starter kit that combines an Obsidian-first wiki with a canonical ontology layer and repo-intelligence contracts.
 
-It is designed for people who want:
+Its core direction is:
 
-- wiki-first reading and synthesis
-- ontology-backed canonical truth in JSONL registries
-- a reusable skill pack plus a runnable local reference runtime
+- keep note growth more manageable for agents by pairing the wiki with an ontology layer instead of forcing everything through raw page reading
+- support ontology graph and neighborhood expansion when deeper structure is needed
+- provide agent-readable project memory through wiki pages, JSONL ontology registries, and intelligence contracts
+- package a reusable skill pack, a local reference runtime, and a private-workspace bootstrap baseline in one repository
 
 In one repository, DocTology gives you:
 
