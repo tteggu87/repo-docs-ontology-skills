@@ -1,0 +1,17 @@
+## Codebase Patterns
+- `.agent/skills/llm-wiki-bootstrap/references/` is the natural place for reusable architecture references.
+- `templates/llm-wiki-three-layer/` is the natural place for reusable schema and row-shape examples.
+- `docs/` currently holds the architecture package: PRD, issue breakdown, schema draft, flow draft, execution plan, rebuild matrix.
+
+## [2026-04-17 13:30 KST] - Ralph bootstrap
+- Created Ralph-ready branch and artifacts for three-layer runtime integration.
+- Active branch: `codex/three-layer-runtime-integration`
+- Next story: `TLR-1`
+---
+## [2026-04-17 13:45 KST] - TLR-1
+- Integrated three-layer references into llm-wiki-bootstrap docs.
+- Files changed: .agent/skills/llm-wiki-bootstrap/SKILL.md, .agent/skills/llm-wiki-bootstrap/references/scaffold-spec.md
+- Quality checks run and result
+  - `git diff --check` -> pass
+  - `rg -n "three-layer-taxonomy|three-layer-file-contract|templates/llm-wiki-three-layer" ...` -> pass
+---

@@ -76,10 +76,27 @@ It supports two profiles:
 - `raw/` is immutable source storage.
 - `wiki/` is maintained synthesis.
 - `warehouse/jsonl/` is optional canonical structured truth for ontology-ready repos.
+- file-layer surfaces remain the canonical truth even when later operational or analytical DB layers are introduced.
 - `AGENTS.md` is the repo-local contract for future agents.
 - `intelligence/` is optional repo-local vocabulary plus dataset/action contracts.
 - `scripts/llm_wiki.py` handles lightweight maintenance tasks only.
 - The scaffold should be immediately usable without third-party Python dependencies.
+
+## Three-Layer Extension Path
+
+When this scaffold later grows into a longer-lived LLM Wiki system, prefer the staged three-layer path:
+
+1. file-first canonical wiki surface
+2. SQLite operational index
+3. DuckDB analytical warehouse
+
+Supporting references:
+
+- `references/three-layer-taxonomy.md`
+- `references/three-layer-file-contract.md`
+- `templates/llm-wiki-three-layer/`
+
+Those materials are intentionally guidance and template surfaces, not proof that the scaffold already ships a full SQLite/DuckDB runtime.
 
 ## Safety Rules
 
@@ -98,3 +115,4 @@ After scaffolding:
 3. Ask Codex to use the repo-local `AGENTS.md`.
 4. Register the source with the local CLI.
 5. If the repo uses `wiki-plus-ontology`, run ontology-backed ingest from there.
+6. If the user later wants a longer-lived architecture, consult the three-layer references before adding SQLite or DuckDB.

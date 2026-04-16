@@ -1,0 +1,66 @@
+{
+  "branchName": "codex/three-layer-runtime-integration",
+  "project": "DocTology three-layer runtime integration",
+  "stories": [
+    {
+      "id": "TLR-1",
+      "title": "Integrate three-layer references into bootstrap docs",
+      "description": "Wire the new taxonomy/file contract/schema templates into llm-wiki-bootstrap references and related reusable docs so the design is actually discoverable by users of the scaffold.",
+      "acceptanceCriteria": [
+        "Relevant bootstrap docs or references point to the new three-layer taxonomy/file-contract materials",
+        "No contradiction remains between bootstrap docs and the new three-layer architecture package",
+        "Verification evidence is recorded"
+      ],
+      "priority": "high",
+      "passes": true
+    },
+    {
+      "id": "TLR-2",
+      "title": "Add SQLite operational runtime contract stubs",
+      "description": "Add concrete command/stub surfaces for SQLite operational index work so v1 is more than prose.",
+      "acceptanceCriteria": [
+        "SQLite operational command contract is represented in repo-local files",
+        "Rebuildability is explicit",
+        "Verification evidence is recorded"
+      ],
+      "priority": "high",
+      "passes": false
+    },
+    {
+      "id": "TLR-3",
+      "title": "Add DuckDB analytical runtime contract stubs",
+      "description": "Add concrete command/stub surfaces for DuckDB analytical refresh and health operations so v2 has an executable shape.",
+      "acceptanceCriteria": [
+        "DuckDB analytical command contract is represented in repo-local files",
+        "Refresh/rebuild boundaries are explicit",
+        "Verification evidence is recorded"
+      ],
+      "priority": "medium",
+      "passes": false
+    },
+    {
+      "id": "TLR-4",
+      "title": "Add drift and validation integration",
+      "description": "Extend the architecture package with validation-oriented integration surfaces so file/SQLite/DuckDB drift can be checked coherently.",
+      "acceptanceCriteria": [
+        "Validation and drift paths are discoverable in repo-local artifacts",
+        "No source of truth ambiguity is introduced",
+        "Verification evidence is recorded"
+      ],
+      "priority": "medium",
+      "passes": false
+    },
+    {
+      "id": "TLR-5",
+      "title": "Sync operator-facing docs",
+      "description": "Update the operator-facing entry docs so the three-layer path is visible and consistent from the public face.",
+      "acceptanceCriteria": [
+        "Operator-facing docs reflect the three-layer path",
+        "Docs remain consistent with templates and contracts",
+        "Verification evidence is recorded"
+      ],
+      "priority": "medium",
+      "passes": false
+    }
+  ]
+}
