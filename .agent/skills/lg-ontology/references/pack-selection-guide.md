@@ -22,8 +22,8 @@ Use this guide to pick between `repo-docs-intelligence-bootstrap`, `lightweight-
 
 ## Copy-Paste Prompt Examples
 
-- `[$repo-docs-intelligence-bootstrap](C:\Users\tteggu\.agents\skills\repo-docs-intelligence-bootstrap\SKILL.md) 로 구조화해주고 [$lg-ontology](C:\Users\tteggu\.codex\skills\lg-ontology\SKILL.md) 로 온톨로지화와 graph projection까지 해줘.`
-- `[$lg-ontology](C:\Users\tteggu\.codex\skills\lg-ontology\SKILL.md) 를 사용하여 [<대상파일또는폴더>](<경로>) 온톨로지화와 graph projection까지 해줘.`
+- `repo-docs-intelligence-bootstrap`로 구조화해주고 `lg-ontology`로 온톨로지화와 graph projection까지 해줘.
+- `lg-ontology`를 사용하여 [<대상파일또는폴더>](<경로>) 온톨로지화와 graph projection까지 해줘.
 
 ## Starter Packs
 

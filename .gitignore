@@ -1,19 +1,17 @@
+.DS_Store
 .venv/
 __pycache__/
 *.pyc
-.DS_Store
-.codex/skills/**/.codex/
+*.pyo
+node_modules/
+dist/
+test-results/
+continue.json
 .gstack/
 .omx/
-continue.json
-
-# Local operator/runtime artifacts
-.codex/context/whiplash-state.json
 RESEARCH/
-vector/
-warehouse/ontology.duckdb
-warehouse/graph_projection/*.jsonl
-warehouse/graph_projection/summary.json
-warehouse/graph_projection/edges/
-warehouse/graph_projection/nodes/
-raw/inbox/TEST.MD
+
+# Agent-local runtime artifacts
+.agent/tmp/
+.agent/context/
+.agent/skills/**/.agent/

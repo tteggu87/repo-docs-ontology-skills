@@ -26,7 +26,7 @@ It should feel simple to the human:
 Internally, this skill should:
 
 1. honor the repo-local `AGENTS.md`
-2. use [$lightweight-ontology-core](/Users/hoyasung007hotmail.com/.codex/skills/lightweight-ontology-core/SKILL.md) for canonical ontology extraction
+2. use `lightweight-ontology-core` for canonical ontology extraction
 3. project the resulting structured truth back into `wiki/`
 4. refresh `wiki/_meta/index.md` and `wiki/_meta/log.md`
 
@@ -47,8 +47,8 @@ Repo-local `AGENTS.md` remains the governing contract.
 - ontology schema design or low-level validator debugging in isolation
 - answering a question when no new source ingest is needed
 
-For new repo setup, use [$llm-wiki-bootstrap](/Users/hoyasung007hotmail.com/.codex/skills/llm-wiki-bootstrap/SKILL.md).
-For lower-level ontology work, use [$lightweight-ontology-core](/Users/hoyasung007hotmail.com/.codex/skills/lightweight-ontology-core/SKILL.md) directly.
+For new repo setup, use `llm-wiki-bootstrap`.
+For lower-level ontology work, use `lightweight-ontology-core` directly.
 
 ## Inputs
 
@@ -114,7 +114,7 @@ Important:
 
 ### 3. Build Canonical Ontology Truth
 
-Use [$lightweight-ontology-core](/Users/hoyasung007hotmail.com/.codex/skills/lightweight-ontology-core/SKILL.md) concepts and conventions to update canonical truth.
+Use `lightweight-ontology-core` concepts and conventions to update canonical truth.
 
 At minimum, preserve or create:
 
@@ -155,7 +155,7 @@ If the ingest changed how the repo should be interpreted, update `AGENTS.md` or 
 
 The normal human workflow should look like this:
 
-1. scaffold once with [$llm-wiki-bootstrap](/Users/hoyasung007hotmail.com/.codex/skills/llm-wiki-bootstrap/SKILL.md)
+1. scaffold once with `llm-wiki-bootstrap`
 2. place a source in `raw/inbox/`
 3. run this ingest skill
 4. ask a question from the wiki

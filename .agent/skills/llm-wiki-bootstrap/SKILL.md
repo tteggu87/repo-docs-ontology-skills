@@ -51,13 +51,13 @@ Do not use this skill when the user only wants to ingest one source into an exis
 ## Default Command
 
 ```bash
-python3 /Users/hoyasung007hotmail.com/.codex/skills/llm-wiki-bootstrap/scripts/bootstrap_llm_wiki.py /absolute/path/to/new-project --profile wiki-only
+python3 ~/.agent/skills/llm-wiki-bootstrap/scripts/bootstrap_llm_wiki.py /absolute/path/to/new-project --profile wiki-only
 ```
 
 For an ontology-ready scaffold:
 
 ```bash
-python3 /Users/hoyasung007hotmail.com/.codex/skills/llm-wiki-bootstrap/scripts/bootstrap_llm_wiki.py /absolute/path/to/new-project --profile wiki-plus-ontology
+python3 ~/.agent/skills/llm-wiki-bootstrap/scripts/bootstrap_llm_wiki.py /absolute/path/to/new-project --profile wiki-plus-ontology
 ```
 
 Add `--force` only when the user explicitly wants overwrites.
