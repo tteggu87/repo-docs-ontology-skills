@@ -1,0 +1,14 @@
+metadata:
+  status: Active
+  source_of_truth: false
+  last_updated: 2026-03-18
+  purpose: "Capability bindings for the CLI fixture."
+
+capabilities:
+  - key: cli.run_wrapper
+    implementation: scripts.run_wrapper:main
+    input_contract: cli.input
+    output_contract: cli.output
+    side_effects:
+      - "Runs the wrapper script."
+    status: active

@@ -1,0 +1,14 @@
+metadata:
+  status: Active
+  source_of_truth: false
+  last_updated: YYYY-MM-DD
+  purpose: "Canonical datasets and shapes referenced by actions, capabilities, and schema excerpts."
+
+datasets:
+  - dataset_key: primary.store
+    source: "Replace with the dataset source."
+    owner: platform
+    canonical_shape: intelligence/schemas/primary_store.sql
+    freshness: on_write
+    used_by_actions:
+      - sample.action

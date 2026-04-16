@@ -1,0 +1,41 @@
+---
+status: Active
+source_of_truth: Yes
+last_updated: YYYY-MM-DD
+superseded_by: N/A
+---
+
+# Documentation Portal
+
+Start here.
+
+## Operating Intent
+
+- Keep current repository truth explicit.
+- Reduce drift between code, docs, contracts, and guidance.
+- Make legacy material visible instead of hiding it.
+
+## Current References
+
+- `docs/CURRENT_STATE.md`
+- `docs/ARCHITECTURE.md`
+- `docs/LAYERS.md`
+- `docs/SKILLS_INTEGRATION.md`
+- `docs/ROADMAP.md`
+- `docs/IMPACT_SUMMARY.md`
+
+## Decisions
+
+- `docs/adr/`
+
+## Legacy And Non-Current Material
+
+- `docs/reviews/`
+- `docs/experiments/`
+- `docs/archive/`
+
+## Review Questions
+
+- What is the current source of truth?
+- What remains intentionally legacy?
+- What drift has been resolved, and what still needs follow-up?
