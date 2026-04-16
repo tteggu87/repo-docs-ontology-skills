@@ -1,0 +1,8 @@
+{
+  "run_id": "run-ingest-2026-04-17-001",
+  "phase": "extract_claims",
+  "status": "success",
+  "detail": "Claims extracted and export files updated.",
+  "started_at": "2026-04-17T10:00:00Z",
+  "finished_at": "2026-04-17T10:01:12Z"
+}

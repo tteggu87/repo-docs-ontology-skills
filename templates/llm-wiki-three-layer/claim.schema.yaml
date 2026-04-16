@@ -1,0 +1,33 @@
+schema_id: claim.schema.v1
+description: Structural contract for canonical claim export rows.
+
+required:
+  - claim_id
+  - source_id
+  - claim_text
+  - confidence
+  - extraction_run_id
+
+optional:
+  - chunk_id
+  - provenance_offsets
+  - status
+  - canonical_page_ids
+
+constraints:
+  confidence:
+    type: float
+    minimum: 0.0
+    maximum: 1.0
+
+statuses:
+  - draft
+  - reviewed
+  - accepted
+  - rejected
+
+notes:
+  - every claim must be traceable to at least one source
+  - provenance_offsets should be included when available
+  - claims are not pages and must not replace wiki synthesis
+
