@@ -2,20 +2,19 @@
 
 [English](README.md) | [한국어](README.ko.md)
 
-DocTology is a public repository with two intentional layers:
+DocTology is an open-source starter kit for building Obsidian-first, evidence-grounded knowledge systems.
 
-1. `.agent/skills/`
-   - reusable knowledge, ontology, bootstrap, and operator skills
-2. a small runnable reference runtime at repo root
-   - an Obsidian-first LLM Wiki CLI
-   - an optional local workbench UI
-   - runtime contracts under `intelligence/`
+It gives you three things in one repository:
 
-This repository is intentionally not a checked-in personal vault.
-It is also not just a pure skill dump.
-Think of it as:
+- a portable `.agent/skills/` pack for bootstrap, ontology, and operator workflows
+- a runnable local reference runtime with an LLM Wiki CLI and optional workbench UI
+- a clean starting point for your own workspace without committing private corpus data
 
-`portable skill pack + runnable local reference runtime`
+Best fit for:
+
+- builders who want a reusable knowledge/ontology skill pack
+- teams who want a public reference implementation they can run locally
+- users who want to bootstrap a private workspace from a cleaner public baseline
 
 ## Start Here
 

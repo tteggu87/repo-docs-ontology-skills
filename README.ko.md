@@ -2,21 +2,19 @@
 
 [English](README.md) | [한국어](README.ko.md)
 
-DocTology는 공개용 레포 하나 안에 두 가지를 같이 담는 구조입니다.
+DocTology는 Obsidian-first, evidence-grounded 지식 시스템을 빠르게 시작하기 위한 오픈소스 starter kit입니다.
 
-1. `.agent/skills/`
-   - 재사용 가능한 지식/온톨로지/부트스트랩/운영 스킬 묶음
-2. 레포 루트의 작은 reference runtime
-   - Obsidian-first LLM Wiki CLI
-   - 선택형 로컬 workbench UI
-   - `intelligence/` 아래의 runtime contract
+이 레포 하나로 다음 세 가지를 같이 제공합니다.
 
-즉 이 레포는:
+- bootstrap, ontology, operator 워크플로를 담은 portable `.agent/skills/` 팩
+- LLM Wiki CLI와 선택형 workbench UI가 포함된 로컬 reference runtime
+- 개인 코퍼스를 공개 레포에 넣지 않고도 내 워크스페이스를 시작할 수 있는 깔끔한 기준선
 
-- 개인용 실데이터 vault는 아니고
-- 순수 문서 저장소나 skill dump만도 아니며
-- `portable skill pack + runnable local reference runtime`
-  으로 보는 게 가장 정확합니다.
+특히 이런 경우에 맞습니다.
+
+- 재사용 가능한 지식/온톨로지 skill pack이 필요한 사람
+- 로컬에서 바로 실행해볼 수 있는 공개 reference implementation이 필요한 팀
+- 더 깔끔한 공개 baseline에서 개인 워크스페이스를 부트스트랩하고 싶은 사용자
 
 ## 먼저 어디서 시작하면 되나
 
