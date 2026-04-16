@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
-import shutil
 import sys
 from pathlib import Path
 
@@ -17,6 +16,163 @@ def today() -> str:
 def write_text(path: Path, content: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(content, encoding="utf-8")
+
+
+def sqlite_operational_schema_sql() -> str:
+    return """-- sqlite_operational.schema.sql
+-- Purpose: operational index schema for a file-canonical LLM Wiki
+
+PRAGMA foreign_keys = ON;
+
+CREATE TABLE IF NOT EXISTS pages (
+  id TEXT PRIMARY KEY,
+  path TEXT NOT NULL UNIQUE,
+  title TEXT NOT NULL,
+  page_type TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  checksum TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS page_links (
+  from_page_id TEXT NOT NULL,
+  to_page_id TEXT,
+  to_link_text TEXT NOT NULL,
+  status TEXT NOT NULL CHECK (status IN ('resolved', 'unresolved')),
+  created_at TEXT NOT NULL,
+  FOREIGN KEY (from_page_id) REFERENCES pages(id)
+);
+
+CREATE TABLE IF NOT EXISTS page_sources (
+  page_id TEXT NOT NULL,
+  source_id TEXT NOT NULL,
+  relation_type TEXT NOT NULL CHECK (relation_type IN ('primary', 'supporting', 'mentioned')),
+  PRIMARY KEY (page_id, source_id, relation_type),
+  FOREIGN KEY (page_id) REFERENCES pages(id)
+);
+
+CREATE TABLE IF NOT EXISTS aliases (
+  alias_text TEXT NOT NULL,
+  target_type TEXT NOT NULL CHECK (target_type IN ('page', 'entity')),
+  target_id TEXT NOT NULL,
+  PRIMARY KEY (alias_text, target_type, target_id)
+);
+
+CREATE TABLE IF NOT EXISTS tags (
+  page_id TEXT NOT NULL,
+  tag TEXT NOT NULL,
+  PRIMARY KEY (page_id, tag),
+  FOREIGN KEY (page_id) REFERENCES pages(id)
+);
+
+CREATE TABLE IF NOT EXISTS memories (
+  id TEXT PRIMARY KEY,
+  memory_type TEXT NOT NULL CHECK (
+    memory_type IN ('preference', 'active_context', 'agent_note', 'task_memory', 'working_fact')
+  ),
+  subject TEXT,
+  content TEXT NOT NULL,
+  source_ref TEXT,
+  confidence REAL,
+  created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS jobs (
+  id TEXT PRIMARY KEY,
+  job_type TEXT NOT NULL CHECK (
+    job_type IN ('register_source', 'reindex_sqlite', 'refresh_duckdb', 'extract_claims', 'audit_health')
+  ),
+  status TEXT NOT NULL CHECK (status IN ('queued', 'running', 'success', 'failed')),
+  started_at TEXT,
+  finished_at TEXT,
+  detail TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_pages_title ON pages(title);
+CREATE INDEX IF NOT EXISTS idx_page_links_from ON page_links(from_page_id);
+CREATE INDEX IF NOT EXISTS idx_page_links_to ON page_links(to_page_id);
+CREATE INDEX IF NOT EXISTS idx_aliases_text ON aliases(alias_text);
+CREATE INDEX IF NOT EXISTS idx_tags_tag ON tags(tag);
+CREATE INDEX IF NOT EXISTS idx_jobs_status ON jobs(status);
+"""
+
+
+def duckdb_analytical_schema_sql() -> str:
+    return """-- duckdb_analytical.schema.sql
+-- Purpose: analytical warehouse schema for a file-canonical LLM Wiki
+
+CREATE TABLE IF NOT EXISTS sources (
+  source_id VARCHAR PRIMARY KEY,
+  source_type VARCHAR,
+  uri VARCHAR,
+  created_at TIMESTAMP,
+  raw_checksum VARCHAR
+);
+
+CREATE TABLE IF NOT EXISTS chunks (
+  chunk_id VARCHAR PRIMARY KEY,
+  source_id VARCHAR,
+  chunk_index BIGINT,
+  text VARCHAR,
+  token_count BIGINT
+);
+
+CREATE TABLE IF NOT EXISTS claims (
+  claim_id VARCHAR PRIMARY KEY,
+  source_id VARCHAR,
+  chunk_id VARCHAR,
+  claim_text VARCHAR,
+  confidence DOUBLE,
+  extraction_run_id VARCHAR
+);
+
+CREATE TABLE IF NOT EXISTS entities (
+  entity_id VARCHAR PRIMARY KEY,
+  canonical_name VARCHAR,
+  entity_type VARCHAR
+);
+
+CREATE TABLE IF NOT EXISTS claim_entities (
+  claim_id VARCHAR,
+  entity_id VARCHAR,
+  role VARCHAR
+);
+
+CREATE TABLE IF NOT EXISTS relations (
+  relation_id VARCHAR PRIMARY KEY,
+  source_entity_id VARCHAR,
+  relation_type VARCHAR,
+  target_entity_id VARCHAR,
+  evidence_claim_id VARCHAR,
+  relation_confidence DOUBLE,
+  extraction_run_id VARCHAR
+);
+
+CREATE TABLE IF NOT EXISTS page_coverage_snapshots (
+  page_id VARCHAR,
+  run_id VARCHAR,
+  source_count BIGINT,
+  claim_count BIGINT,
+  entity_count BIGINT,
+  freshness_score DOUBLE,
+  coverage_score DOUBLE,
+  captured_at TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS audit_events (
+  run_id VARCHAR,
+  phase VARCHAR,
+  status VARCHAR,
+  detail VARCHAR,
+  page_id VARCHAR,
+  severity VARCHAR,
+  created_at TIMESTAMP
+);
+"""
+
+
+def generated_helper_script(name: str) -> str:
+    source = (Path(__file__).resolve().parent / name).read_text(encoding="utf-8")
+    return source.replace("Path(__file__).resolve().parents[4]", "Path(__file__).resolve().parent.parent")
 
 
 def ensure_safe_target(target: Path, force: bool) -> None:
@@ -494,11 +650,25 @@ The LLM ingests, structures, cross-links, updates, and keeps the wiki healthy.
 │   ├── assets/
 │   └── notes/
 ├── scripts/
-│   └── llm_wiki.py
+│   ├── llm_wiki.py
+│   ├── reindex_sqlite_operational.py
+│   ├── refresh_duckdb_analytics.py
+│   └── verify_three_layer_drift.py
+├── state/
 ├── templates/
-│   └── source_page_template.md
+│   ├── source_page_template.md
+│   └── llm-wiki-three-layer/
+│       ├── duckdb_analytical.schema.sql
+│       └── sqlite_operational.schema.sql
 ├── warehouse/
 │   └── jsonl/
+│       ├── messages.jsonl
+│       ├── documents.jsonl
+│       ├── entities.jsonl
+│       ├── claims.jsonl
+│       ├── claim_evidence.jsonl
+│       ├── segments.jsonl
+│       └── derived_edges.jsonl
 └── wiki/
     ├── _meta/
     │   ├── dashboard.md
@@ -537,7 +707,7 @@ source .venv/bin/activate
 python scripts/llm_wiki.py status
 ```
 
-No third-party Python packages are required for the local scaffold.
+No third-party Python packages are required for the local scaffold, though DuckDB refresh needs the `duckdb` package when you actually run it.
 
 ### 3. Add Sources
 
@@ -562,7 +732,20 @@ If you install `llm-wiki-ontology-ingest` later, use that skill after source reg
 - refresh affected wiki pages
 - keep provenance-aware structured truth aligned with human-facing synthesis
 
-### 6. Ask Me To Maintain The Wiki
+### 6. Rebuild SQLite Or Refresh DuckDB
+
+Run:
+
+```bash
+python scripts/reindex_sqlite_operational.py --repo-root .
+python scripts/refresh_duckdb_analytics.py --repo-root .
+python scripts/verify_three_layer_drift.py --repo-root .
+```
+
+These helpers are rebuildable support tools.
+They do not replace canonical file truth under `raw/`, `warehouse/jsonl/`, or `wiki/`.
+
+### 7. Ask Me To Maintain The Wiki
 
 Use prompts like:
 
@@ -1475,6 +1658,8 @@ def scaffold(target: Path, force: bool, profile: str) -> None:
         directories.extend(
             [
                 target / "intelligence" / "manifests",
+                target / "state",
+                target / "templates" / "llm-wiki-three-layer",
                 target / "warehouse" / "jsonl",
             ]
         )
@@ -1493,6 +1678,21 @@ def scaffold(target: Path, force: bool, profile: str) -> None:
         write_text(target / "intelligence" / "glossary.yaml", glossary_yaml())
         write_text(target / "intelligence" / "manifests" / "datasets.yaml", datasets_yaml())
         write_text(target / "intelligence" / "manifests" / "actions.yaml", actions_yaml())
+        write_text(target / "scripts" / "reindex_sqlite_operational.py", generated_helper_script("reindex_sqlite_operational.py"))
+        write_text(target / "scripts" / "refresh_duckdb_analytics.py", generated_helper_script("refresh_duckdb_analytics.py"))
+        write_text(target / "scripts" / "verify_three_layer_drift.py", generated_helper_script("verify_three_layer_drift.py"))
+        write_text(target / "templates" / "llm-wiki-three-layer" / "sqlite_operational.schema.sql", sqlite_operational_schema_sql())
+        write_text(target / "templates" / "llm-wiki-three-layer" / "duckdb_analytical.schema.sql", duckdb_analytical_schema_sql())
+        for name in (
+            "messages.jsonl",
+            "documents.jsonl",
+            "entities.jsonl",
+            "claims.jsonl",
+            "claim_evidence.jsonl",
+            "segments.jsonl",
+            "derived_edges.jsonl",
+        ):
+            write_text(target / "warehouse" / "jsonl" / name, "")
 
 
 def build_parser() -> argparse.ArgumentParser:

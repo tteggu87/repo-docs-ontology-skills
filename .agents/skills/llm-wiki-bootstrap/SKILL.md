@@ -41,6 +41,12 @@ Do not use this skill when the user only wants to ingest one source into an exis
      - `intelligence/glossary.yaml`
      - `intelligence/manifests/datasets.yaml`
      - `intelligence/manifests/actions.yaml`
+     - `state/`
+     - `scripts/reindex_sqlite_operational.py`
+     - `scripts/refresh_duckdb_analytics.py`
+     - `scripts/verify_three_layer_drift.py`
+     - `templates/llm-wiki-three-layer/sqlite_operational.schema.sql`
+     - `templates/llm-wiki-three-layer/duckdb_analytical.schema.sql`
      - `warehouse/jsonl/`
 6. Spot-check the generated repo contract:
    - `AGENTS.md` includes a startup ritual for future agents
@@ -76,7 +82,7 @@ Add `--force` only when the user explicitly wants overwrites.
 - minimal CLI for `ingest`, `reindex`, `lint`, `status`, `log`
 - source-page template
 - starter dashboard, index, and log pages
-- optional ontology-ready `warehouse/jsonl/` and `intelligence/` starter files
+- optional ontology-ready `warehouse/jsonl/`, `intelligence/`, `state/`, and lightweight SQLite/DuckDB helper files
 
 ## Three-Layer Follow-On Guidance
 
@@ -92,7 +98,7 @@ Use these repo-local materials for that transition:
 - `references/three-layer-file-contract.md`
 - `templates/llm-wiki-three-layer/`
 
-These are follow-on contracts and templates, not a claim that the bootstrap already generates a full SQLite/DuckDB runtime.
+The bootstrap now ships lightweight local SQLite/DuckDB rebuild helpers and schema templates for ontology-ready repos, but it still avoids heavy always-on runtime infrastructure.
 
 ## Generated Contract Expectations
 

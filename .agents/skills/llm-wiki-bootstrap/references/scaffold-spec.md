@@ -53,10 +53,24 @@ It supports two profiles:
     notes/
   scripts/
     llm_wiki.py
+    reindex_sqlite_operational.py
+    refresh_duckdb_analytics.py
+    verify_three_layer_drift.py
+  state/
   templates/
     source_page_template.md
+    llm-wiki-three-layer/
+      sqlite_operational.schema.sql
+      duckdb_analytical.schema.sql
   warehouse/
     jsonl/
+      messages.jsonl
+      documents.jsonl
+      entities.jsonl
+      claims.jsonl
+      claim_evidence.jsonl
+      segments.jsonl
+      derived_edges.jsonl
   wiki/
     _meta/
       dashboard.md
@@ -76,10 +90,12 @@ It supports two profiles:
 - `raw/` is immutable source storage.
 - `wiki/` is maintained synthesis.
 - `warehouse/jsonl/` is optional canonical structured truth for ontology-ready repos.
+- `state/` holds rebuildable operational and analytical DB state only.
 - file-layer surfaces remain the canonical truth even when later operational or analytical DB layers are introduced.
 - `AGENTS.md` is the repo-local contract for future agents.
 - `intelligence/` is optional repo-local vocabulary plus dataset/action contracts.
-- `scripts/llm_wiki.py` handles lightweight maintenance tasks only.
+- `scripts/llm_wiki.py` handles lightweight maintenance tasks.
+- ontology-ready scaffolds also ship lightweight SQLite/DuckDB rebuild helpers plus schema templates.
 - The scaffold should be immediately usable without third-party Python dependencies.
 
 ## Three-Layer Extension Path
@@ -96,7 +112,7 @@ Supporting references:
 - `references/three-layer-file-contract.md`
 - `templates/llm-wiki-three-layer/`
 
-Those materials are intentionally guidance and template surfaces, not proof that the scaffold already ships a full SQLite/DuckDB runtime.
+Those materials are still guidance and template surfaces. The scaffold ships lightweight local rebuild helpers, not a heavy always-on runtime stack.
 
 ## Safety Rules
 

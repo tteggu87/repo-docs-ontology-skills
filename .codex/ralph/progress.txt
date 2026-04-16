@@ -51,3 +51,23 @@
   - `git diff --check` -> pass
   - temporary repo smoke test for SQLite and DuckDB stubs -> pass
 ---
+## [2026-04-17 15:10 KST] - TLR-7
+- Closed the bootstrap/runtime path gap for ontology-profile scaffolds.
+- Files changed:
+  - `.agents/skills/llm-wiki-bootstrap/scripts/bootstrap_llm_wiki.py`
+  - `.agents/skills/llm-wiki-bootstrap/scripts/reindex_sqlite_operational.py`
+  - `.agents/skills/llm-wiki-bootstrap/scripts/refresh_duckdb_analytics.py`
+  - `.agents/skills/llm-wiki-bootstrap/scripts/verify_three_layer_drift.py`
+  - `.agents/skills/llm-wiki-bootstrap/SKILL.md`
+  - `.agents/skills/llm-wiki-bootstrap/references/scaffold-spec.md`
+- Quality checks run and result
+  - `python3 -m py_compile ...` -> pass
+  - `python3 .agents/skills/llm-wiki-bootstrap/scripts/bootstrap_llm_wiki.py "$TMP" --profile wiki-plus-ontology` -> pass
+  - `python3 "$TMP/scripts/reindex_sqlite_operational.py" --repo-root "$TMP"` -> pass
+  - `python3 "$TMP/scripts/refresh_duckdb_analytics.py" --repo-root "$TMP"` -> pass
+  - `python3 "$TMP/scripts/verify_three_layer_drift.py" --repo-root "$TMP"` -> pass
+- Learnings for future iterations
+  - canonical path contract now centers on `raw/`, `wiki/`, `warehouse/jsonl/`, and `state/`
+  - SQLite and DuckDB remain rebuildable support layers, not canonical truth
+  - ontology-profile bootstrap now ships lightweight three-layer rebuild helpers
+---
