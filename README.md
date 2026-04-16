@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="apps/workbench/public/doctology-logo.jpeg" alt="DocTology logo" width="460">
+</p>
+
 # DocTology
 
 [English](README.md) | [한국어](README.ko.md)
