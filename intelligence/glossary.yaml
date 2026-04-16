@@ -1,0 +1,73 @@
+terms:
+  - key: raw_source
+    definition: Immutable source material stored under raw/ and used as the original evidence surface.
+    aliases:
+      - source
+      - raw file
+  - key: canonical_ontology
+    definition: Structured machine-truth registries under warehouse/jsonl/ used for provenance-aware reasoning.
+    aliases:
+      - ontology registry
+      - canonical structured truth
+  - key: wiki_page
+    definition: Human-facing maintained markdown synthesis page under wiki/.
+    aliases:
+      - synthesis page
+      - maintained page
+  - key: derived_output
+    definition: Any artifact generated from canonical truth that is not itself canonical, such as graph projection or retrieval indexes.
+    aliases:
+      - projection
+      - derived artifact
+  - key: entity
+    definition: Named person, project, organization, concept, or domain object extracted into canonical registries.
+  - key: claim
+    definition: Structured statement extracted from a source and tracked with review state and provenance.
+  - key: evidence
+    definition: Supporting link between a claim and a source segment or source reference.
+  - key: segment
+    definition: Stable text-reference unit bridging documents, evidence, retrieval, and downstream synthesis.
+  - key: analysis_page
+    definition: Durable answer or synthesis note saved under wiki/analyses/.
+  - key: ontology_backed_ingest
+    definition: Repeated source-processing workflow that updates canonical registries first and then projects results into wiki pages.
+  - key: source_family
+    definition: Stable identity for a recurring corpus such as one chat room, mailbox, or note stream across multiple exports.
+    aliases:
+      - family
+      - recurring source
+  - key: export_version
+    definition: One concrete snapshot or export event for a source family, tracked separately from the family itself.
+    aliases:
+      - export snapshot
+      - source version
+  - key: message_fingerprint
+    definition: Stable row identity used to detect duplicates or repeats for sequential corpora within the same source family.
+    aliases:
+      - row fingerprint
+      - message identity
+  - key: incremental_ingest
+    definition: Ingest workflow that recognizes repeated exports of the same source family and adds only newly observed canonical records when possible.
+    aliases:
+      - cumulative export ingest
+      - delta-aware ingest
+  - key: workbench
+    definition: Optional local sidecar UI in apps/workbench backed by the Python adapter in scripts/workbench_api.py.
+    aliases:
+      - sidecar workbench
+      - operator workbench
+  - key: query_preview
+    definition: Repo-local search and synthesis draft produced from wiki pages first, with canonical registry hits added as supporting evidence.
+    aliases:
+      - ask preview
+      - local query preview
+  - key: bounded_write
+    definition: Explicit backend-gated write path restricted to approved wiki or canonical targets rather than arbitrary filesystem mutation.
+    aliases:
+      - gated write
+      - explicit write contract
+  - key: claim_review
+    definition: Operator review action that updates canonical claim review state without letting the browser mutate registries directly.
+    aliases:
+      - claim moderation
+      - claim triage
