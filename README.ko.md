@@ -192,6 +192,69 @@ Windows 실행:
 run_windows_workbench.bat
 ```
 
+## 정상일 때 무엇이 보여야 하나
+
+workbench가 올바른 repo에 붙어 있다면, 홈 화면과 summary API가 다른 로컬 워크스페이스가 아니라 이 저장소를 가리켜야 합니다.
+
+빠른 확인:
+
+```bash
+python3 scripts/workbench_api.py --route /api/workbench/summary
+```
+
+정상이라면 JSON에 대략 다음이 보여야 합니다.
+
+- `"root": "/.../DocTology"`
+- fresh clone 기준 낮거나 0에 가까운 count
+- 첫 콘텐츠를 넣기 전 `missing_index`, `missing_log` 같은 경고
+
+## 문제 해결
+
+### launcher가 다른 워크스페이스를 여는 것 같다
+
+이미 다른 workbench가 `4174` 또는 `8765` 포트를 쓰고 있으면, 브라우저 탭이 현재 repo가 아닌 다른 workspace를 보여줄 수 있습니다.
+
+- macOS launcher는 이제 실행 중 listener가 현재 repo 소속인지 확인하고, 다른 repo면 다시 시작합니다.
+- 그래도 이상하면 아래로 직접 확인하세요.
+
+```bash
+python3 scripts/workbench_api.py --route /api/workbench/summary
+```
+
+여기서 `root` 값이 `DocTology`를 가리켜야 합니다.
+
+### `ModuleNotFoundError: No module named 'yaml'`
+
+PyYAML을 설치하면 됩니다.
+
+```bash
+pip install pyyaml
+```
+
+### frontend가 뜨지 않는다
+
+프론트 의존성을 다시 설치하세요.
+
+```bash
+npm --prefix apps/workbench ci
+```
+
+### 첫 실행에서 helper-model 호출을 원하지 않는다
+
+example 설정으로 먼저 덮어쓰세요.
+
+```bash
+cp wikiconfig.example.json wikiconfig.json
+```
+
+이렇게 하면 helper-model 기능이 꺼진 상태에서 repo-local baseline부터 검증할 수 있습니다.
+
+### clone했는데 너무 비어 보인다
+
+정상입니다.
+이 공개 레포는 개인 코퍼스를 넣어둔 저장소가 아니라, baseline + reference runtime입니다.
+아래 예시처럼 `raw/inbox/`에 테스트 source 하나를 넣고 흐름을 먼저 확인하면 됩니다.
+
 ## 첫 콘텐츠 넣어보기
 
 이 레포는 일부러 빈 상태에서 시작합니다.

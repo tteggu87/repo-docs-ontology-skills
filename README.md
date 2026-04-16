@@ -189,6 +189,69 @@ Windows launcher:
 run_windows_workbench.bat
 ```
 
+## What You Should See
+
+When the workbench is connected to the correct repo, the home screen and summary API should reflect this repository, not some other local workspace.
+
+Quick check:
+
+```bash
+python3 scripts/workbench_api.py --route /api/workbench/summary
+```
+
+You should see JSON with:
+
+- `"root": "/.../DocTology"`
+- low or zero counts on a fresh clone
+- warnings such as `missing_index` and `missing_log` before first content is added
+
+## Troubleshooting
+
+### The launcher opens the wrong workspace
+
+If you already have another workbench running on ports `4174` or `8765`, a browser tab may appear to show the wrong repo.
+
+- the macOS launcher now checks whether the running listener belongs to this repo and restarts mismatched listeners
+- if you still see unexpected data, verify the summary route:
+
+```bash
+python3 scripts/workbench_api.py --route /api/workbench/summary
+```
+
+The `root` value should point at `DocTology`.
+
+### `ModuleNotFoundError: No module named 'yaml'`
+
+Install PyYAML:
+
+```bash
+pip install pyyaml
+```
+
+### Workbench frontend does not start
+
+Install frontend dependencies again:
+
+```bash
+npm --prefix apps/workbench ci
+```
+
+### I do not want helper-model calls on first run
+
+Use the example config first:
+
+```bash
+cp wikiconfig.example.json wikiconfig.json
+```
+
+That keeps helper-model features disabled and lets you validate the repo-local baseline first.
+
+### The repo feels empty after clone
+
+That is expected.
+This public repo is a baseline and reference runtime, not a checked-in personal corpus.
+Add one test source under `raw/inbox/` and run the CLI flow below.
+
 ## First Content: Create a Minimal Source Page
 
 The repo starts empty on purpose. The fastest way to confirm the CLI flow is to add one small raw source and register it.
