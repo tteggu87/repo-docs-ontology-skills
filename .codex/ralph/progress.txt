@@ -29,3 +29,17 @@
   - `python3 -m py_compile .agent/skills/llm-wiki-bootstrap/scripts/refresh_duckdb_analytics.py` -> pass
   - `git diff --check` -> pass
 ---
+## [2026-04-17 14:20 KST] - TLR-4
+- Added three-layer drift verification stub under llm-wiki-bootstrap.
+- Files changed: .agent/skills/llm-wiki-bootstrap/scripts/verify_three_layer_drift.py
+- Quality checks run and result
+  - `python3 -m py_compile .agent/skills/llm-wiki-bootstrap/scripts/verify_three_layer_drift.py` -> pass
+  - `git diff --check` -> pass
+---
+## [2026-04-17 14:20 KST] - TLR-5
+- Synced operator-facing README docs with the three-layer operating model.
+- Files changed: README.md, README.ko.md
+- Quality checks run and result
+  - `rg -n "Three-layer operating model|files as canonical truth|SQLite as operational index|DuckDB as analytical warehouse" README.md README.ko.md` -> pass
+  - `git diff --check` -> pass
+---
