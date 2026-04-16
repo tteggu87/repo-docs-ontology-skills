@@ -49,17 +49,56 @@ def extract_title(path: Path, text: str) -> str:
 
 
 def frontmatter_value(text: str, key: str) -> str | None:
-    if not text.startswith("---\n"):
+    frontmatter_lines, _ = split_frontmatter(text)
+    if not frontmatter_lines:
         return None
+    for line in frontmatter_lines:
+        if line.startswith(f"{key}:"):
+            return line.split(":", 1)[1].strip().strip('"')
+    return None
+
+
+def split_frontmatter(text: str) -> tuple[list[str], str]:
+    if not text.startswith("---\n"):
+        return [], text
     lines = text.splitlines()
     try:
         end_index = lines[1:].index("---") + 1
     except ValueError:
-        return None
-    for line in lines[1:end_index]:
+        return [], text
+    frontmatter_lines = lines[1:end_index]
+    body = "\n".join(lines[end_index + 1 :])
+    return frontmatter_lines, body
+
+
+def frontmatter_list(text: str, key: str) -> list[str]:
+    frontmatter_lines, _ = split_frontmatter(text)
+    if not frontmatter_lines:
+        return []
+
+    values: list[str] = []
+    collecting = False
+    base_indent = None
+    for line in frontmatter_lines:
+        if collecting:
+            stripped = line.strip()
+            indent = len(line) - len(line.lstrip(" "))
+            if not stripped:
+                continue
+            if stripped.startswith("- "):
+                values.append(stripped[2:].strip().strip('"'))
+                continue
+            if base_indent is not None and indent > base_indent:
+                continue
+            break
+
         if line.startswith(f"{key}:"):
-            return line.split(":", 1)[1].strip().strip('"')
-    return None
+            collecting = True
+            base_indent = len(line) - len(line.lstrip(" "))
+            remainder = line.split(":", 1)[1].strip()
+            if remainder:
+                values.append(remainder.strip("[] ").strip('"'))
+    return values
 
 
 def page_records(repo_root: Path) -> list[tuple[str, str, str, str, str, str]]:
@@ -89,12 +128,12 @@ def page_records(repo_root: Path) -> list[tuple[str, str, str, str, str, str]]:
 
 
 def link_records(repo_root: Path, rows: list[tuple[str, str, str, str, str, str]]) -> list[tuple[str, str | None, str, str, str]]:
-    wiki_dir = repo_root / "wiki"
     page_ids = {Path(path).stem: page_id for page_id, path, *_ in rows}
     links: list[tuple[str, str | None, str, str, str]] = []
     for page_id, path, *_ in rows:
         text = read_text(repo_root / path)
-        for link in WIKILINK_RE.findall(text):
+        _, body = split_frontmatter(text)
+        for link in WIKILINK_RE.findall(body):
             resolved_page_id = page_ids.get(link)
             links.append((page_id, resolved_page_id, link, "resolved" if resolved_page_id else "unresolved", today_utc()))
     return links
@@ -104,8 +143,10 @@ def source_records(rows: list[tuple[str, str, str, str, str, str]], repo_root: P
     records: list[tuple[str, str, str]] = []
     for page_id, path, *_ in rows:
         text = read_text(repo_root / path)
-        for source_link in re.findall(r'^\s*-\s*"\[\[([^\]]+)\]\]"\s*$', text, re.MULTILINE):
-            records.append((page_id, source_link, "primary"))
+        for source_item in frontmatter_list(text, "sources"):
+            match = WIKILINK_RE.search(source_item)
+            if match:
+                records.append((page_id, match.group(1), "primary"))
     return records
 
 
@@ -113,7 +154,7 @@ def tag_records(rows: list[tuple[str, str, str, str, str, str]], repo_root: Path
     records: list[tuple[str, str]] = []
     for page_id, path, *_ in rows:
         text = read_text(repo_root / path)
-        for tag in re.findall(r'^\s*-\s*([A-Za-z0-9._/-]+)\s*$', text, re.MULTILINE):
+        for tag in frontmatter_list(text, "tags"):
             records.append((page_id, tag))
     return records
 
