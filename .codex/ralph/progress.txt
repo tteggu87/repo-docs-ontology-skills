@@ -15,3 +15,10 @@
   - `git diff --check` -> pass
   - `rg -n "three-layer-taxonomy|three-layer-file-contract|templates/llm-wiki-three-layer" ...` -> pass
 ---
+## [2026-04-17 14:00 KST] - TLR-2
+- Added SQLite operational reindex script stub under llm-wiki-bootstrap.
+- Files changed: .agent/skills/llm-wiki-bootstrap/scripts/reindex_sqlite_operational.py
+- Quality checks run and result
+  - `python3 -m py_compile .agent/skills/llm-wiki-bootstrap/scripts/reindex_sqlite_operational.py` -> pass
+  - `git diff --check` -> pass
+---
