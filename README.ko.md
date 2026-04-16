@@ -1,0 +1,286 @@
+# DocTology
+
+[English](README.md) | [한국어](README.ko.md)
+
+DocTology는 공개용 레포 하나 안에 두 가지를 같이 담는 구조입니다.
+
+1. `.agent/skills/`
+   - 재사용 가능한 지식/온톨로지/부트스트랩/운영 스킬 묶음
+2. 레포 루트의 작은 reference runtime
+   - Obsidian-first LLM Wiki CLI
+   - 선택형 로컬 workbench UI
+   - `intelligence/` 아래의 runtime contract
+
+즉 이 레포는:
+
+- 개인용 실데이터 vault는 아니고
+- 순수 문서 저장소나 skill dump만도 아니며
+- `portable skill pack + runnable local reference runtime`
+  으로 보는 게 가장 정확합니다.
+
+## 먼저 어디서 시작하면 되나
+
+목적에 따라 시작점이 다릅니다.
+
+- 재사용 가능한 스킬과 템플릿이 필요하다
+  - `.agent/skills/`부터 보세요.
+- 지금 이 공개 레포에서 reference runtime을 직접 실행해보고 싶다
+  - 아래 `Quick Start`를 따라가면 됩니다.
+- 내 데이터로 쓸 깨끗한 새 워크스페이스가 필요하다
+  - 아래 `깨끗한 워크스페이스 부트스트랩`으로 가면 됩니다.
+
+## 이 레포에 들어있는 것
+
+```text
+DocTology/
+├── .agent/
+│   └── skills/
+│       ├── lightweight-ontology-core/
+│       ├── lg-ontology/
+│       ├── llm-wiki-bootstrap/
+│       ├── llm-wiki-ontology-ingest/
+│       ├── ontology-pipeline-operator/
+│       └── ...
+├── apps/
+│   └── workbench/
+├── scripts/
+├── templates/
+├── intelligence/
+├── wikiconfig.json
+├── wikiconfig.example.json
+├── run-workbench.command
+├── run_windows_workbench.bat
+└── install_windows.bat
+```
+
+## 왜 루트 runtime 파일들을 유지하나
+
+이 파일들은 보기 좋으라고 둔 게 아니라, 실제 reference runtime이 직접 의존합니다.
+
+- `apps/workbench/`는 `scripts/workbench_api.py`에 의존합니다.
+- `scripts/llm_wiki.py`는 `templates/source_page_template.md`를 읽습니다.
+- `scripts/incremental_ingest.py`는 `intelligence/manifests/source_families.yaml`를 읽습니다.
+- `scripts/workbench/server.py`는 `intelligence/manifests/workbench.yaml`를 가리킵니다.
+- `scripts/workbench/repository.py`는 `wikiconfig.json`을 읽습니다.
+- 실행 파일들은 루트 runtime layout을 전제로 합니다.
+
+즉 `intelligence/`, `templates/`, `scripts/`, launcher 파일은 장식용 문서가 아니라 현재 공개 reference runtime의 실제 계약 일부입니다.
+
+## 반대로 의도적으로 넣지 않는 것
+
+이 공개 레포는 개인 실데이터를 넣는 곳이 아닙니다.
+다음은 기본적으로 커밋 대상이 아닙니다.
+
+- 개인 `raw/`
+- 개인 `wiki/`
+- 개인 `warehouse/`
+- vector store
+- 캐시와 스크래치 산출물
+- 개인 Obsidian vault 내용물
+
+실제 데이터는 본인 워크스페이스에 두고, 이 레포는 공개 기준선 또는 부트스트랩 소스로 쓰는 편이 맞습니다.
+
+## Quick Start
+
+이 섹션은 “처음 clone한 사람이 막히지 않고 최소한 한 번은 끝까지 따라갈 수 있게” 쓰는 기준으로 정리했습니다.
+
+### 준비물
+
+필요한 것은 다음입니다.
+
+- Python 3
+- Node.js와 npm
+- Python용 PyYAML
+
+### 1) 레포 clone
+
+```bash
+git clone https://github.com/tteggu87/DocTology.git
+cd DocTology
+```
+
+### 2) 첫 실행은 안전 모드로 시작
+
+체크인된 `wikiconfig.json`은 로컬 OpenAI-compatible backend를 가정할 수 있습니다.
+처음에는 helper-model 호출 없이 repo-local 흐름만 확인하는 편이 안전합니다.
+그래서 먼저 example 설정으로 덮어쓰는 것을 권장합니다.
+
+macOS / Linux:
+
+```bash
+cp wikiconfig.example.json wikiconfig.json
+```
+
+Windows PowerShell:
+
+```powershell
+Copy-Item wikiconfig.example.json wikiconfig.json -Force
+```
+
+이렇게 하면 helper-model 기능이 비활성화된 상태에서 먼저 기본 런타임을 검증할 수 있습니다.
+
+### 3) 의존성 설치
+
+macOS / Linux:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install --upgrade pip
+pip install pyyaml
+npm --prefix apps/workbench ci
+```
+
+Windows:
+
+```bat
+install_windows.bat
+```
+
+### 4) 빈 baseline이 정상 동작하는지 확인
+
+개인 데이터가 하나도 없는 상태에서도 아래 명령은 돌아가야 합니다.
+
+```bash
+python3 scripts/llm_wiki.py status
+python3 scripts/workbench_api.py --route /api/workbench/summary
+```
+
+정상이라면:
+
+- `status`가 에러 없이 0건 상태를 보여주고
+- workbench summary route가 JSON을 반환하며
+- `missing_index`, `missing_log` 같은 경고는 fresh baseline 기준으로 자연스럽습니다.
+
+### 5) workbench 실행
+
+macOS 원클릭 launcher:
+
+```bash
+./run-workbench.command
+```
+
+이 스크립트는 다음을 자동으로 합니다.
+
+- Python workbench API를 `127.0.0.1:8765`에서 시작
+- Vite frontend를 `127.0.0.1:4174`에서 시작
+- 브라우저 자동 열기
+
+Linux 또는 수동 실행 방식:
+
+터미널 1:
+
+```bash
+python3 scripts/workbench_api.py --serve --host 127.0.0.1 --port 8765
+```
+
+터미널 2:
+
+```bash
+npm --prefix apps/workbench run dev -- --host 127.0.0.1 --port 4174
+```
+
+브라우저에서 열 주소:
+
+```text
+http://127.0.0.1:4174/#home
+```
+
+Windows 실행:
+
+```bat
+run_windows_workbench.bat
+```
+
+## 첫 콘텐츠 넣어보기
+
+이 레포는 일부러 빈 상태에서 시작합니다.
+그래서 가장 빠른 검증은 작은 raw source 하나를 넣고 source page가 생기는지 보는 것입니다.
+
+macOS / Linux:
+
+```bash
+mkdir -p raw/inbox
+printf 'hello doctology\n' > raw/inbox/hello.txt
+python3 scripts/llm_wiki.py ingest raw/inbox/hello.txt --title "Hello Source"
+python3 scripts/llm_wiki.py reindex
+python3 scripts/llm_wiki.py lint
+python3 scripts/llm_wiki.py status
+```
+
+Windows PowerShell:
+
+```powershell
+New-Item -ItemType Directory -Force raw/inbox | Out-Null
+Set-Content raw/inbox/hello.txt 'hello doctology'
+python scripts/llm_wiki.py ingest raw/inbox/hello.txt --title "Hello Source"
+python scripts/llm_wiki.py reindex
+python scripts/llm_wiki.py lint
+python scripts/llm_wiki.py status
+```
+
+정상이라면 다음 파일들이 생깁니다.
+
+- `wiki/sources/source-<date>-hello-source.md`
+- `wiki/_meta/index.md`
+- `wiki/_meta/log.md`
+
+이 단계까지 되면 최소한 다음이 모두 연결된 것입니다.
+
+- CLI
+- template 경로
+- wiki 메타 갱신 흐름
+- 기본 reference runtime
+
+## 깨끗한 워크스페이스 부트스트랩
+
+레포 루트를 바로 쓰는 대신, 내 데이터용 workspace를 따로 만들고 싶다면 번들된 bootstrap 스크립트를 쓰면 됩니다.
+
+### plain wiki 워크스페이스
+
+```bash
+python3 .agent/skills/llm-wiki-bootstrap/scripts/bootstrap_llm_wiki.py ~/Documents/my-llm-wiki --profile wiki-only
+```
+
+### wiki + ontology 스타터
+
+```bash
+python3 .agent/skills/llm-wiki-bootstrap/scripts/bootstrap_llm_wiki.py ~/Documents/my-llm-wiki --profile wiki-plus-ontology
+```
+
+이 경로는 다음에 적합합니다.
+
+- 내 전용 `raw/`, `wiki/`, `warehouse/`를 따로 두고 싶을 때
+- 실제 데이터가 들어가는 로컬 워크스페이스가 필요할 때
+- 공개 레포 자체를 개인 vault로 쓰고 싶지 않을 때
+
+## 포함된 대표 skill 계열
+
+대표적으로 아래 계열이 같이 들어 있습니다.
+
+- `llm-wiki-bootstrap`
+  - 새 Obsidian-first LLM Wiki 워크스페이스 생성
+- `llm-wiki-ontology-ingest`
+  - 기존 ontology-backed wiki에 source ingest
+- `lightweight-ontology-core`
+  - canonical JSONL ontology truth 관리
+- `lg-ontology`
+  - canonical truth 위에 파생 graph-style inspection 추가
+- `ontology-pipeline-operator`
+  - 기존 ontology/wiki 파이프라인 운영과 refresh
+
+## 이 레포를 이해하는 가장 좋은 방식
+
+이 레포는 두 방식 중 하나로 쓰면 됩니다.
+
+1. 공개용 skill-pack + reference implementation
+2. 내 워크스페이스를 만들기 위한 bootstrap source
+
+즉 공개 기준선과 개인 실데이터 저장소를 혼동하지 않는 것이 가장 중요합니다.
+
+## 메모
+
+- 이 레포에서 portable 폴더명 기준은 `.agent`입니다.
+- 첫 로컬 테스트에는 `wikiconfig.example.json` 쪽이 더 안전한 기본값입니다.
+- `intelligence/`는 실제 런타임 일부가 직접 읽기 때문에 의도적으로 포함되어 있습니다.
+- workbench는 선택형이지만, CLI와 runtime contract는 placeholder가 아닙니다.

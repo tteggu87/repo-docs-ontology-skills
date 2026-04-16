@@ -1,33 +1,45 @@
 # DocTology
 
-Portable knowledge/ontology skill pack plus a runnable local reference runtime.
+[English](README.md) | [한국어](README.ko.md)
 
-This repository now has two intentional layers:
+DocTology is a public repository with two intentional layers:
 
 1. `.agent/skills/`
-   - reusable skill modules
-   - portable templates, references, eval fixtures, and helper scripts
-2. root runtime/reference files
-   - a small runnable LLM Wiki / workbench reference surface
-   - useful when you want to test the public-facing flow directly instead of only browsing skill docs
+   - reusable knowledge, ontology, bootstrap, and operator skills
+2. a small runnable reference runtime at repo root
+   - an Obsidian-first LLM Wiki CLI
+   - an optional local workbench UI
+   - runtime contracts under `intelligence/`
 
-So this repo is not just a pure skill dump anymore, and it is also not a checked-in personal vault.
-It is best understood as:
+This repository is intentionally not a checked-in personal vault.
+It is also not just a pure skill dump.
+Think of it as:
 
-`portable skill pack + runnable local reference repo`
+`portable skill pack + runnable local reference runtime`
 
-## Layout
+## Start Here
+
+Choose the path that matches your goal:
+
+- I want reusable skills and templates
+  - start in `.agent/skills/`
+- I want to run the public reference runtime in this repo
+  - follow `Quick Start`
+- I want a clean workspace for my own corpus
+  - skip to `Bootstrap a Clean Workspace`
+
+## What Is In This Repository
 
 ```text
 DocTology/
 ├── .agent/
 │   └── skills/
-│       ├── repo-docs-intelligence-bootstrap/
 │       ├── lightweight-ontology-core/
 │       ├── lg-ontology/
 │       ├── llm-wiki-bootstrap/
 │       ├── llm-wiki-ontology-ingest/
-│       └── ontology-pipeline-operator/
+│       ├── ontology-pipeline-operator/
+│       └── ...
 ├── apps/
 │   └── workbench/
 ├── scripts/
@@ -36,113 +48,230 @@ DocTology/
 ├── wikiconfig.json
 ├── wikiconfig.example.json
 ├── run-workbench.command
-└── run_windows_workbench.bat
+├── run_windows_workbench.bat
+└── install_windows.bat
 ```
 
-## What belongs here
+## Why These Root Runtime Files Stay
 
-### A. Portable skill-pack content
+These are intentionally committed because the reference runtime actually depends on them:
 
-These belong under `.agent/skills/`:
-- skill instructions
-- reusable scripts bundled with a skill
-- references
-- eval fixtures
-- templates owned by a specific skill
-
-### B. Runnable reference-runtime content
-
-These belong at repo root because they are part of the current public runnable reference:
-- `apps/workbench/`
-- `scripts/`
-- `templates/`
-- `intelligence/`
-- `wikiconfig.json`
-- `wikiconfig.example.json`
-- launcher files such as `run-workbench.command` and `run_windows_workbench.bat`
-
-Why they stay:
-- `apps/workbench/` needs `scripts/workbench_api.py`
-- `scripts/llm_wiki.py` uses `templates/source_page_template.md`
+- `apps/workbench/` depends on `scripts/workbench_api.py`
+- `scripts/llm_wiki.py` reads `templates/source_page_template.md`
 - `scripts/incremental_ingest.py` reads `intelligence/manifests/source_families.yaml`
+- `scripts/workbench/server.py` points to `intelligence/manifests/workbench.yaml`
 - `scripts/workbench/repository.py` reads `wikiconfig.json`
-- launcher files depend on the root runtime layout
+- launcher files assume the root runtime layout
 
-## What still does NOT belong here
+In other words, `intelligence/`, `templates/`, `scripts/`, and the launchers are not decorative docs here. They are part of the runnable reference contract.
 
-These are still project-local or generated outputs and should not be committed as part of this public repo baseline:
+## What Is Intentionally Excluded
+
+Do not treat this repo as the place to commit your private runtime data:
+
 - personal `raw/`
 - personal `wiki/`
 - personal `warehouse/`
 - vector stores
-- local caches and scratch artifacts
-- personal Obsidian vault contents
+- caches and scratch artifacts
+- private Obsidian vault contents
 
-## Quick intent guide
+Use the repo root as a public baseline or bootstrap source. Put your real corpus in your own workspace.
 
-- If you want reusable capability only: start in `.agent/skills/`
-- If you want to run the local public reference flow: use the root runtime files
+## Quick Start
 
-## Included skill families
+This section is written for a first-time user who wants to clone the repo and make sure the shipped runtime actually works.
 
-- `repo-docs-intelligence-bootstrap`
-  - structure an existing repo or PRD and establish current truth
-- `lightweight-ontology-core`
-  - extract canonical ontology truth from documents and notes
-- `lg-ontology`
-  - add graph projection and graph-style inspection on top of canonical JSONL truth
+### Prerequisites
+
+You need:
+
+- Python 3
+- Node.js and npm
+- PyYAML for the Python runtime
+
+### 1) Clone the repository
+
+```bash
+git clone https://github.com/tteggu87/DocTology.git
+cd DocTology
+```
+
+### 2) Put the repo in safe first-run mode
+
+The checked-in `wikiconfig.json` may point at a local OpenAI-compatible backend.
+If you just want a safe first run without helper-model calls, replace it with the example file first:
+
+macOS / Linux:
+
+```bash
+cp wikiconfig.example.json wikiconfig.json
+```
+
+Windows PowerShell:
+
+```powershell
+Copy-Item wikiconfig.example.json wikiconfig.json -Force
+```
+
+This keeps helper-model features disabled and lets you test the repo-local flow first.
+
+### 3) Install dependencies
+
+macOS / Linux:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install --upgrade pip
+pip install pyyaml
+npm --prefix apps/workbench ci
+```
+
+Windows:
+
+```bat
+install_windows.bat
+```
+
+### 4) Verify the empty baseline
+
+These commands should work before you add any personal content:
+
+```bash
+python3 scripts/llm_wiki.py status
+python3 scripts/workbench_api.py --route /api/workbench/summary
+```
+
+Expected behavior:
+
+- `status` prints zero counts instead of crashing
+- the workbench summary route returns JSON
+- warnings such as `missing_index` or `missing_log` are normal for a fresh baseline
+
+### 5) Start the workbench
+
+macOS one-command launcher:
+
+```bash
+./run-workbench.command
+```
+
+What it does:
+
+- starts the Python workbench API on `127.0.0.1:8765`
+- starts the Vite frontend on `127.0.0.1:4174`
+- opens the browser automatically
+
+Linux or manual cross-platform start:
+
+Terminal 1:
+
+```bash
+python3 scripts/workbench_api.py --serve --host 127.0.0.1 --port 8765
+```
+
+Terminal 2:
+
+```bash
+npm --prefix apps/workbench run dev -- --host 127.0.0.1 --port 4174
+```
+
+Then open:
+
+```text
+http://127.0.0.1:4174/#home
+```
+
+Windows launcher:
+
+```bat
+run_windows_workbench.bat
+```
+
+## First Content: Create a Minimal Source Page
+
+The repo starts empty on purpose. The fastest way to confirm the CLI flow is to add one small raw source and register it.
+
+macOS / Linux:
+
+```bash
+mkdir -p raw/inbox
+printf 'hello doctology\n' > raw/inbox/hello.txt
+python3 scripts/llm_wiki.py ingest raw/inbox/hello.txt --title "Hello Source"
+python3 scripts/llm_wiki.py reindex
+python3 scripts/llm_wiki.py lint
+python3 scripts/llm_wiki.py status
+```
+
+Windows PowerShell:
+
+```powershell
+New-Item -ItemType Directory -Force raw/inbox | Out-Null
+Set-Content raw/inbox/hello.txt 'hello doctology'
+python scripts/llm_wiki.py ingest raw/inbox/hello.txt --title "Hello Source"
+python scripts/llm_wiki.py reindex
+python scripts/llm_wiki.py lint
+python scripts/llm_wiki.py status
+```
+
+After that you should see:
+
+- `wiki/sources/source-<date>-hello-source.md`
+- `wiki/_meta/index.md`
+- `wiki/_meta/log.md`
+
+This proves the shipped CLI, template path, and wiki metadata flow are wired correctly.
+
+## Bootstrap a Clean Workspace
+
+If you want to build your own real workspace instead of using the repo root directly, use the bundled bootstrap script.
+
+### Plain wiki workspace
+
+```bash
+python3 .agent/skills/llm-wiki-bootstrap/scripts/bootstrap_llm_wiki.py ~/Documents/my-llm-wiki --profile wiki-only
+```
+
+### Wiki plus ontology starter
+
+```bash
+python3 .agent/skills/llm-wiki-bootstrap/scripts/bootstrap_llm_wiki.py ~/Documents/my-llm-wiki --profile wiki-plus-ontology
+```
+
+Use this path when you want:
+
+- your own `raw/`, `wiki/`, and `warehouse/`
+- a clean local workspace for real data
+- the same architecture without turning the public repo itself into your private vault
+
+## Included Skill Families
+
+The exact contents may evolve, but the main shipped families are:
+
 - `llm-wiki-bootstrap`
   - scaffold a new Obsidian-first LLM Wiki workspace
 - `llm-wiki-ontology-ingest`
-  - ingest sources into an existing ontology-backed LLM Wiki
+  - ingest sources into an existing ontology-backed wiki
+- `lightweight-ontology-core`
+  - maintain canonical JSONL ontology truth
+- `lg-ontology`
+  - add derived graph-style inspection on top of canonical truth
 - `ontology-pipeline-operator`
   - operate and refresh an existing ontology/wiki pipeline
 
-## 한국어
+## Recommended Mental Model
 
-### 이 레포를 한 문장으로 말하면
+Use this repo in one of two ways:
 
-DocTology는
-`재사용 가능한 skill pack`과
-`직접 실행해볼 수 있는 로컬 reference runtime`을
-같이 담는 공개 레포입니다.
+1. as a public skill-pack and reference implementation
+2. as a bootstrap source for your own real workspace
 
-### 왜 이렇게 두 층으로 두는가
-
-이번 정리 기준은 다음입니다.
-
-- `.agent/skills/` 아래에는 portable skill을 둔다
-- 하지만 `apps/workbench`, `scripts`, `templates`, `intelligence`, `wikiconfig.json`, 실행 배치/커맨드 파일은 실제 runnable reference를 위해 루트에 둔다
-
-즉:
-- 이 레포는 순수 skill dump만은 아니다
-- 그렇다고 개인용 `raw/wiki/warehouse`가 들어가는 실제 vault repo도 아니다
-- 공개용으로 실행 가능한 기준 surface와 reusable skill을 함께 둔 하이브리드 레포다
-
-### 무엇이 왜 필요한가
-
-- `apps/workbench/`
-  - 실제 public-facing reference UI
-- `scripts/`
-  - workbench backend와 local CLI
-- `templates/`
-  - `scripts/llm_wiki.py`가 직접 사용
-- `intelligence/`
-  - incremental ingest와 workbench contract가 직접 사용
-- `wikiconfig.json`
-  - helper-model 경로가 실제로 읽음
-- `run-workbench.command`, `run_windows_workbench.bat`
-  - 실행 진입점
-
-### 무엇은 여전히 넣지 않는가
-
-- 실제 개인 `raw/`, `wiki/`, `warehouse/`
-- vector store
-- 캐시/스크래치 산출물
-- 개인용 vault 실데이터
+Do not confuse the public baseline with the place where your private corpus should live.
 
 ## Notes
 
-- `.agent` is the canonical portable folder name for skill-pack content in this repo.
-- Root runtime files exist because this repo is also a runnable public reference.
-- If a future fully separated demo/runtime repo is created, the root runtime layer can later be split out cleanly.
+- `.agent` is the canonical portable folder name in this repo.
+- `wikiconfig.example.json` is the safest default for first-time local testing.
+- `intelligence/` is intentionally included because parts of the runtime read it directly.
+- the workbench is optional, but the CLI and runtime contracts are not placeholders.
