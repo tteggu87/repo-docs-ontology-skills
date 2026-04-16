@@ -1,6 +1,0 @@
-[project]
-name = "fixture-cli-vs-wrapper"
-version = "0.1.0"
-
-[project.scripts]
-fixture-cli = "pkg_app.cli:main"

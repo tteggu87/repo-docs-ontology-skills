@@ -26,8 +26,8 @@ Do not use this skill when the user only wants to ingest one source into an exis
 1. Confirm the target directory and whether it is new or already contains files.
 2. If the directory is non-empty, avoid destructive overwrite unless the user explicitly wants replacement.
 3. Choose the profile:
-   - `wiki-only` for a plain Obsidian-first wiki
-   - `wiki-plus-ontology` when the repo should also start with `warehouse/jsonl/` and minimal intelligence manifests
+   - `wiki-plus-ontology` as the default for ontology-ready repos with `warehouse/jsonl/` and minimal intelligence manifests
+   - `wiki-only` only when the user explicitly wants a plain Obsidian-first wiki
 4. Run `scripts/bootstrap_llm_wiki.py <target-dir> --profile <profile>` from this skill.
 5. Inspect the generated tree and verify that these exist:
    - `AGENTS.md`
@@ -51,13 +51,19 @@ Do not use this skill when the user only wants to ingest one source into an exis
 ## Default Command
 
 ```bash
-python3 ~/.agents/skills/llm-wiki-bootstrap/scripts/bootstrap_llm_wiki.py /absolute/path/to/new-project --profile wiki-only
+python3 ~/.agents/skills/llm-wiki-bootstrap/scripts/bootstrap_llm_wiki.py /absolute/path/to/new-project
 ```
 
-For an ontology-ready scaffold:
+For an explicit ontology-ready scaffold:
 
 ```bash
 python3 ~/.agents/skills/llm-wiki-bootstrap/scripts/bootstrap_llm_wiki.py /absolute/path/to/new-project --profile wiki-plus-ontology
+```
+
+For an explicit plain wiki scaffold:
+
+```bash
+python3 ~/.agents/skills/llm-wiki-bootstrap/scripts/bootstrap_llm_wiki.py /absolute/path/to/new-project --profile wiki-only
 ```
 
 Add `--force` only when the user explicitly wants overwrites.

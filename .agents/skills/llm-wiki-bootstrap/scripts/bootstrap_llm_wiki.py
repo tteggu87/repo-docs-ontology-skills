@@ -1501,8 +1501,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--profile",
         choices=PROFILES,
-        default="wiki-only",
-        help="Scaffold profile. Use wiki-plus-ontology for canonical ontology starter files.",
+        default="wiki-plus-ontology",
+        help="Scaffold profile. Defaults to wiki-plus-ontology for canonical ontology starter files.",
     )
     parser.add_argument("--force", action="store_true", help="Allow writing scaffold files into a non-empty directory.")
     return parser
