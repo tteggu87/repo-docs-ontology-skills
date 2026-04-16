@@ -27,305 +27,76 @@ _DocTology 워크벤치 질문 작업공간 — 현재 위키를 확인하고, r
 
 _참고 예시 — 서로 거의 연결되지 않았던 Obsidian 노트들이 점차 구조와 neighborhood를 형성하며 위키처럼 자라나는 모습을 보여줍니다._
 
-## 먼저 어디서 시작하면 되나
+## 어디서 시작할지 먼저 고르세요
 
-목적에 따라 시작점이 다릅니다.
+### 1) LLM Wiki를 먼저 쓰고 싶나요?
+그렇다면 `llm-wiki-bootstrap`으로 시작하면 됩니다.
 
-- 재사용 가능한 스킬과 템플릿이 필요하다
-  - `.agent/skills/`부터 보세요.
-- 지금 이 공개 레포에서 reference runtime을 직접 실행해보고 싶다
-  - 아래 `Quick Start`를 따라가면 됩니다.
-- 내 데이터로 쓸 깨끗한 새 워크스페이스가 필요하다
-  - 아래 `깨끗한 워크스페이스 부트스트랩`으로 가면 됩니다.
+흐름은 단순합니다.
 
-## 이 레포에 들어있는 것
+- 위키 부트스트랩 실행
+- 생성된 `raw/inbox/` 폴더에 문서를 넣기
+- `llm-wiki-ontology-ingest`로 ingest 진행
+- 이후 질문·분석 워크플로로 위키를 계속 키우기
 
-```text
-DocTology/
-├── .agent/
-│   └── skills/
-│       ├── lightweight-ontology-core/
-│       ├── lg-ontology/
-│       ├── llm-wiki-bootstrap/
-│       ├── llm-wiki-ontology-ingest/
-│       ├── ontology-pipeline-operator/
-│       └── ...
-├── apps/
-│   └── workbench/
-├── scripts/
-├── templates/
-├── intelligence/
-├── wikiconfig.json
-├── wikiconfig.example.json
-├── run-workbench.command
-├── run_windows_workbench.bat
-└── install_windows.bat
-```
+즉, 시작점은 항상 **wiki-first** 입니다.
 
-## Quick Start
+### 2) 생성된 위키에서 ontology 관계를 더 다듬고 싶나요?
+그렇다면 `lightweight-ontology-core`를 사용하세요.
 
-이 섹션은 “처음 clone한 사람이 막히지 않고 최소한 한 번은 끝까지 따라갈 수 있게” 쓰는 기준으로 정리했습니다.
+이 단계에서는:
 
-### 준비물
+- 엔티티 / claim / evidence / relation 같은 canonical ontology layer를 정리하고
+- 위키 아래의 JSONL truth를 더 정교하게 만들며
+- 필요하면 이후 `lg-ontology`로 graph / neighborhood 확장까지 이어갈 수 있습니다.
 
-필요한 것은 다음입니다.
+즉, 위키를 만든 뒤 관계를 재정의하고 구조를 더 강하게 만들고 싶을 때 들어가는 단계입니다.
 
-- Python 3
-- Node.js와 npm
-- Python용 PyYAML
+### 3) 프로젝트 전용 기억창고를 만들고 싶나요?
+그렇다면 `repo-docs-intelligence-bootstrap`을 사용하세요.
 
-### 1) 레포 clone
+이 경로는 개인 위키를 키우는 쪽보다:
 
-```bash
-git clone https://github.com/tteggu87/DocTology.git
-cd DocTology
-```
+- 특정 코드베이스나 프로젝트의 현재 상태를 기억시키고
+- 에이전트가 읽을 project memory를 만들고
+- repo-docs intelligence 스타일의 AGENTS / intelligence contract를 세우는 데 더 맞습니다.
 
-### 2) 첫 실행은 안전 모드로 시작
+즉, 이것은 **위키 부트스트랩의 대체 선택지**이지, 그 위에 겹쳐서 또 실행하는 단계가 아닙니다.
 
-체크인된 `wikiconfig.json`은 로컬 OpenAI-compatible backend를 가정할 수 있습니다.
-처음에는 helper-model 호출 없이 repo-local 흐름만 확인하는 편이 안전합니다.
-그래서 먼저 example 설정으로 덮어쓰는 것을 권장합니다.
+## 주의
 
-macOS / Linux:
+**부트스트랩은 하나만 사용하세요.**
 
-```bash
-cp wikiconfig.example.json wikiconfig.json
-```
+여러 부트스트랩을 연속으로 실행하면 `AGENTS.md`가 덮어쓰기되어 이전 설정과 운영 규칙이 무효가 될 수 있습니다.
 
-Windows PowerShell:
+처음에 먼저 선택해야 합니다.
 
-```powershell
-Copy-Item wikiconfig.example.json wikiconfig.json -Force
-```
+- LLM Wiki를 키우고 싶은가?
+- 아니면 repo용 intelligence / project memory를 만들고 싶은가?
 
-이렇게 하면 helper-model 기능이 비활성화된 상태에서 먼저 기본 런타임을 검증할 수 있습니다.
+둘 다 중요하지만, 시작 부트스트랩은 하나만 고르는 것이 맞습니다.
 
-### 3) 의존성 설치
-
-macOS / Linux:
-
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install --upgrade pip
-pip install pyyaml
-npm --prefix apps/workbench ci
-```
-
-Windows:
-
-```bat
-install_windows.bat
-```
-
-### 4) 빈 baseline이 정상 동작하는지 확인
-
-개인 데이터가 하나도 없는 상태에서도 아래 명령은 돌아가야 합니다.
-
-```bash
-python3 scripts/llm_wiki.py status
-python3 scripts/workbench_api.py --route /api/workbench/summary
-```
-
-정상이라면:
-
-- `status`가 에러 없이 0건 상태를 보여주고
-- workbench summary route가 JSON을 반환하며
-- `missing_index`, `missing_log` 같은 경고는 fresh baseline 기준으로 자연스럽습니다.
-
-### 5) workbench 실행
-
-macOS 원클릭 launcher:
-
-```bash
-./run-workbench.command
-```
-
-이 스크립트는 다음을 자동으로 합니다.
-
-- Python workbench API를 `127.0.0.1:8765`에서 시작
-- Vite frontend를 `127.0.0.1:4174`에서 시작
-- 브라우저 자동 열기
-
-Linux 또는 수동 실행 방식:
-
-터미널 1:
-
-```bash
-python3 scripts/workbench_api.py --serve --host 127.0.0.1 --port 8765
-```
-
-터미널 2:
-
-```bash
-npm --prefix apps/workbench run dev -- --host 127.0.0.1 --port 4174
-```
-
-브라우저에서 열 주소:
-
-```text
-http://127.0.0.1:4174/#home
-```
-
-Windows 실행:
-
-```bat
-run_windows_workbench.bat
-```
-
-## 정상일 때 무엇이 보여야 하나
-
-workbench가 올바른 repo에 붙어 있다면, 홈 화면과 summary API가 다른 로컬 워크스페이스가 아니라 이 저장소를 가리켜야 합니다.
-
-빠른 확인:
-
-```bash
-python3 scripts/workbench_api.py --route /api/workbench/summary
-```
-
-정상이라면 JSON에 대략 다음이 보여야 합니다.
-
-- `"root": "/.../DocTology"`
-- fresh clone 기준 낮거나 0에 가까운 count
-- 첫 콘텐츠를 넣기 전 `missing_index`, `missing_log` 같은 경고
-
-## 문제 해결
-
-### launcher가 다른 워크스페이스를 여는 것 같다
-
-이미 다른 workbench가 `4174` 또는 `8765` 포트를 쓰고 있으면, 브라우저 탭이 현재 repo가 아닌 다른 workspace를 보여줄 수 있습니다.
-
-- macOS launcher는 이제 실행 중 listener가 현재 repo 소속인지 확인하고, 다른 repo면 다시 시작합니다.
-- 그래도 이상하면 아래로 직접 확인하세요.
-
-```bash
-python3 scripts/workbench_api.py --route /api/workbench/summary
-```
-
-여기서 `root` 값이 `DocTology`를 가리켜야 합니다.
-
-### `ModuleNotFoundError: No module named 'yaml'`
-
-PyYAML을 설치하면 됩니다.
-
-```bash
-pip install pyyaml
-```
-
-### frontend가 뜨지 않는다
-
-프론트 의존성을 다시 설치하세요.
-
-```bash
-npm --prefix apps/workbench ci
-```
-
-### 첫 실행에서 helper-model 호출을 원하지 않는다
-
-example 설정으로 먼저 덮어쓰세요.
-
-```bash
-cp wikiconfig.example.json wikiconfig.json
-```
-
-이렇게 하면 helper-model 기능이 꺼진 상태에서 repo-local baseline부터 검증할 수 있습니다.
-
-### clone했는데 너무 비어 보인다
-
-정상입니다.
-이 공개 레포는 개인 코퍼스를 넣어둔 저장소가 아니라, baseline + reference runtime입니다.
-아래 예시처럼 `raw/inbox/`에 테스트 source 하나를 넣고 흐름을 먼저 확인하면 됩니다.
-
-## 첫 콘텐츠 넣어보기
-
-이 레포는 일부러 빈 상태에서 시작합니다.
-그래서 가장 빠른 검증은 작은 raw source 하나를 넣고 source page가 생기는지 보는 것입니다.
-
-macOS / Linux:
-
-```bash
-mkdir -p raw/inbox
-printf 'hello doctology\n' > raw/inbox/hello.txt
-python3 scripts/llm_wiki.py ingest raw/inbox/hello.txt --title "Hello Source"
-python3 scripts/llm_wiki.py reindex
-python3 scripts/llm_wiki.py lint
-python3 scripts/llm_wiki.py status
-```
-
-Windows PowerShell:
-
-```powershell
-New-Item -ItemType Directory -Force raw/inbox | Out-Null
-Set-Content raw/inbox/hello.txt 'hello doctology'
-python scripts/llm_wiki.py ingest raw/inbox/hello.txt --title "Hello Source"
-python scripts/llm_wiki.py reindex
-python scripts/llm_wiki.py lint
-python scripts/llm_wiki.py status
-```
-
-정상이라면 다음 파일들이 생깁니다.
-
-- `wiki/sources/source-<date>-hello-source.md`
-- `wiki/_meta/index.md`
-- `wiki/_meta/log.md`
-
-이 단계까지 되면 최소한 다음이 모두 연결된 것입니다.
-
-- CLI
-- template 경로
-- wiki 메타 갱신 흐름
-- 기본 reference runtime
-
-## 깨끗한 워크스페이스 부트스트랩
-
-레포 루트를 바로 쓰는 대신, 내 데이터용 workspace를 따로 만들고 싶다면 번들된 bootstrap 스크립트를 쓰면 됩니다.
-
-### plain wiki 워크스페이스
-
-```bash
-python3 .agent/skills/llm-wiki-bootstrap/scripts/bootstrap_llm_wiki.py ~/Documents/my-llm-wiki --profile wiki-only
-```
-
-### wiki + ontology 스타터
-
-```bash
-python3 .agent/skills/llm-wiki-bootstrap/scripts/bootstrap_llm_wiki.py ~/Documents/my-llm-wiki --profile wiki-plus-ontology
-```
-
-이 경로는 다음에 적합합니다.
-
-- 내 전용 `raw/`, `wiki/`, `warehouse/`를 따로 두고 싶을 때
-- 실제 데이터가 들어가는 로컬 워크스페이스가 필요할 때
-- 공개 레포 자체를 개인 vault로 쓰고 싶지 않을 때
-
-## 포함된 대표 skill 계열
-
-대표적으로 아래 계열이 같이 들어 있습니다.
+## 핵심 skill 경로
 
 - `llm-wiki-bootstrap`
-  - 새 Obsidian-first LLM Wiki 워크스페이스 생성
+  - Obsidian-first LLM Wiki 시작
 - `llm-wiki-ontology-ingest`
-  - 기존 ontology-backed wiki에 source ingest
+  - inbox 문서를 ontology-backed wiki로 ingest
 - `lightweight-ontology-core`
-  - canonical JSONL ontology truth 관리
+  - 위키 아래의 canonical ontology truth 정리
 - `lg-ontology`
-  - canonical truth 위에 파생 graph-style inspection 추가
-- `ontology-pipeline-operator`
-  - 기존 ontology/wiki 파이프라인 운영과 refresh
+  - ontology graph / neighborhood 확장
+- `repo-docs-intelligence-bootstrap`
+  - 프로젝트 전용 기억창고 / repo intelligence bootstrap
 
-## 이 레포를 이해하는 가장 좋은 방식
+## 지금 체크인된 reference runtime에 대해
 
-이 레포는 두 방식 중 하나로 쓰면 됩니다.
+이 저장소에 포함된 workbench는 현재 자유 대화형 LLM 앱이라기보다:
 
-1. 공개용 skill-pack + reference implementation
-2. 내 워크스페이스를 만들기 위한 bootstrap source
+- 생성된 위키를 확인하고
+- repo-local preview를 검토하고
+- bounded analysis page를 저장하는
 
-즉 공개 기준선과 개인 실데이터 저장소를 혼동하지 않는 것이 가장 중요합니다.
+읽기·검토용 reference surface에 가깝습니다.
 
-## 메모
-
-- 이 레포에서 portable 폴더명 기준은 `.agent`입니다.
-- 첫 로컬 테스트에는 `wikiconfig.example.json` 쪽이 더 안전한 기본값입니다.
-- `intelligence/`는 실제 런타임 일부가 직접 읽기 때문에 의도적으로 포함되어 있습니다.
-- workbench는 선택형이지만, CLI와 runtime contract는 placeholder가 아닙니다.
+즉, README의 핵심은 런타임 사용법보다 **어떤 부트스트랩을 고르고 어떤 기억 계층을 만들지**를 이해하는 데 있습니다.

@@ -27,298 +27,76 @@ Current workbench reality: this is primarily a read-and-review surface for the g
 
 _Reference example — a view of knowledge growing into a wiki as previously unlinked Obsidian notes begin to form visible structure and neighborhoods._
 
-## Start Here
+## Choose your starting path first
 
-Choose the path that matches your goal:
+### 1) Do you want to start with an LLM Wiki?
+Then start with `llm-wiki-bootstrap`.
 
-- I want reusable skills and templates
-  - start in `.agent/skills/`
-- I want to run the public reference runtime in this repo
-  - follow `Quick Start`
-- I want a clean workspace for my own corpus
-  - skip to `Bootstrap a Clean Workspace`
+The flow is simple:
 
-## What Is In This Repository
+- run the wiki bootstrap
+- put documents into the generated `raw/inbox/`
+- run `llm-wiki-ontology-ingest`
+- keep growing the wiki through question and analysis workflows
 
-```text
-DocTology/
-├── .agent/
-│   └── skills/
-│       ├── lightweight-ontology-core/
-│       ├── lg-ontology/
-│       ├── llm-wiki-bootstrap/
-│       ├── llm-wiki-ontology-ingest/
-│       ├── ontology-pipeline-operator/
-│       └── ...
-├── apps/
-│   └── workbench/
-├── scripts/
-├── templates/
-├── intelligence/
-├── wikiconfig.json
-├── wikiconfig.example.json
-├── run-workbench.command
-├── run_windows_workbench.bat
-└── install_windows.bat
-```
+In other words, the first step is always **wiki-first**.
 
-## Quick Start
+### 2) Do you want to redefine ontology relationships inside the generated wiki?
+Then use `lightweight-ontology-core`.
 
-This section is written for a first-time user who wants to clone the repo and make sure the shipped runtime actually works.
+At this stage you are:
 
-### Prerequisites
+- refining the canonical ontology layer under the wiki
+- tightening entities, claims, evidence, and relations in JSONL truth
+- and, when needed, extending into graph / neighborhood workflows later with `lg-ontology`
 
-You need:
+This is the stage for strengthening structure after the wiki already exists.
 
-- Python 3
-- Node.js and npm
-- PyYAML for the Python runtime
+### 3) Do you want a project-specific memory store instead?
+Then use `repo-docs-intelligence-bootstrap`.
 
-### 1) Clone the repository
+This path is better for:
 
-```bash
-git clone https://github.com/tteggu87/DocTology.git
-cd DocTology
-```
+- capturing the current state of a specific codebase or project
+- building agent-readable project memory
+- establishing AGENTS and intelligence contracts in a repo-docs intelligence style
 
-### 2) Put the repo in safe first-run mode
+In other words, this is an **alternative starting bootstrap**, not something you stack on top of the wiki bootstrap.
 
-The checked-in `wikiconfig.json` may point at a local OpenAI-compatible backend.
-If you just want a safe first run without helper-model calls, replace it with the example file first:
+## Caution
 
-macOS / Linux:
+**Use only one bootstrap to start.**
 
-```bash
-cp wikiconfig.example.json wikiconfig.json
-```
+If you run multiple bootstraps in sequence, `AGENTS.md` can be overwritten and the earlier operating rules may be invalidated.
 
-Windows PowerShell:
+Choose first:
 
-```powershell
-Copy-Item wikiconfig.example.json wikiconfig.json -Force
-```
+- do you want to grow an LLM Wiki?
+- or do you want repo-focused intelligence / project memory?
 
-This keeps helper-model features disabled and lets you test the repo-local flow first.
+Both matter, but the initial bootstrap should be only one.
 
-### 3) Install dependencies
-
-macOS / Linux:
-
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install --upgrade pip
-pip install pyyaml
-npm --prefix apps/workbench ci
-```
-
-Windows:
-
-```bat
-install_windows.bat
-```
-
-### 4) Verify the empty baseline
-
-These commands should work before you add any personal content:
-
-```bash
-python3 scripts/llm_wiki.py status
-python3 scripts/workbench_api.py --route /api/workbench/summary
-```
-
-Expected behavior:
-
-- `status` prints zero counts instead of crashing
-- the workbench summary route returns JSON
-- warnings such as `missing_index` or `missing_log` are normal for a fresh baseline
-
-### 5) Start the workbench
-
-macOS one-command launcher:
-
-```bash
-./run-workbench.command
-```
-
-What it does:
-
-- starts the Python workbench API on `127.0.0.1:8765`
-- starts the Vite frontend on `127.0.0.1:4174`
-- opens the browser automatically
-
-Linux or manual cross-platform start:
-
-Terminal 1:
-
-```bash
-python3 scripts/workbench_api.py --serve --host 127.0.0.1 --port 8765
-```
-
-Terminal 2:
-
-```bash
-npm --prefix apps/workbench run dev -- --host 127.0.0.1 --port 4174
-```
-
-Then open:
-
-```text
-http://127.0.0.1:4174/#home
-```
-
-Windows launcher:
-
-```bat
-run_windows_workbench.bat
-```
-
-## What You Should See
-
-When the workbench is connected to the correct repo, the home screen and summary API should reflect this repository, not some other local workspace.
-
-Quick check:
-
-```bash
-python3 scripts/workbench_api.py --route /api/workbench/summary
-```
-
-You should see JSON with:
-
-- `"root": "/.../DocTology"`
-- low or zero counts on a fresh clone
-- warnings such as `missing_index` and `missing_log` before first content is added
-
-## Troubleshooting
-
-### The launcher opens the wrong workspace
-
-If you already have another workbench running on ports `4174` or `8765`, a browser tab may appear to show the wrong repo.
-
-- the macOS launcher now checks whether the running listener belongs to this repo and restarts mismatched listeners
-- if you still see unexpected data, verify the summary route:
-
-```bash
-python3 scripts/workbench_api.py --route /api/workbench/summary
-```
-
-The `root` value should point at `DocTology`.
-
-### `ModuleNotFoundError: No module named 'yaml'`
-
-Install PyYAML:
-
-```bash
-pip install pyyaml
-```
-
-### Workbench frontend does not start
-
-Install frontend dependencies again:
-
-```bash
-npm --prefix apps/workbench ci
-```
-
-### I do not want helper-model calls on first run
-
-Use the example config first:
-
-```bash
-cp wikiconfig.example.json wikiconfig.json
-```
-
-That keeps helper-model features disabled and lets you validate the repo-local baseline first.
-
-### The repo feels empty after clone
-
-That is expected.
-This public repo is a baseline and reference runtime, not a checked-in personal corpus.
-Add one test source under `raw/inbox/` and run the CLI flow below.
-
-## First Content: Create a Minimal Source Page
-
-The repo starts empty on purpose. The fastest way to confirm the CLI flow is to add one small raw source and register it.
-
-macOS / Linux:
-
-```bash
-mkdir -p raw/inbox
-printf 'hello doctology\n' > raw/inbox/hello.txt
-python3 scripts/llm_wiki.py ingest raw/inbox/hello.txt --title "Hello Source"
-python3 scripts/llm_wiki.py reindex
-python3 scripts/llm_wiki.py lint
-python3 scripts/llm_wiki.py status
-```
-
-Windows PowerShell:
-
-```powershell
-New-Item -ItemType Directory -Force raw/inbox | Out-Null
-Set-Content raw/inbox/hello.txt 'hello doctology'
-python scripts/llm_wiki.py ingest raw/inbox/hello.txt --title "Hello Source"
-python scripts/llm_wiki.py reindex
-python scripts/llm_wiki.py lint
-python scripts/llm_wiki.py status
-```
-
-After that you should see:
-
-- `wiki/sources/source-<date>-hello-source.md`
-- `wiki/_meta/index.md`
-- `wiki/_meta/log.md`
-
-This proves the shipped CLI, template path, and wiki metadata flow are wired correctly.
-
-## Bootstrap a Clean Workspace
-
-If you want to build your own real workspace instead of using the repo root directly, use the bundled bootstrap script.
-
-### Plain wiki workspace
-
-```bash
-python3 .agent/skills/llm-wiki-bootstrap/scripts/bootstrap_llm_wiki.py ~/Documents/my-llm-wiki --profile wiki-only
-```
-
-### Wiki plus ontology starter
-
-```bash
-python3 .agent/skills/llm-wiki-bootstrap/scripts/bootstrap_llm_wiki.py ~/Documents/my-llm-wiki --profile wiki-plus-ontology
-```
-
-Use this path when you want:
-
-- your own `raw/`, `wiki/`, and `warehouse/`
-- a clean local workspace for real data
-- the same architecture without turning the public repo itself into your private vault
-
-## Included Skill Families
-
-The exact contents may evolve, but the main shipped families are:
+## Core skill paths
 
 - `llm-wiki-bootstrap`
-  - scaffold a new Obsidian-first LLM Wiki workspace
+  - start an Obsidian-first LLM Wiki
 - `llm-wiki-ontology-ingest`
-  - ingest sources into an existing ontology-backed wiki
+  - ingest inbox documents into an ontology-backed wiki
 - `lightweight-ontology-core`
-  - maintain canonical JSONL ontology truth
+  - refine canonical ontology truth beneath the wiki
 - `lg-ontology`
-  - add derived graph-style inspection on top of canonical truth
-- `ontology-pipeline-operator`
-  - operate and refresh an existing ontology/wiki pipeline
+  - extend into ontology graph / neighborhood exploration
+- `repo-docs-intelligence-bootstrap`
+  - bootstrap project-specific memory / repo intelligence
 
-## Recommended Mental Model
+## About the checked-in reference runtime
 
-Use this repo in one of two ways:
+The workbench included in this repository is currently closer to a read-and-review surface than a freeform conversational LLM app.
 
-1. as a public skill-pack and reference implementation
-2. as a bootstrap source for your own real workspace
+Its role today is mainly to:
 
-Do not confuse the public baseline with the place where your private corpus should live.
+- inspect the generated wiki
+- review repo-local previews
+- save bounded analysis pages
 
-## Notes
-
-- `.agent` is the canonical portable folder name in this repo.
-- `wikiconfig.example.json` is the safest default for first-time local testing.
-- `intelligence/` is intentionally included because parts of the runtime read it directly.
-- the workbench is optional, but the CLI and runtime contracts are not placeholders.
+So the main point of this README is not detailed runtime setup. It is understanding **which bootstrap to choose and which memory layer you want to build first**.
