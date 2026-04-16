@@ -18,7 +18,9 @@ In one repository, DocTology gives you:
 
 ![DocTology workbench question workspace](assets/readme/doctology-workbench-question-workspace.jpg)
 
-_DocTology workbench question workspace — ask the wiki, inspect evidence, and save durable answers._
+_DocTology workbench question workspace — review the current wiki, inspect repo-local query previews, and save bounded analysis pages._
+
+Current workbench reality: this is primarily a read-and-review surface for the generated wiki and related previews. It is not yet a freeform, actively conversational LLM chat workspace.
 
 ## Start Here
 
