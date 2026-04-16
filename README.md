@@ -17,6 +17,13 @@ DocTology는 처음부터 거대한 graph platform을 강요하지 않습니다.
 
 `LLM Wiki scaffold -> ontology-backed ingest -> optional graph projection -> optional operator workflow`
 
+## Workbench launchers
+
+- macOS: `Run-DocTology-Workbench.command`
+- Windows: `Run-DocTology-Workbench.bat`
+
+Both launchers start the local Vite workbench at `http://127.0.0.1:4173`.
+
 ## At a glance
 
 - Start with `llm-wiki-bootstrap` when you want a fresh Obsidian-first LLM Wiki repository.
