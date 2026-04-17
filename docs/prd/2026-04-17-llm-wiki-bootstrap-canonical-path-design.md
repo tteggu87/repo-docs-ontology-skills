@@ -40,7 +40,7 @@ Use the existing ontology-ready bootstrap layout as the canonical file contract.
 ### Rebuildable state surfaces
 
 - `state/wiki_index.sqlite` = operational SQLite index
-- `state/analytics.duckdb` = analytical DuckDB mirror
+- `state/wiki_analytics.duckdb` = local wiki analytics DuckDB mirror
 
 ## Why this choice
 
@@ -74,7 +74,7 @@ This preserves the most coherent existing direction:
     verify_three_layer_drift.py
   state/
     wiki_index.sqlite
-    analytics.duckdb
+    wiki_analytics.duckdb
   templates/
     source_page_template.md
     llm-wiki-three-layer/
@@ -142,7 +142,7 @@ Reason:
 Decision:
 
 - SQLite path: `state/wiki_index.sqlite`
-- DuckDB path: `state/analytics.duckdb`
+- Bootstrap DuckDB path: `state/wiki_analytics.duckdb`
 
 ## Ownership matrix
 
@@ -178,7 +178,7 @@ DuckDB should read from:
 
 DuckDB should write only:
 
-- `state/analytics.duckdb`
+- `state/wiki_analytics.duckdb`
 
 DuckDB must not become:
 
@@ -193,7 +193,7 @@ Drift verification should compare:
 1. `wiki/**/*.md`
 2. `warehouse/jsonl/...`
 3. `state/wiki_index.sqlite`
-4. `state/analytics.duckdb`
+4. `state/wiki_analytics.duckdb`
 
 It should not expect:
 

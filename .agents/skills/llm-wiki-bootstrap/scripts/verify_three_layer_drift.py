@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify basic drift signals across file, SQLite, and DuckDB layers."""
+"""Verify basic drift signals across file, SQLite, and bootstrap wiki analytics DuckDB layers."""
 
 from __future__ import annotations
 
@@ -26,7 +26,7 @@ def main() -> int:
     wiki_dir = repo_root / "wiki"
     warehouse_dir = repo_root / "warehouse" / "jsonl"
     sqlite_path = repo_root / "state" / "wiki_index.sqlite"
-    duckdb_path = repo_root / "state" / "analytics.duckdb"
+    duckdb_path = repo_root / "state" / "wiki_analytics.duckdb"
 
     page_count = 0
     if wiki_dir.exists():
@@ -46,7 +46,7 @@ def main() -> int:
     if page_count and not sqlite_exists:
         issues.append("pages_exist_but_sqlite_missing")
     if jsonl_rows and not duckdb_exists:
-        issues.append("canonical_jsonl_exists_but_duckdb_missing")
+        issues.append("canonical_jsonl_exists_but_wiki_analytics_duckdb_missing")
 
     if sqlite_exists:
         connection = sqlite3.connect(sqlite_path)
@@ -67,7 +67,7 @@ def main() -> int:
                     "SELECT COUNT(*) FROM information_schema.tables WHERE table_name='sources'"
                 ).fetchone()
                 if not rows or rows[0] == 0:
-                    issues.append("duckdb_sources_table_missing")
+                    issues.append("wiki_analytics_duckdb_sources_table_missing")
             finally:
                 connection.close()
 

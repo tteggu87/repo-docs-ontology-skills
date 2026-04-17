@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Initialize and refresh a lightweight DuckDB analytical warehouse from canonical exports."""
+"""Initialize and refresh a lightweight DuckDB wiki analytics mirror from canonical exports."""
 
 from __future__ import annotations
 
@@ -35,7 +35,7 @@ TABLE_COLUMNS = {
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Refresh analytics.duckdb from canonical JSONL exports.")
+    parser = argparse.ArgumentParser(description="Refresh wiki_analytics.duckdb from canonical JSONL exports.")
     parser.add_argument("--repo-root", required=True, help="Target wiki repository root.")
     return parser.parse_args()
 
@@ -139,7 +139,7 @@ def main() -> int:
 
     args = parse_args()
     repo_root = Path(args.repo_root).resolve()
-    db_path = repo_root / "state" / "analytics.duckdb"
+    db_path = repo_root / "state" / "wiki_analytics.duckdb"
     db_path.parent.mkdir(parents=True, exist_ok=True)
 
     connection = duckdb.connect(str(db_path))
@@ -175,7 +175,7 @@ def main() -> int:
     finally:
         connection.close()
 
-    print(f"Refreshed DuckDB analytical warehouse: {db_path}")
+    print(f"Refreshed DuckDB wiki analytics mirror: {db_path}")
     return 0
 
 

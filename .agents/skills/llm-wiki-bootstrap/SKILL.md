@@ -9,6 +9,8 @@ description: Use this skill when the user wants to scaffold a new Obsidian-first
 
 Create a fresh markdown-first LLM Wiki workspace that is ready for Codex-style maintenance. The skill scaffolds the folder structure, `AGENTS.md`, starter `README.md`, local CLI, template files, and meta pages so the next agent can operate the vault consistently. It now supports both a plain wiki scaffold and an ontology-ready scaffold.
 
+This is the recommended **start here** skill for DocTology-style wiki-first repos.
+
 The generated repo-local `AGENTS.md` is the primary contract for future agents.
 Do not introduce a competing top-level wiki schema file as a peer to `AGENTS.md`.
 

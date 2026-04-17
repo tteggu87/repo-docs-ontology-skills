@@ -51,6 +51,10 @@ class LlmWikiBootstrapThreeLayerTests(unittest.TestCase):
         for path in expected_paths:
             self.assertTrue(path.exists(), f"Missing expected path: {path}")
 
+        readme = (repo / "README.md").read_text(encoding="utf-8")
+        self.assertIn("Rebuild SQLite Or Refresh Wiki Analytics DuckDB", readme)
+        self.assertNotIn("Rebuild SQLite Or Refresh DuckDB", readme)
+
     def test_sqlite_rebuild_parses_frontmatter_tags_sources_and_body_links_correctly(self) -> None:
         repo = self.make_repo()
 
@@ -111,6 +115,7 @@ class LlmWikiBootstrapThreeLayerTests(unittest.TestCase):
         run_py(duckdb_script, "--repo-root", str(repo))
         result = run_py(drift_script, "--repo-root", str(repo))
 
+        self.assertTrue((repo / "state" / "wiki_analytics.duckdb").exists())
         self.assertIn("DRIFT_OK", result.stdout)
         self.assertIn("sqlite: present", result.stdout)
         self.assertIn("duckdb: present", result.stdout)

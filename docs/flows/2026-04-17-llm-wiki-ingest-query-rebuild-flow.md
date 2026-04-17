@@ -119,7 +119,7 @@ Input:
 
 Writes:
 
-- `state/analytics.duckdb`
+- `state/wiki_analytics.duckdb`
 
 Derived outputs:
 
@@ -188,7 +188,7 @@ Use when:
 
 Reads:
 
-- `state/analytics.duckdb`
+- `state/wiki_analytics.duckdb`
 
 Rules:
 
@@ -229,7 +229,7 @@ Rebuild source:
 
 Output:
 
-- fully regenerated `state/analytics.duckdb`
+- fully regenerated `state/wiki_analytics.duckdb`
 
 ## 4. Failure handling
 

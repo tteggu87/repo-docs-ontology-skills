@@ -70,6 +70,22 @@ That default path is the main product promise:
 - verifiable truth second
 - graph/operator complexity only when it becomes genuinely useful
 
+## Which path am I on?
+
+Use this quick map:
+
+- **Start here:** `llm-wiki-bootstrap`
+- **Daily path:** `llm-wiki-ontology-ingest`
+- **Advanced canonical engine:** `lightweight-ontology-core`
+- **Optional graph extension:** `lg-ontology`
+
+Most users should begin with:
+
+1. project-local `llm-wiki-bootstrap`
+2. repeated `llm-wiki-ontology-ingest`
+
+Treat the other ontology skills as later-stage refinement or optional extension layers.
+
 ## Choose your starting path first
 
 ### 1) Do you want to start with an LLM Wiki?
@@ -85,10 +101,13 @@ The flow is simple:
 Current ontology-profile bootstrap behavior now also ships lightweight local rebuild helpers and state paths for longer-lived repos:
 
 - `state/wiki_index.sqlite`
-- `state/analytics.duckdb`
+- `state/wiki_analytics.duckdb`
 - `scripts/reindex_sqlite_operational.py`
 - `scripts/refresh_duckdb_analytics.py`
 - `scripts/verify_three_layer_drift.py`
+
+This bootstrap-layer DuckDB is a local wiki analytics mirror.
+It is separate from the ontology-core / lg ontology mirror contract.
 
 In other words, the first step is always **wiki-first**.
 

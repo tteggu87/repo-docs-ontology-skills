@@ -8,6 +8,7 @@ description: Use this skill when an existing Obsidian-first LLM Wiki repository 
 ## Overview
 
 This is the user-facing ingest skill for an ontology-backed LLM Wiki.
+Treat it as the recommended **daily path** after the initial bootstrap.
 
 Use it when the repository already has:
 

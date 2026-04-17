@@ -8,6 +8,8 @@ description: Use when documents, notes, research memos, story canon, or reposito
 Use this skill to build and maintain a lightweight claim-and-evidence ontology layer on top of documents.
 The purpose is to improve reasoning quality without turning authoring into a heavyweight graph engineering project.
 
+Treat this as an **advanced canonical engine**, not as the default beginner-facing starting point.
+
 This skill owns canonical ontology generation.
 It does not own repo-specific wiki export or markdown page conventions.
 Those belong to downstream adapters.

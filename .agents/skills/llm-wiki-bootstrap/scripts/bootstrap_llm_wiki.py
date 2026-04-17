@@ -732,7 +732,7 @@ If you install `llm-wiki-ontology-ingest` later, use that skill after source reg
 - refresh affected wiki pages
 - keep provenance-aware structured truth aligned with human-facing synthesis
 
-### 6. Rebuild SQLite Or Refresh DuckDB
+### 6. Rebuild SQLite Or Refresh Wiki Analytics DuckDB
 
 Run:
 
@@ -744,6 +744,7 @@ python scripts/verify_three_layer_drift.py --repo-root .
 
 These helpers are rebuildable support tools.
 They do not replace canonical file truth under `raw/`, `warehouse/jsonl/`, or `wiki/`.
+The bootstrap-layer DuckDB is a local wiki analytics mirror, not the ontology-core mirror contract.
 
 ### 7. Ask Me To Maintain The Wiki
 

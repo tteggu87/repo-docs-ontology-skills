@@ -8,6 +8,8 @@ description: Extend lightweight-ontology-core into a lightweight graph workflow 
 Use this skill to keep `lightweight-ontology-core` as the source of truth while adding a lightweight graph projection layer.
 The goal is to improve graph-style inspection, path reasoning, and comparison testing without turning the canonical ontology into a graph-database-first system.
 
+Treat this as an **optional graph extension**, not as a default starting point.
+
 ## Operating Model
 
 Keep these layers separate:

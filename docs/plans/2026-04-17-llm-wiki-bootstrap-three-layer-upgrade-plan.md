@@ -81,7 +81,7 @@ Implement:
 
 - make `refresh_duckdb_analytics.py` read from `warehouse/jsonl/...`
 - normalize table loading against canonical JSONL datasets
-- store output at `state/analytics.duckdb`
+- store output at `state/wiki_analytics.duckdb`
 
 Acceptance criteria:
 
@@ -93,7 +93,7 @@ Implement:
 
 - make `verify_three_layer_drift.py` inspect the canonical path set
 - verify `state/wiki_index.sqlite`
-- verify `state/analytics.duckdb`
+- verify `state/wiki_analytics.duckdb`
 - compare against real wiki and warehouse roots
 
 Acceptance criteria:
@@ -168,7 +168,7 @@ Implement:
 
 - create or seed minimal canonical JSONL fixture files
 - run DuckDB refresh
-- verify `state/analytics.duckdb` exists and contains expected tables
+- verify `state/wiki_analytics.duckdb` exists and contains expected tables
 
 Acceptance criteria:
 

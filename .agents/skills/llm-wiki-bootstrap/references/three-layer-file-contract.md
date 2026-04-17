@@ -25,7 +25,7 @@ This reference defines the preferred file-layer layout for a wiki-first, file-ca
     verify_three_layer_drift.py
   state/
     wiki_index.sqlite
-    analytics.duckdb
+    wiki_analytics.duckdb
   templates/
     source_page_template.md
     llm-wiki-three-layer/
@@ -60,14 +60,14 @@ This reference defines the preferred file-layer layout for a wiki-first, file-ca
 - `wiki/` = maintained human-facing synthesis
 - `intelligence/` = repo-local vocabulary, dataset roles, and action contracts
 - `warehouse/jsonl/` = canonical structured machine-truth
-- `state/` = rebuildable operational and analytical databases only
+- `state/` = rebuildable operational and local wiki analytics databases only
 - `templates/llm-wiki-three-layer/` = lightweight schema support for local rebuild helpers
 
 ## Ownership summary
 
 - files own canonical truth
 - SQLite owns operational index state only
-- DuckDB owns analytical mirror state only
+- Bootstrap DuckDB owns local wiki analytics mirror state only
 
 ## Guardrails
 
