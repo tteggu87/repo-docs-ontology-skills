@@ -125,6 +125,7 @@ Current preferred interpretation:
 This means:
 
 - bootstrap-layer DuckDB is not the canonical ontology mirror
+- bootstrap-layer DuckDB should stay focused on source registry, page coverage snapshots, and audit-style inspection
 - ontology-core remains the owner of ontology mirror semantics
 - any future unification must be explicit and repo-wide
 

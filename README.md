@@ -108,6 +108,7 @@ Current ontology-profile bootstrap behavior now also ships lightweight local reb
 
 This bootstrap-layer DuckDB is a local wiki analytics mirror.
 It is separate from the ontology-core / lg ontology mirror contract.
+Its intended scope is lightweight wiki-facing analytics such as source registry, page coverage, and audit-style inspection.
 
 In other words, the first step is always **wiki-first**.
 

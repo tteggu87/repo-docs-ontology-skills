@@ -4,7 +4,9 @@
 from __future__ import annotations
 
 import argparse
+import datetime as dt
 import json
+import re
 from pathlib import Path
 
 try:
@@ -17,21 +19,20 @@ ROOT = Path(__file__).resolve().parents[4]
 SCHEMA_PATH = ROOT / "templates" / "llm-wiki-three-layer" / "duckdb_analytical.schema.sql"
 TABLE_COLUMNS = {
     "sources": ["source_id", "source_type", "uri", "created_at", "raw_checksum"],
-    "chunks": ["chunk_id", "source_id", "chunk_index", "text", "token_count"],
-    "claims": ["claim_id", "source_id", "chunk_id", "claim_text", "confidence", "extraction_run_id"],
-    "entities": ["entity_id", "canonical_name", "entity_type"],
-    "claim_entities": ["claim_id", "entity_id", "role"],
-    "relations": [
-        "relation_id",
-        "source_entity_id",
-        "relation_type",
-        "target_entity_id",
-        "evidence_claim_id",
-        "relation_confidence",
-        "extraction_run_id",
+    "page_coverage_snapshots": [
+        "page_id",
+        "run_id",
+        "source_count",
+        "claim_count",
+        "entity_count",
+        "freshness_score",
+        "coverage_score",
+        "captured_at",
     ],
     "audit_events": ["run_id", "phase", "status", "detail", "page_id", "severity", "created_at"],
 }
+WIKILINK_RE = re.compile(r"\[\[([^\]|#]+)")
+WIKI_PAGE_DIRS = {"sources", "concepts", "entities", "people", "projects", "timelines", "analyses"}
 
 
 def parse_args() -> argparse.Namespace:
@@ -53,6 +54,83 @@ def read_jsonl(path: Path) -> list[dict]:
     return rows
 
 
+def split_frontmatter(text: str) -> tuple[list[str], str]:
+    if not text.startswith("---\n"):
+        return [], text
+    lines = text.splitlines()
+    try:
+        end_index = lines[1:].index("---") + 1
+    except ValueError:
+        return [], text
+    return lines[1:end_index], "\n".join(lines[end_index + 1 :])
+
+
+def frontmatter_value(text: str, key: str) -> str | None:
+    frontmatter_lines, _ = split_frontmatter(text)
+    for line in frontmatter_lines:
+        if line.startswith(f"{key}:"):
+            return line.split(":", 1)[1].strip().strip('"')
+    return None
+
+
+def frontmatter_list(text: str, key: str) -> list[str]:
+    frontmatter_lines, _ = split_frontmatter(text)
+    values: list[str] = []
+    collecting = False
+    for line in frontmatter_lines:
+        stripped = line.strip()
+        if collecting:
+            if not stripped:
+                continue
+            if stripped.startswith("- "):
+                values.append(stripped[2:].strip().strip('"'))
+                continue
+            break
+        if line.startswith(f"{key}:"):
+            collecting = True
+            remainder = line.split(":", 1)[1].strip()
+            if remainder:
+                values.append(remainder.strip("[] ").strip('"'))
+    return values
+
+
+def page_snapshot_rows(repo_root: Path) -> list[dict]:
+    wiki_dir = repo_root / "wiki"
+    if not wiki_dir.exists():
+        return []
+
+    rows: list[dict] = []
+    captured_at = dt.datetime.now(dt.timezone.utc).isoformat()
+    run_id = f"wiki-analytics-{dt.datetime.now(dt.timezone.utc).strftime('%Y%m%dT%H%M%SZ')}"
+
+    for path in sorted(wiki_dir.rglob("*.md")):
+        rel = path.relative_to(wiki_dir)
+        if not rel.parts or rel.parts[0] == "_meta" or rel.parts[0] not in WIKI_PAGE_DIRS:
+            continue
+        text = path.read_text(encoding="utf-8")
+        _, body = split_frontmatter(text)
+        sources = frontmatter_list(text, "sources")
+        updated = frontmatter_value(text, "updated") or frontmatter_value(text, "updated_at")
+        body_links = WIKILINK_RE.findall(body)
+        entity_links = sum(1 for link in body_links if link.startswith("entity-"))
+        source_count = len(sources)
+        freshness_score = 1.0 if updated else 0.5
+        coverage_score = min(1.0, source_count / 2.0) if source_count else 0.0
+        rows.append(
+            {
+                "page_id": frontmatter_value(text, "page_id") or f"page-{path.stem}",
+                "run_id": run_id,
+                "source_count": source_count,
+                "claim_count": 0,
+                "entity_count": entity_links,
+                "freshness_score": freshness_score,
+                "coverage_score": coverage_score,
+                "captured_at": captured_at,
+            }
+        )
+    return rows
+
+
 def project_rows(table_name: str, rows: list[dict]) -> list[list[object]]:
     columns = TABLE_COLUMNS[table_name]
     projected: list[list[object]] = []
@@ -65,24 +143,8 @@ def project_rows(table_name: str, rows: list[dict]) -> list[list[object]]:
                 "created_at": row.get("created_at") or row.get("ingested_at"),
                 "raw_checksum": row.get("raw_checksum") or row.get("checksum"),
             }
-        elif table_name == "chunks":
-            normalized = {
-                "chunk_id": row.get("chunk_id") or row.get("segment_id"),
-                "source_id": row.get("source_id") or row.get("document_id"),
-                "chunk_index": row.get("chunk_index") if row.get("chunk_index") is not None else row.get("segment_index"),
-                "text": row.get("text") or row.get("content"),
-                "token_count": row.get("token_count"),
-            }
-        elif table_name == "relations":
-            normalized = {
-                "relation_id": row.get("relation_id") or row.get("edge_id"),
-                "source_entity_id": row.get("source_entity_id") or row.get("source_id"),
-                "relation_type": row.get("relation_type") or row.get("predicate"),
-                "target_entity_id": row.get("target_entity_id") or row.get("target_id"),
-                "evidence_claim_id": row.get("evidence_claim_id") or row.get("claim_id"),
-                "relation_confidence": row.get("relation_confidence") if row.get("relation_confidence") is not None else row.get("confidence"),
-                "extraction_run_id": row.get("extraction_run_id") or row.get("run_id"),
-            }
+        elif table_name == "page_coverage_snapshots":
+            normalized = {column: row.get(column) for column in columns}
         elif table_name == "audit_events":
             normalized = {
                 "run_id": row.get("run_id"),
@@ -92,27 +154,6 @@ def project_rows(table_name: str, rows: list[dict]) -> list[list[object]]:
                 "page_id": row.get("page_id"),
                 "severity": row.get("severity"),
                 "created_at": row.get("created_at") or row.get("finished_at") or row.get("started_at"),
-            }
-        elif table_name == "entities":
-            normalized = {
-                "entity_id": row.get("entity_id"),
-                "canonical_name": row.get("canonical_name") or row.get("name"),
-                "entity_type": row.get("entity_type") or row.get("type"),
-            }
-        elif table_name == "claims":
-            normalized = {
-                "claim_id": row.get("claim_id"),
-                "source_id": row.get("source_id") or row.get("document_id"),
-                "chunk_id": row.get("chunk_id") or row.get("segment_id"),
-                "claim_text": row.get("claim_text") or row.get("text"),
-                "confidence": row.get("confidence"),
-                "extraction_run_id": row.get("extraction_run_id") or row.get("run_id"),
-            }
-        elif table_name == "claim_entities":
-            normalized = {
-                "claim_id": row.get("claim_id"),
-                "entity_id": row.get("entity_id"),
-                "role": row.get("role"),
             }
         else:
             normalized = {column: row.get(column) for column in columns}
@@ -147,30 +188,18 @@ def main() -> int:
         connection.execute(SCHEMA_PATH.read_text(encoding="utf-8"))
         for table in (
             "sources",
-            "chunks",
-            "claims",
-            "entities",
-            "claim_entities",
-            "relations",
+            "page_coverage_snapshots",
             "audit_events",
         ):
             connection.execute(f"DELETE FROM {table}")
 
         warehouse = repo_root / "warehouse" / "jsonl"
         source_rows = read_jsonl(warehouse / "documents.jsonl")
-        chunk_rows = read_jsonl(warehouse / "segments.jsonl")
-        claim_rows = read_jsonl(warehouse / "claims.jsonl")
-        entity_rows = read_jsonl(warehouse / "entities.jsonl")
-        claim_entity_rows = read_jsonl(warehouse / "claim_entities.jsonl")
-        relation_rows = read_jsonl(warehouse / "derived_edges.jsonl")
+        page_rows = page_snapshot_rows(repo_root)
         run_rows = read_jsonl(warehouse / "audit_events.jsonl")
 
         load_rows(connection, "sources", source_rows)
-        load_rows(connection, "chunks", chunk_rows)
-        load_rows(connection, "claims", claim_rows)
-        load_rows(connection, "entities", entity_rows)
-        load_rows(connection, "claim_entities", claim_entity_rows)
-        load_rows(connection, "relations", relation_rows)
+        load_rows(connection, "page_coverage_snapshots", page_rows)
         load_rows(connection, "audit_events", run_rows)
     finally:
         connection.close()

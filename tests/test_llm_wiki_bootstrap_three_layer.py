@@ -106,6 +106,8 @@ class LlmWikiBootstrapThreeLayerTests(unittest.TestCase):
         if importlib.util.find_spec("duckdb") is None:
             self.skipTest("duckdb is not installed")
 
+        import duckdb
+
         repo = self.make_repo()
         sqlite_script = repo / "scripts" / "reindex_sqlite_operational.py"
         duckdb_script = repo / "scripts" / "refresh_duckdb_analytics.py"
@@ -119,6 +121,24 @@ class LlmWikiBootstrapThreeLayerTests(unittest.TestCase):
         self.assertIn("DRIFT_OK", result.stdout)
         self.assertIn("sqlite: present", result.stdout)
         self.assertIn("duckdb: present", result.stdout)
+
+        connection = duckdb.connect(str(repo / "state" / "wiki_analytics.duckdb"), read_only=True)
+        try:
+            tables = {
+                row[0]
+                for row in connection.execute(
+                    "SELECT table_name FROM information_schema.tables WHERE table_schema='main'"
+                ).fetchall()
+            }
+        finally:
+            connection.close()
+
+        self.assertIn("sources", tables)
+        self.assertIn("page_coverage_snapshots", tables)
+        self.assertIn("audit_events", tables)
+        self.assertNotIn("claims", tables)
+        self.assertNotIn("entities", tables)
+        self.assertNotIn("relations", tables)
 
 
 if __name__ == "__main__":

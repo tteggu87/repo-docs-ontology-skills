@@ -17,6 +17,13 @@
 - Prefer thin wrappers and a thick core package.
 - Keep the ontology lightweight; add artifacts only when they reduce ambiguity, drift, or repeated mistakes.
 
+## Wiki coexistence rules
+- If `wiki/AGENTS.md` exists, treat it as the governing contract for files under `wiki/`.
+- Before meaningful code, architecture, or product-direction changes, check `wiki/AGENTS.md`, `wiki/wiki/_meta/index.md`, and recent relevant entries in `wiki/wiki/_meta/log.md` when the wiki workspace exists.
+- Treat the wiki as a durable context surface, not as an automatic replacement for live code verification.
+- Root guidance should extend wiki guidance, not replace it.
+- If a root `AGENTS.md` is refreshed while a wiki workspace exists, preserve wiki-aware guidance and do not conceptually clobber wiki-specific operating rules.
+
 ## Documentation rules
 - Do not delete old docs unless clearly obsolete and duplicated.
 - Move outdated docs to `docs/archive/` with a status banner.

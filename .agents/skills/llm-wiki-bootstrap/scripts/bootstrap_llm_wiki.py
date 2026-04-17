@@ -108,45 +108,6 @@ CREATE TABLE IF NOT EXISTS sources (
   raw_checksum VARCHAR
 );
 
-CREATE TABLE IF NOT EXISTS chunks (
-  chunk_id VARCHAR PRIMARY KEY,
-  source_id VARCHAR,
-  chunk_index BIGINT,
-  text VARCHAR,
-  token_count BIGINT
-);
-
-CREATE TABLE IF NOT EXISTS claims (
-  claim_id VARCHAR PRIMARY KEY,
-  source_id VARCHAR,
-  chunk_id VARCHAR,
-  claim_text VARCHAR,
-  confidence DOUBLE,
-  extraction_run_id VARCHAR
-);
-
-CREATE TABLE IF NOT EXISTS entities (
-  entity_id VARCHAR PRIMARY KEY,
-  canonical_name VARCHAR,
-  entity_type VARCHAR
-);
-
-CREATE TABLE IF NOT EXISTS claim_entities (
-  claim_id VARCHAR,
-  entity_id VARCHAR,
-  role VARCHAR
-);
-
-CREATE TABLE IF NOT EXISTS relations (
-  relation_id VARCHAR PRIMARY KEY,
-  source_entity_id VARCHAR,
-  relation_type VARCHAR,
-  target_entity_id VARCHAR,
-  evidence_claim_id VARCHAR,
-  relation_confidence DOUBLE,
-  extraction_run_id VARCHAR
-);
-
 CREATE TABLE IF NOT EXISTS page_coverage_snapshots (
   page_id VARCHAR,
   run_id VARCHAR,

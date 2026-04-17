@@ -16,6 +16,7 @@ Bootstrap is only the starting point; the real goal is ongoing alignment that ke
 - creating or updating a root `AGENTS.md` aligned with current repository rules
 - introducing or maintaining a minimal schema-first intelligence layer
 - keeping glossary/manifests/handlers/policies/schemas/capabilities synchronized as the project evolves
+- helping a repo-wide docs/intelligence layer coexist with a project-local wiki contract when both are present
 
 ## Do Not Use This Skill For
 
@@ -32,6 +33,7 @@ Bootstrap is only the starting point; the real goal is ongoing alignment that ke
 - a small schema-first intelligence layer that stays lightweight and useful
 - thin-wrapper / thick-core guidance
 - an `AGENTS.md` file that captures repository working rules
+- a root contract that can coexist with a deeper `wiki/AGENTS.md` without conceptually overwriting it
 - a repeatable validator-backed self-check loop instead of documentation by hope
 
 This skill is for incremental refactors. Do not turn it into a greenfield rewrite.
@@ -74,6 +76,21 @@ When entrypoints disagree, verify the canonical surface from live registration p
 Do not promote a wrapper, bootstrap script, or operator convenience command to primary truth unless the repository actually treats it as canonical.
 Make the official CLI or package-owned command the primary entrypoint when package metadata, imports, or registration points show that it is the real canonical surface.
 Keep wrappers visible as a secondary transitional surface when operators still rely on them, but do not document them as the primary or canonical entrypoint.
+
+### Coexist With A Wiki Contract
+
+If a repository already has a project-local wiki workspace:
+
+- treat root `AGENTS.md` as the repo-wide contract
+- treat `wiki/AGENTS.md` as the governing contract for files under `wiki/`
+- treat `wiki/wiki/_meta/index.md` and recent `wiki/wiki/_meta/log.md` entries as durable context sources before meaningful code, architecture, or product-direction changes
+- do not conceptually overwrite or erase wiki-specific operating rules when refreshing root guidance
+
+Preferred product stance:
+
+- recommended order may exist for onboarding
+- but the implementation should tolerate either order
+- root guidance should merge with wiki guidance, not replace it
 
 ### Impact Analysis First
 
@@ -290,9 +307,35 @@ Include:
 - working style
 - repository rules
 - documentation rules
+- wiki coexistence rules when a wiki workspace exists
 - definition of done
 
 Keep it aligned with the actual architecture and docs structure.
+If `wiki/AGENTS.md` exists, explicitly add or preserve a wiki-aware block describing:
+
+- deeper-scope precedence for files under `wiki/`
+- wiki meta files as durable context sources
+- root guidance extending wiki guidance rather than replacing it
+
+Do not treat refreshing root `AGENTS.md` as permission to conceptually clobber a deeper wiki contract.
+
+## Recommended Order vs Supported Order
+
+Do not force one absolute bootstrap order for every repository.
+
+Instead:
+
+- provide a preferred order in docs when it improves onboarding
+- but keep the implementation order-tolerant when `llm-wiki-bootstrap` and `repo-docs-intelligence-bootstrap` are both used
+
+Recommended scenarios:
+
+- existing codebase first, then wiki layer: `repo-docs-intelligence-bootstrap` -> `llm-wiki-bootstrap`
+- wiki-first local knowledge surface, then repo-wide docs alignment: `llm-wiki-bootstrap` -> `repo-docs-intelligence-bootstrap`
+
+The key invariant is:
+
+- merge, not overwrite
 
 ### 8. Run The Validator As A Self-Check
 

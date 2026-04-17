@@ -68,6 +68,11 @@ def main() -> int:
                 ).fetchone()
                 if not rows or rows[0] == 0:
                     issues.append("wiki_analytics_duckdb_sources_table_missing")
+                page_rows = connection.execute(
+                    "SELECT COUNT(*) FROM information_schema.tables WHERE table_name='page_coverage_snapshots'"
+                ).fetchone()
+                if not page_rows or page_rows[0] == 0:
+                    issues.append("wiki_analytics_duckdb_page_coverage_table_missing")
             finally:
                 connection.close()
 
