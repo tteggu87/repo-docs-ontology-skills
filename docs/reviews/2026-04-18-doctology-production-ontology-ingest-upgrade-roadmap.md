@@ -159,3 +159,9 @@ The safe operational default is:
 - graph projection rebuild immediately after
 - wiki reconciliation in `shadow` mode only
 - explicit human review before any future wiki write-back automation
+
+See also:
+- `docs/flows/2026-04-19-doctology-daily-operator-loop.md`
+- `docs/CURRENT_STATE.md`
+- `docs/LAYERS.md`
+- `docs/VERSIONING_POLICY.md`

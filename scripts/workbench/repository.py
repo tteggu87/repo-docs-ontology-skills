@@ -460,6 +460,18 @@ class WorkbenchRepository:
                     "warnings": ["empty_query"],
                     "seeds": [],
                 },
+                "contract": {
+                    "route": "repo_local_search",
+                    "truth_layers": [
+                        {"name": "wiki_pages", "used": False, "count": 0},
+                        {"name": "source_pages", "used": False, "count": 0},
+                        {"name": "canonical_jsonl", "used": False, "count": 0},
+                        {"name": "graph_projection", "used": False, "count": 0},
+                    ],
+                    "fallback_reason": "empty_query",
+                    "save_readiness": "blocked",
+                    "save_reason": "Ask a more specific question before saving an analysis.",
+                },
             }
 
         page_results: list[dict[str, Any]] = []
@@ -576,6 +588,35 @@ class WorkbenchRepository:
         if claim_seed:
             graph_seed_candidates.append(("claim", claim_seed))
         graph_hints = self._graph_hints_for_seeds(graph_seed_candidates)
+        fallback_reason = None
+        if coverage == "thin":
+            fallback_reason = "thin_coverage"
+        elif coverage == "none":
+            fallback_reason = "no_direct_matches"
+        save_readiness = "ready" if coverage == "supported" else "review_required" if coverage == "thin" else "blocked"
+        save_reason = (
+            "Evidence is broad enough to save after a final human review."
+            if save_readiness == "ready"
+            else "Inspect the evidence and related pages before saving this thin-coverage draft."
+            if save_readiness == "review_required"
+            else "Refine the query before saving because the workspace does not yet have direct enough evidence."
+        )
+        contract = {
+            "route": "repo_local_search",
+            "truth_layers": [
+                {"name": "wiki_pages", "used": bool(top_pages), "count": len(top_pages)},
+                {"name": "source_pages", "used": bool(top_sources), "count": len(top_sources)},
+                {"name": "canonical_jsonl", "used": total_registry_hits > 0, "count": total_registry_hits},
+                {
+                    "name": "graph_projection",
+                    "used": self._should_render_graph_hints(graph_hints),
+                    "count": len(graph_hints.get("seeds") or []),
+                },
+            ],
+            "fallback_reason": fallback_reason,
+            "save_readiness": save_readiness,
+            "save_reason": save_reason,
+        }
 
         answer_lines = [
             "# Local query preview",
@@ -678,6 +719,7 @@ class WorkbenchRepository:
             "provenance_sections": provenance_sections,
             "warnings": warnings,
             "graph_hints": graph_hints,
+            "contract": contract,
         }
 
     def rebuild_index(self) -> bool:
@@ -824,6 +866,29 @@ class WorkbenchRepository:
             lines.extend(["## Provenance sections", ""])
             for section in provenance_items:
                 lines.append(f"- {section['label']}: {section['count']}")
+            lines.append("")
+
+        contract = preview.get("contract") or {}
+        truth_layers = contract.get("truth_layers") or []
+        if contract:
+            lines.extend(
+                [
+                    "## Query contract",
+                    "",
+                    f"- Route: `{contract.get('route', 'unknown')}`",
+                    f"- Save readiness: `{contract.get('save_readiness', 'unknown')}`",
+                    f"- Save reason: {contract.get('save_reason', 'No save reason recorded.')}",
+                ]
+            )
+            fallback_reason = contract.get("fallback_reason")
+            if fallback_reason:
+                lines.append(f"- Fallback reason: `{fallback_reason}`")
+            if truth_layers:
+                lines.extend(["- Truth layers touched:"])
+                for layer in truth_layers:
+                    lines.append(
+                        f"  - `{layer.get('name', 'layer')}` used=`{layer.get('used', False)}` count=`{layer.get('count', 0)}`"
+                    )
             lines.append("")
 
         graph_hints = preview.get("graph_hints") or {}

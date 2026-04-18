@@ -87,3 +87,9 @@ updated: 2026-04-19
 - Classified dirty paths into agent-local artifacts, live corpus content, rebuildable state, and durable repo docs.
 - Applied local-only `.git/info/exclude` cleanup boundaries so the working tree stays clean without forcing premature repo-policy changes.
 - Saved a durable review and wiki analysis describing the finish path: boundary separation, `doctor` hardening, and production ingest as the daily operator loop.
+
+## [2026-04-19] implementation | DocTology knowledge-ops closeout tranche
+
+- Added `docs/CURRENT_STATE.md`, `docs/LAYERS.md`, and `docs/VERSIONING_POLICY.md` to pin truth ownership and versioning rules.
+- Implemented `python scripts/llm_wiki.py doctor` with human-readable and JSON output, then wired it into the workbench doctor lane.
+- Added an explicit query route/truth/fallback contract to query previews and saved analyses, plus a daily operator-loop runbook.

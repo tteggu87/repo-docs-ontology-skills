@@ -28,6 +28,7 @@ ACTION_COMMANDS = {
     "status": ["python3", "scripts/llm_wiki.py", "status"],
     "reindex": ["python3", "scripts/llm_wiki.py", "reindex"],
     "lint": ["python3", "scripts/llm_wiki.py", "lint"],
+    "doctor": ["python3", "scripts/llm_wiki.py", "doctor", "--json"],
 }
 
 REVIEW_STATE_ACTIVE = "approved"
@@ -276,6 +277,16 @@ def summarize_action_output(action: str, stdout_lines: list[str]) -> dict[str, A
             "hard_failures": hard_failures,
             "advisory_warnings": advisory_warnings,
         }
+
+    if action == "doctor":
+        try:
+            return json.loads("\n".join(stdout_lines))
+        except json.JSONDecodeError:
+            return {
+                "kind": "doctor",
+                "messages": stdout_lines,
+                "warnings": ["doctor_summary_parse_failed"],
+            }
 
     return {
         "kind": action,

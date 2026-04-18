@@ -183,6 +183,20 @@ export type QueryGraphHints = {
   seeds: GraphInspectSeed[];
 };
 
+export type QueryContractLayer = {
+  name: "wiki_pages" | "source_pages" | "canonical_jsonl" | "graph_projection";
+  used: boolean;
+  count: number;
+};
+
+export type QueryContract = {
+  route: "repo_local_search";
+  truth_layers: QueryContractLayer[];
+  fallback_reason: string | null;
+  save_readiness: "ready" | "review_required" | "blocked";
+  save_reason: string;
+};
+
 export type QueryPreviewPayload = {
   mode: "repo_local_search";
   question: string;
@@ -194,6 +208,7 @@ export type QueryPreviewPayload = {
   provenance_sections: ProvenanceSection[];
   warnings: string[];
   graph_hints: QueryGraphHints;
+  contract: QueryContract;
 };
 
 export type GraphInspectSeed = {
@@ -270,7 +285,7 @@ export type DraftSourceSummaryPayload = {
   warnings: string[];
 };
 
-export type WorkbenchActionKey = "status" | "reindex" | "lint";
+export type WorkbenchActionKey = "status" | "reindex" | "lint" | "doctor";
 
 export type StatusActionSummary = {
   kind: "status";
@@ -283,12 +298,45 @@ export type LintActionSummary = {
   advisory_warnings: Record<string, string>;
 };
 
+export type DoctorActionSummary = {
+  kind: "doctor";
+  raw_counts: Record<string, number>;
+  wiki_health: Record<string, number>;
+  source_page_health: {
+    missing_raw_path_count: number;
+    missing_raw_path_pages: string[];
+    duplicate_raw_path_owners: Array<{
+      raw_path: string;
+      owners: string[];
+    }>;
+  };
+  warehouse_counts: Record<string, number>;
+  graph_projection: {
+    available: boolean;
+    node_count: number;
+    edge_count: number;
+    warnings: string[];
+  };
+  docs_readiness: Record<string, boolean>;
+  working_tree: {
+    clean: boolean;
+    counts: Record<string, number>;
+  };
+  operator_readiness: {
+    production_ingest_entrypoint_exists: boolean;
+    benchmark_ingest_entrypoint_exists: boolean;
+    shadow_reconcile_preview_exists: boolean;
+    canonical_truth_nonempty: boolean;
+    recommended_next_steps: string[];
+  };
+};
+
 export type GenericActionSummary = {
   kind: string;
   messages: string[];
 };
 
-export type WorkbenchActionSummary = StatusActionSummary | LintActionSummary | GenericActionSummary;
+export type WorkbenchActionSummary = StatusActionSummary | LintActionSummary | DoctorActionSummary | GenericActionSummary;
 
 export type WorkbenchActionPayload = {
   action: WorkbenchActionKey;

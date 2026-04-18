@@ -142,6 +142,10 @@ class WorkbenchGraphInspectTests(unittest.TestCase):
         self.assertTrue(payload["graph_hints"]["available"])
         self.assertTrue(payload["graph_hints"]["related_nodes"])
         self.assertTrue(payload["graph_hints"]["path_hints"])
+        self.assertEqual(payload["contract"]["route"], "repo_local_search")
+        self.assertEqual(payload["contract"]["save_readiness"], "ready")
+        self.assertIsNone(payload["contract"]["fallback_reason"])
+        self.assertTrue(any(layer["name"] == "canonical_jsonl" and layer["used"] for layer in payload["contract"]["truth_layers"]))
 
     def test_query_preview_empty_query_returns_tokens_and_hides_graph_hints(self) -> None:
         repo_root = self.make_repo()
@@ -151,6 +155,8 @@ class WorkbenchGraphInspectTests(unittest.TestCase):
 
         self.assertEqual(payload["tokens"], [])
         self.assertNotIn("## Graph hints", payload["answer_markdown"])
+        self.assertEqual(payload["contract"]["fallback_reason"], "empty_query")
+        self.assertEqual(payload["contract"]["save_readiness"], "blocked")
 
     def test_query_preview_renders_seed_only_graph_hints_when_neighborhood_is_empty(self) -> None:
         repo_root = self.make_repo()
@@ -161,6 +167,18 @@ class WorkbenchGraphInspectTests(unittest.TestCase):
         self.assertFalse(payload["graph_hints"]["available"])
         self.assertTrue(payload["graph_hints"]["seeds"])
         self.assertIn("## Graph hints", payload["answer_markdown"])
+        self.assertEqual(payload["contract"]["save_readiness"], "review_required")
+        self.assertEqual(payload["contract"]["fallback_reason"], "thin_coverage")
+
+    def test_query_preview_reports_blocked_save_when_no_direct_matches_exist(self) -> None:
+        repo_root = self.make_repo()
+        repo = WorkbenchRepository(repo_root)
+
+        payload = repo.query_preview("topic that does not exist here", limit=5)
+
+        self.assertEqual(payload["coverage"], "none")
+        self.assertEqual(payload["contract"]["fallback_reason"], "no_direct_matches")
+        self.assertEqual(payload["contract"]["save_readiness"], "blocked")
 
     def test_query_preview_handles_malformed_graph_projection_without_crashing(self) -> None:
         repo_root = self.make_repo()
@@ -212,6 +230,8 @@ class WorkbenchGraphInspectTests(unittest.TestCase):
         analysis_path = repo_root / payload["analysis_path"]
         analysis_text = analysis_path.read_text(encoding="utf-8")
 
+        self.assertIn("## Query contract", analysis_text)
+        self.assertIn("- Route: `repo_local_search`", analysis_text)
         self.assertIn("## Graph context", analysis_text)
         self.assertIn("Graph hints", analysis_text)
         self.assertIn("Graph seeds", analysis_text)

@@ -128,6 +128,25 @@ function warningLabel(value: string): string {
   return labels[value] ?? value.replaceAll("_", " ");
 }
 
+function saveReadinessLabel(value: string): string {
+  const labels: Record<string, string> = {
+    ready: "저장 가능",
+    review_required: "검토 후 저장",
+    blocked: "저장 보류",
+  };
+  return labels[value] ?? value;
+}
+
+function truthLayerLabel(value: string): string {
+  const labels: Record<string, string> = {
+    wiki_pages: "위키 페이지",
+    source_pages: "소스 페이지",
+    canonical_jsonl: "canonical JSONL",
+    graph_projection: "그래프 projection",
+  };
+  return labels[value] ?? value;
+}
+
 function renderMarkdown(markdown: string) {
   return DOMPurify.sanitize(marked.parse(markdown) as string);
 }
@@ -571,9 +590,11 @@ export default function App() {
     queryResult?.answer_markdown ?? "# 질문\n\n질문을 입력하면 근거가 있는 초안을 여기에서 확인할 수 있습니다.",
   );
   const renderableGraphHints = hasRenderableGraphHints(queryResult?.graph_hints) ? queryResult?.graph_hints ?? null : null;
-  const askHasSideContent = Boolean(
-    queryResult?.related_pages.length || queryResult?.related_sources.length || renderableGraphHints,
-  );
+  const askHasSideContent =
+    Boolean(queryResult) ||
+    Boolean(queryResult?.related_pages.length) ||
+    Boolean(queryResult?.related_sources.length) ||
+    Boolean(renderableGraphHints);
   const layoutClass =
     activeSection === "home"
       ? "simple-layout home-layout"
@@ -596,6 +617,8 @@ export default function App() {
         ? coverageLabel(queryResult.coverage)
         : "질문 준비됨"
       : `${filteredPageCount}개 표시 중`;
+  const doctorSummary =
+    doctorResult?.summary.kind === "doctor" && "raw_counts" in doctorResult.summary ? doctorResult.summary : null;
 
   const openWikiPage = (stem: string) => {
     startTransition(() => {
@@ -956,14 +979,19 @@ export default function App() {
                       </p>
                     </article>
                     <article className="evidence-card">
+                      <span>Route</span>
+                      <strong>{queryResult.contract.route}</strong>
+                      <p>이 질문은 현재 repo-local wiki/source/canonical preview 경로를 통해 해석됩니다.</p>
+                    </article>
+                    <article className="evidence-card">
                       <span>근거 묶음</span>
                       <strong>{queryResult.provenance_sections.reduce((sum, section) => sum + section.count, 0)}</strong>
                       <p>위키, 소스, canonical registry에서 끌어온 근거 묶음 수입니다.</p>
                     </article>
                     <article className="evidence-card">
                       <span>저장 준비</span>
-                      <strong>{queryResult.coverage === "none" ? "재질문 필요" : "검토 후 저장 가능"}</strong>
-                      <p>채팅처럼 넘기지 말고, 근거를 확인한 뒤 남길 가치가 있는 답만 저장하세요.</p>
+                      <strong>{saveReadinessLabel(queryResult.contract.save_readiness)}</strong>
+                      <p>{queryResult.contract.save_reason}</p>
                     </article>
                   </section>
                 ) : null}
@@ -1031,6 +1059,23 @@ export default function App() {
                 <div className="inspector-panel simple-panel ask-side-panel">
                   <RelatedPageList title="관련 페이지" pages={queryResult?.related_pages ?? []} onOpen={openWikiPage} onOpenGraph={openGraphForPage} />
                   <RelatedPageList title="소스 페이지" pages={queryResult?.related_sources ?? []} onOpen={openSourcePage} onOpenGraph={openGraphForSource} />
+                  {queryResult ? (
+                    <section className="message-panel">
+                      <p className="eyebrow">Query contract</p>
+                      <ul className="compact-list compact-list-plain detail-list">
+                        <li>route: {queryResult.contract.route}</li>
+                        <li>save readiness: {saveReadinessLabel(queryResult.contract.save_readiness)}</li>
+                        <li>
+                          fallback: {queryResult.contract.fallback_reason ? warningLabel(queryResult.contract.fallback_reason) : "없음"}
+                        </li>
+                        {queryResult.contract.truth_layers.map((layer) => (
+                          <li key={layer.name}>
+                            {truthLayerLabel(layer.name)} · {layer.used ? "used" : "not used"} · count {layer.count}
+                          </li>
+                        ))}
+                      </ul>
+                    </section>
+                  ) : null}
                   {renderableGraphHints ? (
                     <section className="message-panel">
                       <div className="save-result-header">
@@ -1463,10 +1508,10 @@ export default function App() {
                     <p className="eyebrow">Doctor actions</p>
                     <h3>명시적 실행</h3>
                   </div>
-                  <p className="panel-copy">status, reindex, lint만 실행하고 구조화된 결과를 확인합니다.</p>
+                  <p className="panel-copy">status, doctor, reindex, lint를 명시적으로 실행하고 구조화된 결과만 확인합니다.</p>
                 </div>
                 <div className="future-surface-actions">
-                  {(["status", "reindex", "lint"] as WorkbenchActionKey[]).map((action) => (
+                  {(["status", "doctor", "reindex", "lint"] as WorkbenchActionKey[]).map((action) => (
                     <button
                       key={action}
                       type="button"
@@ -1495,6 +1540,42 @@ export default function App() {
                       <li>command: {doctorResult.command}</li>
                       <li>exit code: {doctorResult.exit_code}</li>
                     </ul>
+                    {doctorSummary ? (
+                      <div className="selection-list simple-selection-list">
+                        <article className="selection-item">
+                          <strong className="selection-title">truth density</strong>
+                          <span className="selection-summary">
+                            raw {doctorSummary.raw_counts.total} · canonical {Object.entries(doctorSummary.warehouse_counts)
+                              .filter(([key]) => key !== "derived_edges")
+                              .reduce((sum, [, count]) => sum + count, 0)} · derived edges {doctorSummary.warehouse_counts.derived_edges ?? 0}
+                          </span>
+                        </article>
+                        <article className="selection-item">
+                          <strong className="selection-title">working tree</strong>
+                          <span className="selection-summary">
+                            {doctorSummary.working_tree.clean ? "clean" : "dirty"} · agent {doctorSummary.working_tree.counts.agent_local ?? 0} · runtime {doctorSummary.working_tree.counts.runtime_state ?? 0} · live {doctorSummary.working_tree.counts.live_workspace ?? 0}
+                          </span>
+                        </article>
+                        <article className="selection-item">
+                          <strong className="selection-title">docs readiness</strong>
+                          <span className="selection-summary">
+                            CURRENT_STATE {doctorSummary.docs_readiness.current_state_exists ? "✓" : "✗"} · LAYERS {doctorSummary.docs_readiness.layers_exists ? "✓" : "✗"} · VERSIONING_POLICY {doctorSummary.docs_readiness.versioning_policy_exists ? "✓" : "✗"}
+                          </span>
+                        </article>
+                        <article className="selection-item">
+                          <strong className="selection-title">operator readiness</strong>
+                          <span className="selection-summary">
+                            production ingest {doctorSummary.operator_readiness.production_ingest_entrypoint_exists ? "✓" : "✗"} · shadow preview {doctorSummary.operator_readiness.shadow_reconcile_preview_exists ? "✓" : "✗"} · canonical truth {doctorSummary.operator_readiness.canonical_truth_nonempty ? "non-empty" : "empty"}
+                          </span>
+                        </article>
+                        {doctorSummary.operator_readiness.recommended_next_steps.map((step: string) => (
+                          <article className="selection-item" key={step}>
+                            <strong className="selection-title">next step</strong>
+                            <span className="selection-summary">{step}</span>
+                          </article>
+                        ))}
+                      </div>
+                    ) : null}
                     <div className="selection-list simple-selection-list">
                       {doctorResult.stdout_lines.length ? (
                         <article className="selection-item">

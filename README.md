@@ -52,6 +52,11 @@ _DocTology workbench question workspace — review the current wiki, inspect rep
 
 Current workbench reality: this is primarily a read-and-review surface for the generated wiki and related previews. It is not yet a freeform, actively conversational LLM chat workspace.
 
+For the live maturity snapshot and ownership rules, see:
+- [`docs/CURRENT_STATE.md`](docs/CURRENT_STATE.md)
+- [`docs/LAYERS.md`](docs/LAYERS.md)
+- [`docs/VERSIONING_POLICY.md`](docs/VERSIONING_POLICY.md)
+
 ![Reference example: knowledge growing into a wiki](assets/readme/doctology-reference-obsidian-notes-forming-a-wiki.jpg)
 
 _Reference example — a view of knowledge growing into a wiki as previously unlinked Obsidian notes begin to form visible structure and neighborhoods._

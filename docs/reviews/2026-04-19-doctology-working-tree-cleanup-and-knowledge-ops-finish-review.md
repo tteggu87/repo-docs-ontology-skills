@@ -136,6 +136,12 @@ These are commit-worthy when they describe stable architecture or operator guida
 DocTology already has **enough layers**.
 What it lacks is **operational closure**.
 
+Update after the closeout tranche implementation:
+- `doctor` now exists in `scripts/llm_wiki.py` with human-readable and JSON output
+- `docs/CURRENT_STATE.md`, `docs/LAYERS.md`, and `docs/VERSIONING_POLICY.md` now pin repo/runtime ownership
+- query previews now expose an explicit route/truth/fallback contract
+- the remaining finish work after this tranche is mostly iterative hardening, not first-pass scaffolding
+
 The finish path is not:
 - add more graph features first
 - add more MCP polish first

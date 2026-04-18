@@ -24,4 +24,5 @@ This file is rebuilt by `python scripts/llm_wiki.py reindex`.
 - [[analysis-2026-04-17-doctology-product-direction]] - tags:
 - [[analysis-2026-04-18-doctology-production-ontology-ingest-upgrade-roadmap]] - tags:
 - [[analysis-2026-04-19-doctology-working-tree-cleanup-and-finish-path]] - tags:
+- [[analysis-2026-04-19-doctology-knowledge-ops-closeout-implementation]] - tags:
 - [[analysis-2026-04-17-duckdb-contract-draft]] - tags:
