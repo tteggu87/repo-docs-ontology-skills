@@ -1,18 +1,38 @@
-import type { GraphInspectSeed, SourceDetailPayload, WikiPagePayload } from "./api";
+import type { GraphInspectSeed, QueryGraphHints, SourceDetailPayload, WikiPagePayload } from "./api";
 
 type BuildGraphInspectSeedsInput = {
   selectedPage: WikiPagePayload | null;
   selectedSource: SourceDetailPayload | null;
+  querySeeds?: GraphInspectSeed[];
+  extraSeeds?: GraphInspectSeed[];
 };
+
+function pushSeed(seeds: GraphInspectSeed[], seed: GraphInspectSeed) {
+  if (!seeds.some((item) => item.key === seed.key)) {
+    seeds.push(seed);
+  }
+}
+
+export function hasRenderableGraphHints(graphHints: QueryGraphHints | null | undefined): boolean {
+  if (!graphHints) {
+    return false;
+  }
+  if ((graphHints.warnings ?? []).includes("empty_query")) {
+    return false;
+  }
+  return Boolean(graphHints.available || graphHints.related_nodes.length || graphHints.path_hints.length || graphHints.seeds.length);
+}
 
 export function buildGraphInspectSeeds({
   selectedPage,
   selectedSource,
+  querySeeds = [],
+  extraSeeds = [],
 }: BuildGraphInspectSeedsInput): GraphInspectSeed[] {
   const seeds: GraphInspectSeed[] = [];
 
   if (selectedPage) {
-    seeds.push({
+    pushSeed(seeds, {
       key: `page:${selectedPage.stem}`,
       type: "page",
       value: selectedPage.stem,
@@ -20,10 +40,21 @@ export function buildGraphInspectSeeds({
       subtitle: selectedPage.path,
       description: "Open the selected wiki page in graph inspect.",
     });
+
+    for (const item of selectedPage.related_pages.slice(0, 3)) {
+      pushSeed(seeds, {
+        key: `page:${item.stem}`,
+        type: "page",
+        value: item.stem,
+        title: item.title,
+        subtitle: `${item.section} · related page`,
+        description: "Inspect a related page neighborhood from the current page context.",
+      });
+    }
   }
 
   if (selectedSource) {
-    seeds.push({
+    pushSeed(seeds, {
       key: `source:${selectedSource.stem}`,
       type: "source",
       value: selectedSource.stem,
@@ -32,10 +63,21 @@ export function buildGraphInspectSeeds({
       description: "Inspect graph context around the selected source page.",
     });
 
-    for (const item of selectedSource.review_queue.slice(0, 3)) {
+    for (const item of selectedSource.related_pages.slice(0, 3)) {
+      pushSeed(seeds, {
+        key: `page:${item.stem}`,
+        type: "page",
+        value: item.stem,
+        title: item.title,
+        subtitle: `${item.section} · from source context`,
+        description: "Drill down from the selected source into a related entity/project/concept page.",
+      });
+    }
+
+    for (const item of selectedSource.review_queue) {
       const value = item.claim_id.trim();
       if (!value) continue;
-      seeds.push({
+      pushSeed(seeds, {
         key: `claim:${value}`,
         type: "claim",
         value,
@@ -44,6 +86,13 @@ export function buildGraphInspectSeeds({
         description: "Inspect the selected review-queue claim in graph space.",
       });
     }
+  }
+
+  for (const seed of querySeeds) {
+    pushSeed(seeds, seed);
+  }
+  for (const seed of extraSeeds) {
+    pushSeed(seeds, seed);
   }
 
   return seeds;

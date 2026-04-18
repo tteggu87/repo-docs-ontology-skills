@@ -3,7 +3,7 @@ title: Log
 type: meta
 status: active
 created: 2026-04-17
-updated: 2026-04-17
+updated: 2026-04-18
 ---
 
 # Log
@@ -44,3 +44,9 @@ updated: 2026-04-17
 - Added a new bounded `/api/graph/inspect` adapter route for seeded page/source/claim graph inspect
 - Added workbench graph seed helpers and a read-only GraphInspectPanel UI
 - Added backend and frontend tests plus a workbench `npm test` script for graph inspect behavior
+
+## [2026-04-18] implementation | Completed Issue 2-5 graph sidecar tranche
+
+- Added query-preview graph hints and persisted graph context into saved analysis pages
+- Enriched review and source lanes with graph-aware hints and direct drilldowns for page/source/claim contexts
+- Expanded graph seed generation to include related entity/project page drilldowns from current page and source context

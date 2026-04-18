@@ -148,6 +148,7 @@ export type ReviewItem = {
   reason?: string;
   updated?: string | null;
   age_days?: number | null;
+  graph_hint?: string;
 };
 
 export type WorkbenchReviewPayload = {
@@ -163,6 +164,7 @@ export type WorkbenchReviewPayload = {
     review_state: string;
     confidence: number | null;
     claim_text?: string;
+    graph_hint?: string;
   }[];
 };
 
@@ -170,6 +172,15 @@ export type ProvenanceSection = {
   label: string;
   count: number;
   items: Record<string, unknown>[];
+};
+
+export type QueryGraphHints = {
+  available: boolean;
+  summary: string;
+  related_nodes: string[];
+  path_hints: string[];
+  warnings: string[];
+  seeds: GraphInspectSeed[];
 };
 
 export type QueryPreviewPayload = {
@@ -182,6 +193,7 @@ export type QueryPreviewPayload = {
   related_sources: RelatedPage[];
   provenance_sections: ProvenanceSection[];
   warnings: string[];
+  graph_hints: QueryGraphHints;
 };
 
 export type GraphInspectSeed = {
