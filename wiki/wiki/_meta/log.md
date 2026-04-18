@@ -3,7 +3,7 @@ title: Log
 type: meta
 status: active
 created: 2026-04-17
-updated: 2026-04-18
+updated: 2026-04-19
 ---
 
 # Log
@@ -81,3 +81,9 @@ updated: 2026-04-18
 - Added `scripts/ontology_benchmark_ingest.py` for sandbox-first canonical benchmark ingest.
 - Added `scripts/build_graph_projection_from_jsonl.py` and `scripts/run_ontology_graph_benchmark.py`.
 - Added `tests/test_ontology_benchmark_ingest.py` and verified workbench compatibility against ontology-backed sandbox outputs.
+
+## [2026-04-19] analysis | DocTology working tree cleanup and knowledge-ops finish path
+
+- Classified dirty paths into agent-local artifacts, live corpus content, rebuildable state, and durable repo docs.
+- Applied local-only `.git/info/exclude` cleanup boundaries so the working tree stays clean without forcing premature repo-policy changes.
+- Saved a durable review and wiki analysis describing the finish path: boundary separation, `doctor` hardening, and production ingest as the daily operator loop.
