@@ -2,7 +2,7 @@
 title: "Flow draft: LLM Wiki ingest/query/rebuild"
 status: draft
 created: 2026-04-17
-updated: 2026-04-17
+updated: 2026-04-18
 owner: "Codex"
 type: flow-draft
 tags:
@@ -53,6 +53,7 @@ Input:
 Writes:
 
 - canonical file layer only
+  - `warehouse/jsonl/source_versions.jsonl`
   - `warehouse/jsonl/messages.jsonl`
   - `warehouse/jsonl/documents.jsonl`
   - `warehouse/jsonl/entities.jsonl`
@@ -66,6 +67,28 @@ Rules:
 - extracted claims are not pages
 - structured truth stays under `warehouse/jsonl/`
 - relations must carry provenance through claims and evidence
+
+### Current ingest implementations
+
+There are now two distinct implementations for this step:
+
+- `scripts/ontology_benchmark_ingest.py`
+  - source-page markdown -> `source_versions/documents/messages/entities/claims/claim_evidence/segments/derived_edges`
+  - benchmark harness only
+  - sandbox-first by default
+- `scripts/ontology_ingest.py`
+  - raw-first production ingest -> `source_versions/documents/messages/entities/claims/claim_evidence/segments/derived_edges`
+  - keeps graph projection contract compatible with the current workbench
+  - supports `--wiki-reconcile-mode shadow` for non-destructive wiki alignment preview
+- `scripts/build_graph_projection_from_jsonl.py`
+  - canonical JSONL -> `warehouse/graph_projection/nodes.jsonl` + `edges.jsonl`
+- `scripts/run_ontology_graph_benchmark.py`
+  - baseline vs benchmark harness vs production reproduction
+
+Important boundary:
+- benchmark path is still **sandbox-first** and architecture/performance focused
+- production path is **raw-first** and intended for canonical truth generation
+- both paths keep graph as a **derived read-only sidecar**, not truth ownership
 
 ## Step 3 — update wiki synthesis layer
 

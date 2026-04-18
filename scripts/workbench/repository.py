@@ -270,11 +270,14 @@ class WorkbenchRepository:
             row.get("document_id"): row
             for row in read_jsonl(self.warehouse_jsonl_dir / "documents.jsonl")
         }
+        entity_rows = read_jsonl(self.warehouse_jsonl_dir / "entities.jsonl")
         oversized: list[dict[str, Any]] = []
         low_coverage: list[dict[str, Any]] = []
         uncertainty: list[dict[str, Any]] = []
         stale: list[dict[str, Any]] = []
         low_confidence_claims: list[dict[str, Any]] = []
+        contradiction_candidates: list[dict[str, Any]] = []
+        merge_candidates: list[dict[str, Any]] = []
         for claim in read_jsonl(self.warehouse_jsonl_dir / "claims.jsonl"):
             confidence = claim.get("confidence")
             review_state = str(claim.get("review_state") or "unknown")
@@ -296,6 +299,33 @@ class WorkbenchRepository:
                     "claim_text": claim.get("claim_text"),
                 }
             )
+            if claim.get("contradiction_candidate"):
+                contradiction_candidates.append(
+                    {
+                        "claim_id": claim.get("claim_id"),
+                        "document_id": claim.get("document_id") or claim.get("source_document_id"),
+                        "source_page": documents_by_id.get(
+                            claim.get("document_id") or claim.get("source_document_id"),
+                            {},
+                        ).get("source_page"),
+                        "subject_id": claim.get("subject_id"),
+                        "confidence": confidence_value,
+                        "claim_text": claim.get("claim_text"),
+                    }
+                )
+
+        for entity in entity_rows:
+            aliases = entity.get("aliases") or []
+            if entity.get("merge_candidate") or len(aliases) > 1:
+                merge_candidates.append(
+                    {
+                        "entity_id": entity.get("entity_id"),
+                        "label": entity.get("label") or entity.get("canonical_name"),
+                        "alias_count": len(aliases),
+                        "aliases": aliases,
+                        "source_pages": entity.get("source_pages") or [],
+                    }
+                )
 
         for record in records:
             line_count = len(record["body"].splitlines())
@@ -361,11 +391,20 @@ class WorkbenchRepository:
                 float(item["confidence"] if item["confidence"] is not None else 1.0),
             )
         )
+        contradiction_candidates.sort(
+            key=lambda item: (
+                float(item["confidence"] if item["confidence"] is not None else 1.0),
+                str(item.get("claim_text") or "").lower(),
+            )
+        )
+        merge_candidates.sort(key=lambda item: (-int(item["alias_count"]), str(item["label"]).lower()))
 
         low_coverage = low_coverage[:limit]
         uncertainty = uncertainty[:limit]
         stale = stale[:limit]
         low_confidence_claims = low_confidence_claims[:limit]
+        contradiction_candidates = contradiction_candidates[:limit]
+        merge_candidates = merge_candidates[:limit]
 
         for item in low_coverage:
             item["graph_hint"] = self._graph_hint_text("page", str(item["stem"]))
@@ -378,6 +417,14 @@ class WorkbenchRepository:
             item["graph_hint"] = self._graph_hint_text("claim", claim_id) or (
                 self._graph_hint_text("source", str(item.get("source_page") or "")) if item.get("source_page") else None
             )
+        for item in contradiction_candidates:
+            claim_id = str(item.get("claim_id") or "")
+            item["graph_hint"] = self._graph_hint_text("claim", claim_id) or (
+                self._graph_hint_text("source", str(item.get("source_page") or "")) if item.get("source_page") else None
+            )
+        for item in merge_candidates:
+            source_pages = item.get("source_pages") or []
+            item["graph_hint"] = self._graph_hint_text("source", str(source_pages[0])) if source_pages else None
 
         return {
             "oversized_pages": oversized[:limit],
@@ -385,6 +432,8 @@ class WorkbenchRepository:
             "uncertainty_candidates": uncertainty,
             "stale_pages": stale,
             "low_confidence_claims": low_confidence_claims,
+            "contradiction_candidates": contradiction_candidates,
+            "merge_candidates": merge_candidates,
         }
 
     def query_preview(self, question: str, limit: int = 5) -> dict[str, Any]:
@@ -1365,6 +1414,7 @@ class WorkbenchRepository:
             row
             for row in entities
             if row.get("source_document_id") in related_document_ids
+            or any(doc_id in related_document_ids for doc_id in (row.get("source_document_ids") or []))
         ]
         related_claims = [
             row

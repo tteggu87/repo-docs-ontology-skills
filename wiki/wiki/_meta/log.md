@@ -50,3 +50,34 @@ updated: 2026-04-18
 - Added query-preview graph hints and persisted graph context into saved analysis pages
 - Enriched review and source lanes with graph-aware hints and direct drilldowns for page/source/claim contexts
 - Expanded graph seed generation to include related entity/project page drilldowns from current page and source context
+
+## [2026-04-18] benchmark | Ontology-backed graph benchmark for DocTology
+
+- Compared the imported-corpus baseline against a separate ontology-backed benchmark sandbox.
+- Generated heuristic benchmark canonical registries and rebuilt graph projection in the sandbox.
+- Saved the benchmark review at `docs/reviews/2026-04-18-doctology-ontology-backed-graph-benchmark.md`.
+
+## [2026-04-18] planning | Production ontology ingest upgrade roadmap
+
+- Saved a GitHub-issue-style production promotion breakdown in `docs/issues/2026-04-18-doctology-production-ontology-ingest-upgrade-issue-breakdown.md`.
+- Saved a durable wiki roadmap summary for the production ontology ingest upgrade path.
+
+## [2026-04-18] implementation | Hardened production ontology ingest safeguards
+
+- Production source-version hashing now tracks raw content only, so wiki-only edits do not create new canonical export versions.
+- Production ingest now fails loudly on duplicate `raw_path` source-page mappings.
+- Markdown raw preprocessing now strips frontmatter / headings / URL scaffolding before claim extraction.
+- Updated Kuzu source-page mapping to remove duplicate production raw-path ownership.
+
+## [2026-04-18] implementation | Added production ontology ingest path
+
+- Added `scripts/ontology_registry_common.py` for shared registry helpers and safety rules.
+- Added `scripts/ontology_ingest.py` for raw-first production canonical ingest with shadow wiki reconciliation preview.
+- Updated workbench review surfaces with contradiction and merge candidates.
+- Extended benchmark runner to compare baseline vs benchmark harness vs production.
+
+## [2026-04-18] implementation | Completed ontology benchmark pipeline MVP
+
+- Added `scripts/ontology_benchmark_ingest.py` for sandbox-first canonical benchmark ingest.
+- Added `scripts/build_graph_projection_from_jsonl.py` and `scripts/run_ontology_graph_benchmark.py`.
+- Added `tests/test_ontology_benchmark_ingest.py` and verified workbench compatibility against ontology-backed sandbox outputs.

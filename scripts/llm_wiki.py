@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
+import json
 import re
 import sys
 from collections import defaultdict
@@ -363,6 +364,23 @@ def log_command(kind: str, title: str, bullets: list[str]) -> int:
     return 0
 
 
+def reconcile_shadow(root_override: str | None) -> int:
+    base_root = Path(root_override).resolve() if root_override else ROOT
+    preview_path = base_root / "wiki" / "state" / "ontology_reconcile_preview.json"
+    if not preview_path.exists():
+        print(f"Shadow preview not found: {preview_path}", file=sys.stderr)
+        return 1
+    payload = json.loads(read_text(preview_path))
+    affected = payload.get("affected_source_pages") or []
+    print("Ontology reconcile shadow preview")
+    print(f"- Root: {base_root}")
+    print(f"- Preview: {preview_path.relative_to(base_root)}")
+    print(f"- Affected source pages: {len(affected)}")
+    for stem in affected:
+        print(f"  - {stem}")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Local tooling for an Obsidian-first LLM Wiki. `ingest` is source registration only."
@@ -379,6 +397,9 @@ def build_parser() -> argparse.ArgumentParser:
     sub.add_parser("reindex", help="Rebuild wiki/_meta/index.md")
     sub.add_parser("lint", help="Check for broken links, orphans, and missing frontmatter.")
     sub.add_parser("status", help="Show counts and basic wiki health metrics.")
+
+    reconcile = sub.add_parser("reconcile-shadow", help="Print the current ontology shadow reconciliation preview.")
+    reconcile.add_argument("--root", default=None, help="Optional project root override containing wiki/state/ontology_reconcile_preview.json.")
 
     log_parser = sub.add_parser("log", help="Append a structured log entry.")
     log_parser.add_argument("kind", help="Entry type such as ingest, query, lint, or refactor.")
@@ -406,6 +427,8 @@ def main() -> int:
         return lint_wiki()
     if args.command == "status":
         return status()
+    if args.command == "reconcile-shadow":
+        return reconcile_shadow(args.root)
     if args.command == "log":
         return log_command(args.kind, args.title, args.details)
 
