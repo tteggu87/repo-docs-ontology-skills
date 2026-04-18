@@ -903,6 +903,164 @@ class WorkbenchRepository:
             for name in JSONL_REGISTRIES
         }
 
+    def _graph_projection_paths(self) -> tuple[Path, Path]:
+        return self.graph_dir / "nodes.jsonl", self.graph_dir / "edges.jsonl"
+
+    def _graph_projection_available(self) -> bool:
+        nodes_path, edges_path = self._graph_projection_paths()
+        return nodes_path.exists() and edges_path.exists()
+
+    def _graph_nodes(self) -> list[dict[str, Any]]:
+        nodes_path, _ = self._graph_projection_paths()
+        return read_jsonl(nodes_path)
+
+    def _graph_edges(self) -> list[dict[str, Any]]:
+        _, edges_path = self._graph_projection_paths()
+        return read_jsonl(edges_path)
+
+    def _graph_string(self, value: Any) -> str:
+        if value is None:
+            return ""
+        if isinstance(value, str):
+            return value
+        if isinstance(value, list):
+            return " ".join(self._graph_string(item) for item in value)
+        if isinstance(value, dict):
+            return " ".join(self._graph_string(item) for item in value.values())
+        return str(value)
+
+    def _graph_node_label(self, node: dict[str, Any]) -> str:
+        return str(node.get("label") or node.get("title") or node.get("name") or node.get("id") or "unnamed-node")
+
+    def _graph_edge_label(self, edge: dict[str, Any]) -> str:
+        return str(edge.get("label") or edge.get("predicate") or edge.get("kind") or "related_to")
+
+    def _graph_node_kind(self, node: dict[str, Any]) -> str:
+        return str(node.get("kind") or node.get("type") or "node")
+
+    def _graph_seed_payload(self, seed_type: str, seed: str) -> tuple[str, list[str]]:
+        normalized_type = seed_type.strip().lower()
+        normalized_seed = seed.strip()
+        if normalized_type not in {"page", "source", "claim"}:
+            raise ValueError("seed_type must be one of: page, source, claim")
+        if not normalized_seed:
+            raise ValueError("seed is required")
+
+        if normalized_type == "page":
+            record = self.wiki_page(normalized_seed)
+            label = str(record["frontmatter"].get("title") or record["stem"])
+            tokens = tokenize_query(" ".join([label, record["stem"], record.get("summary") or ""]))
+            return label, tokens
+
+        if normalized_type == "source":
+            record = self.source_detail(normalized_seed)
+            label = str(record["frontmatter"].get("title") or record["stem"])
+            tokens = tokenize_query(" ".join([label, record["stem"], record.get("summary") or ""]))
+            return label, tokens
+
+        claims = read_jsonl(self.warehouse_jsonl_dir / "claims.jsonl")
+        claim = next((row for row in claims if str(row.get("claim_id") or "") == normalized_seed), None)
+        label = str((claim or {}).get("claim_text") or normalized_seed)
+        token_source = " ".join(
+            [
+                label,
+                str((claim or {}).get("subject_id") or ""),
+                str((claim or {}).get("object_id") or ""),
+                str((claim or {}).get("predicate") or ""),
+            ]
+        )
+        return label, tokenize_query(token_source)
+
+    def graph_inspect(self, seed_type: str, seed: str, *, max_nodes: int = 8, max_edges: int = 12) -> dict[str, Any]:
+        seed_label, tokens = self._graph_seed_payload(seed_type, seed)
+        payload: dict[str, Any] = {
+            "seed": {"type": seed_type, "value": seed, "label": seed_label},
+            "source_path": "warehouse/graph_projection/",
+            "neighborhood": {"node_count": 0, "edge_count": 0, "nodes": [], "edges": []},
+            "path_hints": [],
+            "warnings": [],
+        }
+
+        if not self._graph_projection_available():
+            payload.update(
+                {
+                    "mode": "unavailable",
+                    "summary": "Graph projection is unavailable because `warehouse/graph_projection/` does not contain bounded graph artifacts yet.",
+                    "warnings": ["graph_projection_empty"],
+                }
+            )
+            return payload
+
+        nodes = self._graph_nodes()
+        edges = self._graph_edges()
+        searchable_tokens = [token.lower() for token in tokens if token]
+        matched_nodes = [node for node in nodes if any(token in self._graph_string(node).lower() for token in searchable_tokens)]
+
+        if not matched_nodes:
+            payload.update(
+                {
+                    "mode": "empty",
+                    "summary": f"No bounded neighborhood matched the current {seed_type} seed.",
+                }
+            )
+            return payload
+
+        matched_ids = [str(node.get("id") or "") for node in matched_nodes if node.get("id")][: max(1, max_nodes // 2)]
+        selected_ids = list(dict.fromkeys(matched_ids))
+        for edge in edges:
+            source = str(edge.get("source") or edge.get("from") or "")
+            target = str(edge.get("target") or edge.get("to") or "")
+            if source in selected_ids or target in selected_ids:
+                if source and source not in selected_ids and len(selected_ids) < max_nodes:
+                    selected_ids.append(source)
+                if target and target not in selected_ids and len(selected_ids) < max_nodes:
+                    selected_ids.append(target)
+
+        node_lookup = {str(node.get("id") or ""): node for node in nodes if node.get("id")}
+        selected_nodes = []
+        for node_id in selected_ids[:max_nodes]:
+            node = node_lookup.get(node_id)
+            if not node:
+                continue
+            selected_nodes.append(
+                {
+                    "id": node_id,
+                    "label": self._graph_node_label(node),
+                    "kind": self._graph_node_kind(node),
+                    "matched": node_id in matched_ids,
+                }
+            )
+
+        selected_id_set = {node["id"] for node in selected_nodes}
+        selected_edges = []
+        path_hints = []
+        for edge in edges:
+            source = str(edge.get("source") or edge.get("from") or "")
+            target = str(edge.get("target") or edge.get("to") or "")
+            if source in selected_id_set and target in selected_id_set:
+                label = self._graph_edge_label(edge)
+                selected_edges.append({"source": source, "target": target, "label": label})
+                source_label = next((node["label"] for node in selected_nodes if node["id"] == source), source)
+                target_label = next((node["label"] for node in selected_nodes if node["id"] == target), target)
+                path_hints.append(f"{source_label} --{label}--> {target_label}")
+            if len(selected_edges) >= max_edges:
+                break
+
+        payload.update(
+            {
+                "mode": "available",
+                "summary": f"Found a bounded neighborhood for the current {seed_type} seed.",
+                "neighborhood": {
+                    "node_count": len(selected_nodes),
+                    "edge_count": len(selected_edges),
+                    "nodes": selected_nodes,
+                    "edges": selected_edges,
+                },
+                "path_hints": path_hints[:5],
+            }
+        )
+        return payload
+
     def summary(self) -> dict[str, Any]:
         index_path = self.meta_dir / "index.md"
         log_path = self.meta_dir / "log.md"

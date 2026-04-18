@@ -4,6 +4,7 @@ import DOMPurify from "dompurify";
 import { marked } from "marked";
 import {
   draftSourceSummary,
+  fetchGraphInspect,
   fetchQueryPreview,
   fetchSourceDetail,
   fetchWorkbenchReview,
@@ -15,6 +16,7 @@ import {
   runWorkbenchAction,
   saveAnalysis,
   type DraftSourceSummaryPayload,
+  type GraphInspectPayload,
   type QueryPreviewPayload,
   type ReviewClaimPayload,
   type SaveAnalysisPayload,
@@ -27,7 +29,9 @@ import {
   type WikiPagePayload,
   type WorkbenchSummary,
 } from "./lib/api";
+import { GraphInspectPanel } from "./components/GraphInspectPanel";
 import { buildGraphSurface } from "./lib/graph";
+import { buildGraphInspectSeeds } from "./lib/graph-inspect";
 
 type SectionId = "home" | "ask" | "wiki" | "sources" | "review" | "warehouse" | "doctor" | "graph";
 type PageFilterId =
@@ -303,6 +307,10 @@ export default function App() {
   const [warehouseError, setWarehouseError] = useState<string | null>(null);
   const [queryInput, setQueryInput] = useState("이 작업공간이 ontology builders에 대해 현재 무엇을 알고 있나?");
   const [queryResult, setQueryResult] = useState<QueryPreviewPayload | null>(null);
+  const [graphInspectResult, setGraphInspectResult] = useState<GraphInspectPayload | null>(null);
+  const [graphInspectError, setGraphInspectError] = useState<string | null>(null);
+  const [graphInspectBusy, setGraphInspectBusy] = useState(false);
+  const [activeGraphSeedKey, setActiveGraphSeedKey] = useState<string | null>(null);
   const [queryError, setQueryError] = useState<string | null>(null);
   const [queryBusy, setQueryBusy] = useState(false);
   const [saveResult, setSaveResult] = useState<SaveAnalysisPayload | null>(null);
@@ -593,6 +601,55 @@ export default function App() {
   const primarySections = sections.filter((item) => item.rail === "primary");
   const advancedSections = sections.filter((item) => item.rail === "advanced");
   const graphSurface = buildGraphSurface(summary);
+  const graphSeeds = buildGraphInspectSeeds({ selectedPage, selectedSource });
+
+  useEffect(() => {
+    if (!graphSeeds.length) {
+      setActiveGraphSeedKey(null);
+      setGraphInspectResult(null);
+      return;
+    }
+    if (!activeGraphSeedKey || !graphSeeds.some((seed) => seed.key === activeGraphSeedKey)) {
+      setActiveGraphSeedKey(graphSeeds[0]?.key ?? null);
+    }
+  }, [activeGraphSeedKey, graphSeeds]);
+
+  useEffect(() => {
+    if (activeSection !== "graph") {
+      return;
+    }
+    const seed = graphSeeds.find((item) => item.key === activeGraphSeedKey) ?? graphSeeds[0];
+    if (!seed) {
+      return;
+    }
+    const controller = new AbortController();
+    setGraphInspectBusy(true);
+    setGraphInspectError(null);
+    fetchGraphInspect(seed.type, seed.value, controller.signal)
+      .then((payload) => {
+        setGraphInspectResult(payload);
+      })
+      .catch((error: Error) => {
+        if (controller.signal.aborted) {
+          return;
+        }
+        setGraphInspectError(error.message);
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) {
+          setGraphInspectBusy(false);
+        }
+      });
+    return () => controller.abort();
+  }, [activeGraphSeedKey, activeSection, graphSeeds]);
+
+  function handleGraphInspect(seedKey: string) {
+    const nextSeed = graphSeeds.find((item) => item.key === seedKey);
+    if (!nextSeed) {
+      return;
+    }
+    setActiveGraphSeedKey(nextSeed.key);
+  }
 
   return (
     <div className="app-shell simple-shell">
@@ -1295,10 +1352,20 @@ export default function App() {
                 <div className="panel-header panel-header-compact">
                   <div>
                     <p className="eyebrow">Derived only</p>
-                    <h3>Graph notes</h3>
+                    <h3>Graph inspect</h3>
                   </div>
                   <span className="reader-status">Bounded</span>
                 </div>
+                <GraphInspectPanel
+                  seeds={graphSeeds}
+                  activeSeedKey={activeGraphSeedKey}
+                  inspect={graphInspectResult}
+                  loading={graphInspectBusy}
+                  error={graphInspectError}
+                  onInspect={(seed) => {
+                    handleGraphInspect(seed.key);
+                  }}
+                />
                 <section className="message-panel">
                   <ul className="compact-list compact-list-plain detail-list">
                     {graphSurface.notes.map((note) => (

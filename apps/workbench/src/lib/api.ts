@@ -184,6 +184,47 @@ export type QueryPreviewPayload = {
   warnings: string[];
 };
 
+export type GraphInspectSeed = {
+  key: string;
+  type: "page" | "source" | "claim";
+  value: string;
+  title: string;
+  subtitle: string;
+  description: string;
+};
+
+export type GraphInspectNode = {
+  id: string;
+  label: string;
+  kind: string;
+  matched: boolean;
+};
+
+export type GraphInspectEdge = {
+  source: string;
+  target: string;
+  label: string;
+};
+
+export type GraphInspectPayload = {
+  mode: "unavailable" | "empty" | "available";
+  seed: {
+    type: "page" | "source" | "claim";
+    value: string;
+    label: string;
+  };
+  summary: string;
+  source_path: string;
+  neighborhood: {
+    node_count: number;
+    edge_count: number;
+    nodes: GraphInspectNode[];
+    edges: GraphInspectEdge[];
+  };
+  path_hints: string[];
+  warnings: string[];
+};
+
 export type SaveAnalysisPayload = {
   action: "save_analysis";
   question: string;
@@ -293,6 +334,16 @@ export async function fetchQueryPreview(
 ): Promise<QueryPreviewPayload> {
   const params = new URLSearchParams({ q: question, limit: String(limit) });
   return fetchJson<QueryPreviewPayload>(`/api/query/preview?${params.toString()}`, signal);
+}
+
+
+export async function fetchGraphInspect(
+  seedType: GraphInspectSeed["type"],
+  seed: string,
+  signal?: AbortSignal,
+): Promise<GraphInspectPayload> {
+  const params = new URLSearchParams({ seed_type: seedType, seed });
+  return fetchJson<GraphInspectPayload>(`/api/graph/inspect?${params.toString()}`, signal);
 }
 
 export async function saveAnalysis(question: string, limit = 5): Promise<SaveAnalysisPayload> {

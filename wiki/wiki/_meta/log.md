@@ -38,3 +38,9 @@ updated: 2026-04-17
 - Saved a DocTology-specific Ladybug ROI and priority review in `docs/reviews/`
 - Saved a GitHub-issue-style implementation breakdown in `docs/issues/`
 - Added a durable wiki analysis page for DocTology Ladybug implementation priority
+
+## [2026-04-18] implementation | Added Issue 1 bounded graph inspect panel
+
+- Added a new bounded `/api/graph/inspect` adapter route for seeded page/source/claim graph inspect
+- Added workbench graph seed helpers and a read-only GraphInspectPanel UI
+- Added backend and frontend tests plus a workbench `npm test` script for graph inspect behavior

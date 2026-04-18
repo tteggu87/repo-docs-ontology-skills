@@ -80,6 +80,10 @@ def route_request(
             question = query.get("q", [""])[0]
             limit = int(query.get("limit", ["5"])[0])
             return 200, repo.query_preview(question, limit=limit)
+        if path == "/api/graph/inspect":
+            seed_type = query.get("seed_type", [""])[0]
+            seed = query.get("seed", [""])[0]
+            return 200, repo.graph_inspect(seed_type, seed)
         if path == "/api/warehouse/summary":
             return 200, repo.warehouse_summary()
         if path == "/api/meta/log/recent":
