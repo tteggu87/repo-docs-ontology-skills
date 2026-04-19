@@ -329,6 +329,86 @@ class WorkbenchRepository:
             return "supported", "active"
         return "provisional", "draft"
 
+    @staticmethod
+    def _relation_review_packets(edges: list[dict[str, Any]], *, limit: int = 5) -> list[dict[str, Any]]:
+        grouped: dict[tuple[str, str, str], dict[str, Any]] = {}
+        for row in edges:
+            relation_type = str(row.get("relation_type") or row.get("label") or "unknown")
+            support_status = str(row.get("support_status") or "unknown")
+            relation_state = str(row.get("relation_state") or "unknown")
+            if relation_type in {"documents", "mentions"}:
+                continue
+            key = (relation_type, support_status, relation_state)
+            bucket = grouped.setdefault(
+                key,
+                {
+                    "relation_type": relation_type,
+                    "support_status": support_status,
+                    "relation_state": relation_state,
+                    "edge_count": 0,
+                    "source_claim_ids": set(),
+                    "source_pages": set(),
+                    "truth_basis_counts": Counter(),
+                    "sample_edges": [],
+                },
+            )
+            bucket["edge_count"] += 1
+            source_claim_id = row.get("source_claim_id")
+            if source_claim_id:
+                bucket["source_claim_ids"].add(str(source_claim_id))
+            source_page = row.get("source_page")
+            if source_page:
+                bucket["source_pages"].add(str(source_page))
+            truth_basis = str(row.get("truth_basis") or "unknown")
+            bucket["truth_basis_counts"][truth_basis] += 1
+            if len(bucket["sample_edges"]) < 3:
+                bucket["sample_edges"].append(
+                    {
+                        "source": row.get("source"),
+                        "target": row.get("target"),
+                        "label": row.get("label"),
+                        "source_claim_id": source_claim_id,
+                    }
+                )
+        packets: list[dict[str, Any]] = []
+        for bucket in grouped.values():
+            packets.append(
+                {
+                    "relation_type": bucket["relation_type"],
+                    "support_status": bucket["support_status"],
+                    "relation_state": bucket["relation_state"],
+                    "edge_count": bucket["edge_count"],
+                    "source_claim_count": len(bucket["source_claim_ids"]),
+                    "source_pages": sorted(bucket["source_pages"]),
+                    "truth_basis_counts": dict(sorted(bucket["truth_basis_counts"].items())),
+                    "sample_edges": bucket["sample_edges"],
+                }
+            )
+        priority = {"disputed": 0, "provisional": 1, "supported": 2, "unknown": 3}
+        packets.sort(
+            key=lambda item: (
+                priority.get(str(item["support_status"]), 9),
+                -int(item["edge_count"]),
+                str(item["relation_type"]),
+            )
+        )
+        return packets[:limit]
+
+    @staticmethod
+    def _supersession_summary(related_versions: list[dict[str, Any]], *, family_version_count: int) -> dict[str, Any]:
+        superseded_rows = [row for row in related_versions if row.get("supersedes_export_version_id")]
+        history_status = "single_version"
+        if family_version_count > 1 or superseded_rows:
+            history_status = "versioned_chain"
+        latest_version = related_versions[0] if related_versions else None
+        return {
+            "family_version_count": family_version_count,
+            "superseded_version_count": len(superseded_rows),
+            "history_status": history_status,
+            "latest_export_version_id": latest_version.get("export_version_id") if latest_version else None,
+            "supersedes_export_version_id": latest_version.get("supersedes_export_version_id") if latest_version else None,
+        }
+
     def review_summary(self, limit: int = 5) -> dict[str, Any]:
         records = self.all_page_records()
         documents_by_id = {
@@ -336,6 +416,8 @@ class WorkbenchRepository:
             for row in read_jsonl(self.warehouse_jsonl_dir / "documents.jsonl")
         }
         entity_rows = read_jsonl(self.warehouse_jsonl_dir / "entities.jsonl")
+        derived_edges = read_jsonl(self.warehouse_jsonl_dir / "derived_edges.jsonl")
+        source_versions = read_jsonl(self.warehouse_jsonl_dir / "source_versions.jsonl")
         oversized: list[dict[str, Any]] = []
         low_coverage: list[dict[str, Any]] = []
         uncertainty: list[dict[str, Any]] = []
@@ -472,6 +554,38 @@ class WorkbenchRepository:
             )
         )
         merge_candidates.sort(key=lambda item: (-int(item["alias_count"]), str(item["label"]).lower()))
+        relation_review_packets = self._relation_review_packets(derived_edges, limit=limit)
+        family_version_counts = Counter(str(row.get("source_family_id") or "") for row in source_versions if row.get("source_family_id"))
+        supersession_candidates: list[dict[str, Any]] = []
+        for document_id, document_row in sorted(documents_by_id.items(), key=lambda item: str(item[1].get("source_page") or item[0])):
+            source_page = str(document_row.get("source_page") or "")
+            if not source_page:
+                continue
+            versions = [row for row in source_versions if row.get("document_id") == document_id]
+            if not versions:
+                continue
+            superseded_count = sum(1 for row in versions if row.get("supersedes_export_version_id"))
+            family_id = str(versions[0].get("source_family_id") or document_row.get("source_family_id") or "")
+            family_count = int(family_version_counts.get(family_id, len(versions)))
+            if superseded_count <= 0 and family_count <= 1:
+                continue
+            supersession_candidates.append(
+                {
+                    "source_page": source_page,
+                    "document_id": document_id,
+                    "family_version_count": family_count,
+                    "superseded_version_count": superseded_count,
+                    "latest_export_version_id": versions[0].get("export_version_id"),
+                    "supersedes_export_version_id": versions[0].get("supersedes_export_version_id"),
+                }
+            )
+        supersession_candidates.sort(
+            key=lambda item: (
+                -int(item["superseded_version_count"]),
+                -int(item["family_version_count"]),
+                str(item["source_page"]),
+            )
+        )
 
         low_coverage = low_coverage[:limit]
         uncertainty = uncertainty[:limit]
@@ -508,6 +622,8 @@ class WorkbenchRepository:
             "low_confidence_claims": low_confidence_claims,
             "contradiction_candidates": contradiction_candidates,
             "merge_candidates": merge_candidates,
+            "relation_review_packets": relation_review_packets,
+            "supersession_candidates": supersession_candidates[:limit],
         }
 
     def query_preview(self, question: str, limit: int = 5) -> dict[str, Any]:
@@ -1784,6 +1900,8 @@ class WorkbenchRepository:
         relation_type_counts = Counter(str(row.get("relation_type") or row.get("label") or "unknown") for row in related_derived_edges)
         knowledge_state_summary = self._claim_semantics_summary(related_claims)
         knowledge_state_summary["relation_type_counts"] = dict(sorted(relation_type_counts.items()))
+        relation_review_packets = self._relation_review_packets(related_derived_edges, limit=5)
+        supersession_summary = self._supersession_summary(related_versions, family_version_count=family_version_count)
         review_queue = [
             {
                 "claim_id": row.get("claim_id"),
@@ -1815,8 +1933,10 @@ class WorkbenchRepository:
             "related_documents": related_documents,
             "related_versions": related_versions[:5],
             "incremental_status": incremental_status,
+            "supersession_summary": supersession_summary,
             "coverage": coverage,
             "knowledge_state_summary": knowledge_state_summary,
+            "relation_review_packets": relation_review_packets,
             "review_queue": review_queue,
             "related_pages": self.related_pages_for_stem(stem),
         }

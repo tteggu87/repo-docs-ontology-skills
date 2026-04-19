@@ -278,6 +278,7 @@ class ProductionOntologyIngestTests(unittest.TestCase):
         contradiction_claim = next(row for row in claims if row.get("contradiction_candidate"))
         supporting_edge = next(row for row in derived_edges if row.get("label") == "about_subject")
         graph_supporting_edge = next(row for row in graph_edges if row.get("label") == "about_subject")
+        relation_packet = next(packet for packet in review_payload["relation_review_packets"] if packet["relation_type"] == "about_subject")
         review_item = review_payload["low_confidence_claims"][0]
         queued_item = source_payload["review_queue"][0]
 
@@ -298,6 +299,11 @@ class ProductionOntologyIngestTests(unittest.TestCase):
         self.assertEqual(graph_supporting_edge["relation_type"], "about_subject")
         self.assertEqual(graph_supporting_edge["truth_basis"], "canonical_claim")
         self.assertEqual(graph_supporting_edge["relation_origin"], "claim_projection")
+
+        self.assertEqual(relation_packet["relation_type"], "about_subject")
+        self.assertGreater(relation_packet["edge_count"], 0)
+        self.assertIn(relation_packet["support_status"], {"provisional", "disputed"})
+        self.assertTrue(relation_packet["source_pages"])
 
         self.assertEqual(review_item["truth_basis"], "raw_segment")
         self.assertTrue(review_item["support_status"] in {"provisional", "disputed"})
@@ -345,11 +351,17 @@ class ProductionOntologyIngestTests(unittest.TestCase):
         documents = read_jsonl(repo_root / "warehouse" / "jsonl" / "documents.jsonl")
         source_versions = read_jsonl(repo_root / "warehouse" / "jsonl" / "source_versions.jsonl")
         latest_alpha = [row for row in source_versions if row["document_id"] == "document:source-alpha"][-1]
+        repo = WorkbenchRepository(repo_root)
+        source_payload = repo.source_detail("source-alpha")
 
         self.assertEqual(len(documents), 2)
         self.assertEqual(len([row for row in documents if row["document_id"] == "document:source-beta"]), 1)
         self.assertGreaterEqual(len(source_versions), 3)
         self.assertEqual(latest_alpha["supersedes_export_version_id"], first_alpha["export_version_id"])
+        self.assertIn("supersession_summary", source_payload)
+        self.assertEqual(source_payload["supersession_summary"]["history_status"], "versioned_chain")
+        self.assertGreaterEqual(source_payload["supersession_summary"]["superseded_version_count"], 1)
+        self.assertGreaterEqual(source_payload["supersession_summary"]["family_version_count"], 2)
 
     def test_wiki_only_edit_does_not_create_new_production_source_version(self) -> None:
         repo_root = self.make_repo()

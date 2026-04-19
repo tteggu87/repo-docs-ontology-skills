@@ -210,6 +210,24 @@ def _claim_contract_health(root: Path) -> dict[str, object]:
     }
 
 
+def _supersession_health(root: Path) -> dict[str, object]:
+    versions_path = root / "warehouse" / "jsonl" / "source_versions.jsonl"
+    rows = _read_jsonl_rows(versions_path)
+    family_counts = Counter(str(row.get("source_family_id") or "") for row in rows if row.get("source_family_id"))
+    superseded_version_count = sum(1 for row in rows if row.get("supersedes_export_version_id"))
+    multi_version_family_count = sum(1 for count in family_counts.values() if count > 1)
+    history_status = "no_version_history"
+    if multi_version_family_count > 0 or superseded_version_count > 0:
+        history_status = "versioned_chain_present"
+    return {
+        "version_count": len(rows),
+        "family_count": len(family_counts),
+        "multi_version_family_count": multi_version_family_count,
+        "superseded_version_count": superseded_version_count,
+        "history_status": history_status,
+    }
+
+
 def _graph_projection_health(root: Path) -> dict[str, object]:
     graph_dir = root / "warehouse" / "graph_projection"
     nodes_path = graph_dir / "nodes.jsonl"
@@ -368,6 +386,7 @@ def build_doctor_payload(root: Path = ROOT) -> dict[str, object]:
         "versioning_policy_exists": (base_root / DOC_READINESS_FILES["versioning_policy"]).exists(),
     }
     claim_contract_health = _claim_contract_health(base_root)
+    supersession_health = _supersession_health(base_root)
     warehouse_counts = {
         name: _jsonl_row_count(warehouse_jsonl_dir / f"{name}.jsonl")
         for name in WAREHOUSE_JSONL_REGISTRIES
@@ -401,6 +420,10 @@ def build_doctor_payload(root: Path = ROOT) -> dict[str, object]:
         operator_readiness["recommended_next_steps"].append(
             "Review provisional claim support-status groups before promoting saved analyses."
         )
+    if supersession_health["superseded_version_count"] or supersession_health["multi_version_family_count"]:
+        operator_readiness["recommended_next_steps"].append(
+            "Inspect `source_detail()` supersession summaries for sources with version-chain history before promotion."
+        )
     if operator_readiness["shadow_reconcile_preview_exists"]:
         operator_readiness["recommended_next_steps"].append(
             f"python scripts/llm_wiki.py reconcile-shadow --root {base_root}"
@@ -431,6 +454,7 @@ def build_doctor_payload(root: Path = ROOT) -> dict[str, object]:
             "duplicate_raw_path_owners": duplicate_raw_path_owners,
         },
         "claim_contract_health": claim_contract_health,
+        "supersession_health": supersession_health,
         "warehouse_counts": warehouse_counts,
         "graph_projection": graph_projection,
         "docs_readiness": docs_readiness,
@@ -449,6 +473,7 @@ def render_doctor_payload(payload: dict[str, object]) -> str:
     working_tree = payload["working_tree"]
     operator_readiness = payload["operator_readiness"]
     claim_contract_health = payload["claim_contract_health"]
+    supersession_health = payload["supersession_health"]
     warehouse_counts = payload["warehouse_counts"]
     support_status_summary = ", ".join(
         f"{name}={count}" for name, count in claim_contract_health["support_status_counts"].items()
@@ -491,6 +516,13 @@ def render_doctor_payload(payload: dict[str, object]) -> str:
         f"- Support status counts: {support_status_summary}",
         f"- Lifecycle state counts: {lifecycle_summary}",
         f"- Dominant temporal scope: {claim_contract_health['dominant_temporal_scope'] or 'none'}",
+        "",
+        "Supersession health",
+        f"- Version count: {supersession_health['version_count']}",
+        f"- Family count: {supersession_health['family_count']}",
+        f"- Multi-version families: {supersession_health['multi_version_family_count']}",
+        f"- Superseded versions: {supersession_health['superseded_version_count']}",
+        f"- History status: {supersession_health['history_status']}",
     ]
     next_steps = operator_readiness["recommended_next_steps"]
     if next_steps:

@@ -114,6 +114,16 @@ class LlmWikiRuntimeHealthTests(unittest.TestCase):
             + "\n",
             encoding="utf-8",
         )
+        (root / "warehouse" / "jsonl" / "source_versions.jsonl").write_text(
+            "\n".join(
+                [
+                    '{"export_version_id":"export:v1","source_family_id":"family:alpha","document_id":"document:source-alpha","raw_path":"raw/processed/alpha.md","ingested_at":"2026-04-18","supersedes_export_version_id":null}',
+                    '{"export_version_id":"export:v2","source_family_id":"family:alpha","document_id":"document:source-alpha","raw_path":"raw/processed/alpha.md","ingested_at":"2026-04-19","supersedes_export_version_id":"export:v1"}',
+                ]
+            )
+            + "\n",
+            encoding="utf-8",
+        )
         (root / "warehouse" / "graph_projection" / "nodes.jsonl").write_text(
             '{"id":"source:source-alpha","label":"Source Alpha","kind":"source"}\n', encoding="utf-8"
         )
@@ -190,8 +200,11 @@ class LlmWikiRuntimeHealthTests(unittest.TestCase):
         self.assertEqual(payload["claim_contract_health"]["lifecycle_state_counts"]["contested"], 1)
         self.assertEqual(payload["operator_readiness"]["save_readiness_floor"], "review_required")
         self.assertTrue(any("Resolve disputed" in step for step in payload["operator_readiness"]["recommended_next_steps"]))
+        self.assertGreaterEqual(payload["supersession_health"]["superseded_version_count"], 1)
+        self.assertEqual(payload["supersession_health"]["history_status"], "versioned_chain_present")
         self.assertIn("Save-readiness floor", rendered)
         self.assertIn("Claim contract health", rendered)
+        self.assertIn("Supersession health", rendered)
 
     def test_classify_working_tree_entries_groups_agent_runtime_and_live_workspace_paths(self) -> None:
         payload = llm_wiki.classify_working_tree_entries(
