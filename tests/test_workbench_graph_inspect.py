@@ -162,6 +162,21 @@ class WorkbenchGraphInspectTests(unittest.TestCase):
         self.assertIn("supported `1`", payload["answer_markdown"])
         self.assertIn("raw_segment `1`", payload["answer_markdown"])
 
+    def test_query_preview_downgrades_save_readiness_when_claim_support_is_not_supported(self) -> None:
+        repo_root = self.make_repo()
+        (repo_root / "warehouse" / "jsonl" / "claims.jsonl").write_text(
+            '{"claim_id":"claim:graph-memory-supports-operators","claim_text":"Graph memory supports operators","subject_id":"entity:graph-memory","review_state":"needs_review","confidence":0.62,"support_status":"disputed","truth_basis":"raw_segment","lifecycle_state":"contested","evidence_count":1,"temporal_scope":"ingest_snapshot"}\n',
+            encoding="utf-8",
+        )
+        repo = WorkbenchRepository(repo_root)
+
+        payload = repo.query_preview("graph memory operators", limit=5)
+
+        self.assertEqual(payload["coverage"], "supported")
+        self.assertEqual(payload["contract"]["save_readiness"], "review_required")
+        self.assertIn("disputed", payload["contract"]["save_reason"])
+        self.assertIn("disputed `1`", payload["answer_markdown"])
+
     def test_query_preview_empty_query_returns_tokens_and_hides_graph_hints(self) -> None:
         repo_root = self.make_repo()
         repo = WorkbenchRepository(repo_root)
@@ -373,6 +388,21 @@ class WorkbenchGraphInspectTests(unittest.TestCase):
 
         self.assertNotIn("## Graph hints", payload["preview"]["answer_markdown"])
         self.assertNotIn("## Graph context", analysis_text)
+
+    def test_review_claim_updates_support_status_and_lifecycle_state(self) -> None:
+        repo_root = self.make_repo()
+        (repo_root / "warehouse" / "jsonl" / "claims.jsonl").write_text(
+            '{"claim_id":"claim:graph-memory-supports-operators","claim_text":"Graph memory supports operators","subject_id":"entity:graph-memory","review_state":"needs_review","confidence":0.62,"support_status":"provisional","truth_basis":"raw_segment","lifecycle_state":"draft","evidence_count":1,"temporal_scope":"ingest_snapshot","contradiction_candidate":false}\n',
+            encoding="utf-8",
+        )
+        repo = WorkbenchRepository(repo_root)
+
+        payload = repo.review_claim("claim:graph-memory-supports-operators", "approved")
+
+        self.assertEqual(payload["claim"]["review_state"], "approved")
+        self.assertEqual(payload["claim"]["support_status"], "supported")
+        self.assertEqual(payload["claim"]["lifecycle_state"], "active")
+        self.assertTrue(payload["claim"]["state_updated_at"])
 
 
 if __name__ == "__main__":

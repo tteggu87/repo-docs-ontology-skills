@@ -13,7 +13,7 @@ import json
 import re
 import subprocess
 import sys
-from collections import defaultdict
+from collections import Counter, defaultdict
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -175,6 +175,41 @@ def _jsonl_row_count(path: Path) -> int:
     return count
 
 
+def _read_jsonl_rows(path: Path) -> list[dict[str, object]]:
+    if not path.exists():
+        return []
+    rows: list[dict[str, object]] = []
+    for raw_line in path.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line:
+            continue
+        try:
+            payload = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(payload, dict):
+            rows.append(payload)
+    return rows
+
+
+def _claim_contract_health(root: Path) -> dict[str, object]:
+    claims_path = root / "warehouse" / "jsonl" / "claims.jsonl"
+    claims = _read_jsonl_rows(claims_path)
+    support_status_counts = Counter(str(row.get("support_status") or "unknown") for row in claims)
+    lifecycle_state_counts = Counter(str(row.get("lifecycle_state") or "unknown") for row in claims)
+    temporal_scope_counts = Counter(str(row.get("temporal_scope") or "unknown") for row in claims)
+    truth_basis_counts = Counter(str(row.get("truth_basis") or "unknown") for row in claims)
+    dominant_temporal_scope = temporal_scope_counts.most_common(1)[0][0] if temporal_scope_counts else None
+    return {
+        "claim_count": len(claims),
+        "support_status_counts": dict(sorted(support_status_counts.items())),
+        "lifecycle_state_counts": dict(sorted(lifecycle_state_counts.items())),
+        "temporal_scope_counts": dict(sorted(temporal_scope_counts.items())),
+        "truth_basis_counts": dict(sorted(truth_basis_counts.items())),
+        "dominant_temporal_scope": dominant_temporal_scope,
+    }
+
+
 def _graph_projection_health(root: Path) -> dict[str, object]:
     graph_dir = root / "warehouse" / "graph_projection"
     nodes_path = graph_dir / "nodes.jsonl"
@@ -272,16 +307,24 @@ def build_status_payload(root: Path = ROOT) -> dict[str, object]:
     wiki_dir = base_root / "wiki"
     meta_dir = wiki_dir / "_meta"
     raw_dir = base_root / "raw"
+    claim_state_summary = _claim_contract_health(base_root)
     return {
         "root": str(base_root),
         "raw_files": _count_files(raw_dir),
         "wiki_pages": len(sorted(path for path in wiki_dir.rglob("*.md") if path.is_file())) if wiki_dir.exists() else 0,
         "log_entries": _count_log_entries(meta_dir / "log.md"),
         "index_entries": _count_index_entries(meta_dir / "index.md"),
+        "claim_state_summary": claim_state_summary,
     }
 
 
 def render_status_payload(payload: dict[str, object]) -> str:
+    claim_state_summary = payload.get("claim_state_summary") or {}
+    support_status_counts = claim_state_summary.get("support_status_counts") or {}
+    lifecycle_state_counts = claim_state_summary.get("lifecycle_state_counts") or {}
+    dominant_temporal_scope = claim_state_summary.get("dominant_temporal_scope")
+    support_summary = ", ".join(f"{name}={count}" for name, count in support_status_counts.items()) or "none"
+    lifecycle_summary = ", ".join(f"{name}={count}" for name, count in lifecycle_state_counts.items()) or "none"
     return "\n".join(
         [
             "LLM Wiki status",
@@ -290,6 +333,9 @@ def render_status_payload(payload: dict[str, object]) -> str:
             f"- Wiki pages: {payload['wiki_pages']}",
             f"- Log entries: {payload['log_entries']}",
             f"- Index entries: {payload['index_entries']}",
+            f"- Support status counts: {support_summary}",
+            f"- Lifecycle state counts: {lifecycle_summary}",
+            f"- Dominant temporal scope: {dominant_temporal_scope or 'none'}",
         ]
     )
 
@@ -321,6 +367,7 @@ def build_doctor_payload(root: Path = ROOT) -> dict[str, object]:
         "layers_exists": (base_root / DOC_READINESS_FILES["layers"]).exists(),
         "versioning_policy_exists": (base_root / DOC_READINESS_FILES["versioning_policy"]).exists(),
     }
+    claim_contract_health = _claim_contract_health(base_root)
     warehouse_counts = {
         name: _jsonl_row_count(warehouse_jsonl_dir / f"{name}.jsonl")
         for name in WAREHOUSE_JSONL_REGISTRIES
@@ -332,11 +379,27 @@ def build_doctor_payload(root: Path = ROOT) -> dict[str, object]:
         "benchmark_ingest_entrypoint_exists": (base_root / "scripts" / "ontology_benchmark_ingest.py").exists(),
         "shadow_reconcile_preview_exists": (wiki_dir / "state" / "ontology_reconcile_preview.json").exists(),
         "canonical_truth_nonempty": canonical_total > 0,
+        "save_readiness_floor": "blocked",
         "recommended_next_steps": [],
     }
+    disputed_count = int(claim_contract_health["support_status_counts"].get("disputed", 0))
+    provisional_count = int(claim_contract_health["support_status_counts"].get("provisional", 0))
+    supported_count = int(claim_contract_health["support_status_counts"].get("supported", 0))
+    if disputed_count > 0 or provisional_count > 0:
+        operator_readiness["save_readiness_floor"] = "review_required"
+    elif canonical_total > 0 and supported_count > 0:
+        operator_readiness["save_readiness_floor"] = "ready"
     if operator_readiness["production_ingest_entrypoint_exists"] and _count_files(raw_dir) > 0 and canonical_total == 0:
         operator_readiness["recommended_next_steps"].append(
             f"python scripts/ontology_ingest.py --root {base_root} --allow-main-repo --build-graph-projection --wiki-reconcile-mode shadow"
+        )
+    if disputed_count > 0:
+        operator_readiness["recommended_next_steps"].append(
+            "Resolve disputed claim support-status groups in `review_summary()` before treating ask results as save-ready."
+        )
+    elif provisional_count > 0:
+        operator_readiness["recommended_next_steps"].append(
+            "Review provisional claim support-status groups before promoting saved analyses."
         )
     if operator_readiness["shadow_reconcile_preview_exists"]:
         operator_readiness["recommended_next_steps"].append(
@@ -367,6 +430,7 @@ def build_doctor_payload(root: Path = ROOT) -> dict[str, object]:
             "missing_raw_path_pages": missing_raw_path,
             "duplicate_raw_path_owners": duplicate_raw_path_owners,
         },
+        "claim_contract_health": claim_contract_health,
         "warehouse_counts": warehouse_counts,
         "graph_projection": graph_projection,
         "docs_readiness": docs_readiness,
@@ -384,7 +448,14 @@ def render_doctor_payload(payload: dict[str, object]) -> str:
     docs_readiness = payload["docs_readiness"]
     working_tree = payload["working_tree"]
     operator_readiness = payload["operator_readiness"]
+    claim_contract_health = payload["claim_contract_health"]
     warehouse_counts = payload["warehouse_counts"]
+    support_status_summary = ", ".join(
+        f"{name}={count}" for name, count in claim_contract_health["support_status_counts"].items()
+    ) or "none"
+    lifecycle_summary = ", ".join(
+        f"{name}={count}" for name, count in claim_contract_health["lifecycle_state_counts"].items()
+    ) or "none"
     lines = [
         "Doctor report",
         f"- Root: {payload['root']}",
@@ -413,6 +484,13 @@ def render_doctor_payload(payload: dict[str, object]) -> str:
         f"- Benchmark ingest entrypoint: {operator_readiness['benchmark_ingest_entrypoint_exists']}",
         f"- Shadow reconcile preview: {operator_readiness['shadow_reconcile_preview_exists']}",
         f"- Canonical truth non-empty: {operator_readiness['canonical_truth_nonempty']}",
+        f"- Save-readiness floor: {operator_readiness['save_readiness_floor']}",
+        "",
+        "Claim contract health",
+        f"- Claim count: {claim_contract_health['claim_count']}",
+        f"- Support status counts: {support_status_summary}",
+        f"- Lifecycle state counts: {lifecycle_summary}",
+        f"- Dominant temporal scope: {claim_contract_health['dominant_temporal_scope'] or 'none'}",
     ]
     next_steps = operator_readiness["recommended_next_steps"]
     if next_steps:

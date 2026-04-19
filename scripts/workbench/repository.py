@@ -285,6 +285,50 @@ class WorkbenchRepository:
             "dominant_scope": dominant_scope,
         }
 
+    @staticmethod
+    def _save_readiness_from_claim_semantics(coverage: str, claim_semantics: dict[str, Any]) -> tuple[str, str]:
+        if coverage == "none":
+            return (
+                "blocked",
+                "Refine the query before saving because the workspace does not yet have direct enough evidence.",
+            )
+        support_counts = claim_semantics.get("support_status_counts") or {}
+        claim_count = int(claim_semantics.get("claim_count") or 0)
+        disputed_count = int(support_counts.get("disputed", 0))
+        provisional_count = int(support_counts.get("provisional", 0))
+        supported_count = int(support_counts.get("supported", 0))
+        rejected_count = int(support_counts.get("rejected", 0))
+        if disputed_count > 0:
+            return (
+                "review_required",
+                "Claim support status includes disputed evidence. Resolve the disputed claim set before saving.",
+            )
+        if provisional_count > 0:
+            return (
+                "review_required",
+                "Claim support status is still provisional. Review the in-scope evidence before saving.",
+            )
+        if coverage == "supported" and claim_count > 0 and supported_count > 0 and rejected_count == 0:
+            return (
+                "ready",
+                "Evidence is broad enough to save after a final human review.",
+            )
+        return (
+            "review_required",
+            "Inspect the evidence and related pages before saving this thin-coverage draft.",
+        )
+
+    @staticmethod
+    def _derived_claim_state(review_state: str, contradiction_candidate: bool) -> tuple[str, str]:
+        normalized_state = review_state.strip().lower()
+        if normalized_state == REVIEW_STATE_REJECTED:
+            return "rejected", "rejected"
+        if contradiction_candidate:
+            return "disputed", "contested"
+        if normalized_state == REVIEW_STATE_ACTIVE:
+            return "supported", "active"
+        return "provisional", "draft"
+
     def review_summary(self, limit: int = 5) -> dict[str, Any]:
         records = self.all_page_records()
         documents_by_id = {
@@ -640,14 +684,7 @@ class WorkbenchRepository:
             fallback_reason = "thin_coverage"
         elif coverage == "none":
             fallback_reason = "no_direct_matches"
-        save_readiness = "ready" if coverage == "supported" else "review_required" if coverage == "thin" else "blocked"
-        save_reason = (
-            "Evidence is broad enough to save after a final human review."
-            if save_readiness == "ready"
-            else "Inspect the evidence and related pages before saving this thin-coverage draft."
-            if save_readiness == "review_required"
-            else "Refine the query before saving because the workspace does not yet have direct enough evidence."
-        )
+        save_readiness, save_reason = self._save_readiness_from_claim_semantics(coverage, claim_semantics)
         contract = {
             "route": "repo_local_search",
             "truth_layers": [
@@ -1090,13 +1127,23 @@ class WorkbenchRepository:
         for row in claims:
             if row.get("claim_id") != claim_id:
                 continue
+            support_status, lifecycle_state = self._derived_claim_state(
+                normalized_state,
+                bool(row.get("contradiction_candidate")),
+            )
             if row.get("review_state") == normalized_state:
+                row["support_status"] = support_status
+                row["lifecycle_state"] = lifecycle_state
+                row["state_updated_at"] = today
                 updated_claim = row
                 claim_was_same = True
                 break
             row["review_state"] = normalized_state
             row["reviewed_at"] = today
             row["reviewed_via"] = "workbench-review"
+            row["support_status"] = support_status
+            row["lifecycle_state"] = lifecycle_state
+            row["state_updated_at"] = today
             updated_claim = row
             break
 

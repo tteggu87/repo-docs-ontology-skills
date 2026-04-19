@@ -98,12 +98,22 @@ class LlmWikiRuntimeHealthTests(unittest.TestCase):
             "documents",
             "messages",
             "entities",
-            "claims",
             "claim_evidence",
             "segments",
             "derived_edges",
         ]:
             (root / "warehouse" / "jsonl" / f"{registry}.jsonl").write_text("", encoding="utf-8")
+        (root / "warehouse" / "jsonl" / "claims.jsonl").write_text(
+            "\n".join(
+                [
+                    '{"claim_id":"claim-supported","claim_text":"Supported claim","review_state":"approved","support_status":"supported","truth_basis":"raw_segment","lifecycle_state":"active","temporal_scope":"ingest_snapshot","confidence":0.96,"evidence_count":2}',
+                    '{"claim_id":"claim-provisional","claim_text":"Provisional claim","review_state":"needs_review","support_status":"provisional","truth_basis":"raw_segment","lifecycle_state":"draft","temporal_scope":"ingest_snapshot","confidence":0.61,"evidence_count":1}',
+                    '{"claim_id":"claim-disputed","claim_text":"Disputed claim","review_state":"needs_review","support_status":"disputed","truth_basis":"raw_segment","lifecycle_state":"contested","temporal_scope":"ingest_snapshot","confidence":0.58,"evidence_count":1,"contradiction_candidate":true}',
+                ]
+            )
+            + "\n",
+            encoding="utf-8",
+        )
         (root / "warehouse" / "graph_projection" / "nodes.jsonl").write_text(
             '{"id":"source:source-alpha","label":"Source Alpha","kind":"source"}\n', encoding="utf-8"
         )
@@ -154,6 +164,34 @@ class LlmWikiRuntimeHealthTests(unittest.TestCase):
         self.assertEqual(payload["wiki_health"]["source_page_count"], 3)
         self.assertEqual(payload["source_page_health"]["missing_raw_path_count"], 0)
         self.assertEqual(payload["source_page_health"]["missing_raw_path_pages"], [])
+
+    def test_build_status_payload_reports_claim_support_and_lifecycle_counts(self) -> None:
+        repo_root = self.make_repo()
+
+        payload = llm_wiki.build_status_payload(repo_root)
+        rendered = llm_wiki.render_status_payload(payload)
+
+        self.assertEqual(payload["claim_state_summary"]["support_status_counts"]["supported"], 1)
+        self.assertEqual(payload["claim_state_summary"]["support_status_counts"]["disputed"], 1)
+        self.assertEqual(payload["claim_state_summary"]["lifecycle_state_counts"]["contested"], 1)
+        self.assertEqual(payload["claim_state_summary"]["dominant_temporal_scope"], "ingest_snapshot")
+        self.assertIn("Support status counts", rendered)
+        self.assertIn("disputed=1", rendered)
+
+    def test_build_doctor_payload_reports_state_contract_health(self) -> None:
+        repo_root = self.make_repo()
+
+        payload = llm_wiki.build_doctor_payload(repo_root)
+        rendered = llm_wiki.render_doctor_payload(payload)
+
+        self.assertEqual(payload["claim_contract_health"]["support_status_counts"]["supported"], 1)
+        self.assertEqual(payload["claim_contract_health"]["support_status_counts"]["provisional"], 1)
+        self.assertEqual(payload["claim_contract_health"]["support_status_counts"]["disputed"], 1)
+        self.assertEqual(payload["claim_contract_health"]["lifecycle_state_counts"]["contested"], 1)
+        self.assertEqual(payload["operator_readiness"]["save_readiness_floor"], "review_required")
+        self.assertTrue(any("Resolve disputed" in step for step in payload["operator_readiness"]["recommended_next_steps"]))
+        self.assertIn("Save-readiness floor", rendered)
+        self.assertIn("Claim contract health", rendered)
 
     def test_classify_working_tree_entries_groups_agent_runtime_and_live_workspace_paths(self) -> None:
         payload = llm_wiki.classify_working_tree_entries(

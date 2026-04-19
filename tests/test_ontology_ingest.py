@@ -305,6 +305,9 @@ class ProductionOntologyIngestTests(unittest.TestCase):
         self.assertEqual(queued_item["truth_basis"], "raw_segment")
         self.assertIn(queued_item["support_status"], {"provisional", "disputed"})
 
+        self.assertEqual(preview_payload["contract"]["save_readiness"], "review_required")
+        self.assertIn("support status", preview_payload["contract"]["save_reason"].lower())
+        self.assertIn("disputed", preview_payload["answer_markdown"])
         self.assertIn("knowledge_state_summary", source_payload)
         self.assertGreaterEqual(source_payload["knowledge_state_summary"]["support_status_counts"].get("disputed", 0), 1)
         self.assertEqual(source_payload["knowledge_state_summary"]["truth_basis_counts"]["raw_segment"], source_payload["coverage"]["claim_count"])
