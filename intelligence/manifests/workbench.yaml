@@ -8,6 +8,7 @@ workbench:
     role: operator and reader surface for the repository
     responsibilities:
       - render the current ask workspace and wiki reader surfaces
+      - render the currently mounted review, warehouse, doctor, and graph lanes
       - keep additional backend capabilities decoupled from the default frontend until productized
       - call only explicit adapter APIs
     forbidden:
@@ -90,6 +91,9 @@ workbench:
         - source-family lineage and affected surface paths when present
         - source coverage counts from canonical registries
         - source-local claim review queue
+        - knowledge-state summary
+        - supersession summary when version history exists
+        - relation review packets derived from canonical edges when available
         - related page suggestions
 
     - key: workbench_feed
@@ -108,11 +112,17 @@ workbench:
       reads:
         - wiki/
         - warehouse/jsonl/claims.jsonl
+        - warehouse/jsonl/derived_edges.jsonl
+        - warehouse/jsonl/source_versions.jsonl
       returns:
         - low-coverage page candidates
         - stale page candidates
         - uncertainty review candidates
         - low-confidence claim review queue
+        - contradiction candidates
+        - merge candidates
+        - relation review packets
+        - supersession candidates
 
     - key: query_preview
       method: GET
@@ -120,11 +130,25 @@ workbench:
       reads:
         - wiki/
         - warehouse/jsonl/
+        - warehouse/graph_projection/
       returns:
         - repo-local query preview
         - related pages and source pages
         - provenance sections
+        - graph hints when available
+        - explicit route / truth-layers / fallback / save-readiness contract block
         - explicit thin/empty coverage warnings
+
+    - key: graph_inspect
+      method: GET
+      path: /api/graph/inspect?seed_type=<type>&seed=<value>
+      reads:
+        - warehouse/graph_projection/
+      returns:
+        - seed metadata
+        - availability or empty-state summary
+        - bounded neighborhood nodes and edges
+        - path hints and warnings
 
     - key: warehouse_summary
       method: GET
@@ -175,6 +199,17 @@ workbench:
       output_contract:
         - show the exact command
         - show structured command output in the UI
+
+    - key: doctor
+      method: POST
+      path: /api/actions/doctor
+      wraps:
+        - python3 scripts/llm_wiki.py doctor --json
+      writes: []
+      output_contract:
+        - show the exact command
+        - show structured command output in the UI
+        - expose operator readiness, claim contract health, and working-tree diagnostics
 
     - key: save_analysis
       method: POST
@@ -236,4 +271,5 @@ workbench:
     - ask workspace is the current home surface
     - page reader remains wiki-first
     - ask is a repo-local query preview with explicit provenance and weak-coverage states
-    - operator review, source, warehouse, doctor, and graph contracts may exist in the backend without being mounted in the default frontend
+    - review, warehouse, doctor, and graph lanes are already mounted in the current frontend
+    - more specialized backend capabilities may still exist behind explicit bounded routes without becoming the default product face

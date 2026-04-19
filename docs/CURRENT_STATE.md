@@ -1,6 +1,6 @@
 # CURRENT_STATE
 
-_Last updated: 2026-04-19_
+_Last updated: 2026-04-20_
 
 ## Product posture
 
@@ -62,6 +62,17 @@ Verified green during the closeout tranche:
 - `npm run build`
 
 ## Checked-in reference repo reality
+
+### Two wiki surfaces to keep straight
+DocTology currently contains both:
+- the **active runtime-facing wiki surface** under root `wiki/` (especially `wiki/_meta/`, `wiki/sources/`, and sibling directories used by the workbench and local CLI)
+- a **deeper checked-in bootstrap/sample or historical subtree** under `wiki/wiki/`
+
+The checked-in `wiki/` sample workspace should currently be treated as a **lighter/minimal scaffold snapshot**, not as the fully hardened ontology-ready bootstrap contract.
+
+For current runtime work:
+- prefer root `wiki/_meta/`, `wiki/sources/`, and sibling directories first
+- consult `wiki/wiki/` only when the task explicitly targets the checked-in sample workspace or historical internal analyses stored there
 
 ### Strong surfaces already present
 - graph inspect works as a bounded derived sidecar

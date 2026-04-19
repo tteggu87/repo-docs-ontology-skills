@@ -1,9 +1,14 @@
 # AGENTS.md
 
-This repository is an Obsidian-first LLM Wiki with a lightweight ontology layer.
+This checked-in `wiki/` tree is a **lighter bootstrap/sample workspace** for an Obsidian-first LLM Wiki with a lightweight ontology layer.
 
-The human curates sources and asks questions.
-The agent maintains the wiki and the canonical ontology artifacts.
+It is useful for:
+- bootstrap layout inspection
+- minimal local wiki maintenance
+- sample state/index/analytics rebuild loops
+
+It is **not** the full current parent DocTology runtime contract by itself.
+If you are working from the parent repository root, prefer the parent root `AGENTS.md`, `docs/CURRENT_STATE.md`, and `docs/LAYERS.md` for the live runtime rules.
 
 ## Mission
 
@@ -93,27 +98,28 @@ Guidelines:
 When the user asks to ingest a source:
 
 1. Read the raw source from `raw/inbox/`, `raw/processed/`, or `raw/notes/`.
-2. If ontology-backed ingest is available, update canonical ontology registries first under `warehouse/jsonl/`.
-   - use `scripts/ontology_ingest.py` for raw-first production-oriented ingest
-   - use `scripts/ontology_benchmark_ingest.py` only for benchmark/sandbox validation
-3. Locate the matching page in `wiki/sources/`. If it does not exist, create it.
-4. Prefer shadow reconciliation before wiki rewrites.
-   - write `wiki/state/ontology_reconcile_preview.json`
-   - inspect it with `python scripts/llm_wiki.py reconcile-shadow --root <repo>`
-   - do not silently overwrite source pages from ontology output
-5. Write or update:
+2. In this checked-in sample workspace, the local `scripts/llm_wiki.py` only handles **source registration**.
+   - available local commands here are `ingest`, `reindex`, `lint`, `status`, and `log`
+   - local support helpers here are `scripts/reindex_sqlite_operational.py`, `scripts/refresh_duckdb_analytics.py`, and `scripts/verify_three_layer_drift.py`
+3. If you are working inside the **parent DocTology runtime**, ontology-backed ingest and operator contracts live at the parent root, not inside this sample workspace.
+   - parent runtime production ingest: `scripts/ontology_ingest.py`
+   - parent runtime benchmark ingest: `scripts/ontology_benchmark_ingest.py`
+   - parent runtime shadow preview inspection: `python scripts/llm_wiki.py reconcile-shadow --root <repo>`
+4. Locate the matching page in `wiki/sources/`. If it does not exist, create it.
+5. For this checked-in sample workspace itself, do **not** assume local ontology-backed ingest, doctor, or reconcile-shadow commands exist unless they are actually present in `wiki/scripts/`.
+6. Write or update:
    - concise summary
    - key facts
    - important claims
    - contradictions or uncertainties
    - open questions
    - links to affected wiki pages
-6. Update every affected concept, entity, person, project, or timeline page.
-7. Create missing pages when a concept or entity clearly deserves its own page.
-8. Rebuild or refresh `wiki/_meta/index.md` if page inventory changed.
-9. Append an entry to `wiki/_meta/log.md`.
+7. Update every affected concept, entity, person, project, or timeline page.
+8. Create missing pages when a concept or entity clearly deserves its own page.
+9. Rebuild or refresh `wiki/_meta/index.md` if page inventory changed.
+10. Append an entry to `wiki/_meta/log.md`.
 
-If ontology-backed ingest is not yet available, wiki-only ingest may continue, but preserve source boundaries and note that canonical ontology extraction is pending.
+If ontology-backed ingest is not available in the current workspace, continue with source registration plus explicit notes about pending canonical extraction.
 
 ## Query Workflow
 
@@ -137,18 +143,18 @@ When the user asks a question:
 
 ## New Thread Bootstrap
 
-When a new agent opens this repository in a fresh conversation:
+When a new agent opens this checked-in sample workspace in a fresh conversation:
 
-1. Read `AGENTS.md` first.
-2. Read `wiki/_meta/index.md` before answering wiki questions.
-3. Read `wiki/_meta/log.md` if recent work or unfinished threads may matter.
-4. Treat this repository as a persistent wiki workspace, not a one-shot chat scratchpad.
-5. Prefer updating `wiki/` pages over leaving durable synthesis only in chat.
+1. Read this `AGENTS.md` first.
+2. Read `wiki/_meta/index.md` before answering workspace-local wiki questions.
+3. Read `wiki/_meta/log.md` if recent workspace-local work or unfinished threads may matter.
+4. Treat this tree as a persistent sample wiki workspace, not as the full parent DocTology runtime.
+5. If the task actually targets the parent runtime, step back to the parent repository root and follow the parent root `AGENTS.md` instead.
 
 Default startup assumptions:
 
-- This repo-specific `AGENTS.md` is the primary operating contract for future agents working inside this project.
-- The local CLI in `scripts/llm_wiki.py` is support tooling, not the source of truth.
+- This repo-local `AGENTS.md` governs only the checked-in sample workspace rooted here.
+- The local CLI in `scripts/llm_wiki.py` is intentionally minimal and does not imply the full parent runtime contract.
 - If a future agent can answer from existing wiki pages, it should avoid rereading the full raw corpus unless needed for verification or coverage.
 
 ## AGENTS Vs Skills

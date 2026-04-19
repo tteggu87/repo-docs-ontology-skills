@@ -57,6 +57,8 @@ For the live maturity snapshot and ownership rules, see:
 - [`docs/LAYERS.md`](docs/LAYERS.md)
 - [`docs/VERSIONING_POLICY.md`](docs/VERSIONING_POLICY.md)
 
+**Important repo-local note:** the checked-in `wiki/` tree contains both the active runtime-facing wiki surface (root `wiki/_meta/`, `wiki/sources/`, and sibling directories) and a deeper `wiki/wiki/` sample or historical subtree. For current runtime work, prefer the root-level `wiki/*` surfaces first. The checked-in sample workspace should currently be treated as a lighter/minimal scaffold snapshot rather than the full hardened ontology-ready bootstrap contract.
+
 ![Reference example: knowledge growing into a wiki](assets/readme/doctology-reference-obsidian-notes-forming-a-wiki.jpg)
 
 _Reference example — a view of knowledge growing into a wiki as previously unlinked Obsidian notes begin to form visible structure and neighborhoods._

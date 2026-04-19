@@ -1,6 +1,6 @@
 # LAYERS
 
-_Last updated: 2026-04-19_
+_Last updated: 2026-04-20_
 
 ## Truth order
 
@@ -77,6 +77,10 @@ It is the reviewed, human-readable synthesis layer.
 **Promotion rule:**
 Ontology output should not silently overwrite wiki pages.
 Use reviewed promotion and shadow reconcile patterns instead.
+
+**Repo-local note:**
+For current DocTology runtime work, treat root `wiki/_meta/`, `wiki/sources/`, and sibling directories as the primary maintained wiki surface.
+The deeper `wiki/wiki/` subtree is retained as checked-in sample/historical content and should not be treated as the default operator surface unless the task explicitly targets it.
 
 ---
 

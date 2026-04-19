@@ -16,7 +16,7 @@ actions:
     notes:
       - This is lighter than ontology-backed ingest and may be used when canonical extraction is not yet available.
   - key: ingest_with_ontology
-    description: Read a raw source, update canonical ontology registries, and project human-facing updates into wiki pages.
+    description: Read a raw source, refresh canonical ontology registries, rebuild derived graph artifacts when requested, and prepare shadow reconcile previews for explicit wiki promotion.
     inputs:
       - raw/inbox/<source>
     outputs:
@@ -27,23 +27,20 @@ actions:
       - warehouse/jsonl/claim_evidence.jsonl
       - warehouse/jsonl/segments.jsonl
       - warehouse/jsonl/derived_edges.jsonl
-      - wiki/sources/
-      - wiki/people/
-      - wiki/concepts/
-      - wiki/projects/
-      - wiki/analyses/
-      - wiki/_meta/index.md
-      - wiki/_meta/log.md
+      - warehouse/graph_projection/
+      - wiki/state/ontology_reconcile_preview.json when shadow reconcile is requested
     reads:
       - raw/inbox/
       - warehouse/jsonl/
-      - wiki/
+      - wiki/sources/
     writes:
       - warehouse/jsonl/
-      - wiki/
-      - wiki/_meta/
+      - warehouse/graph_projection/
+      - wiki/state/
     notes:
-      - This is the intended repeated user-facing ingest workflow once the ontology-backed ingest skill exists.
+      - This action is the current production-oriented raw-first ingest path.
+      - Canonical truth refresh is real, but wiki promotion should remain shadow-first and explicitly reviewed.
+      - Do not silently rewrite source pages from ontology output.
   - key: ingest_incremental_export
     description: Read a repeated export for a known source family, register the export version, upsert canonical sequential records, and then refresh the affected wiki pages.
     inputs:
@@ -96,16 +93,20 @@ actions:
       - related wiki pages
       - related source pages
       - provenance sections
+      - graph hints when a derived projection is available
+      - explicit route / truth-layer / fallback / save-readiness contract metadata
       - warnings for thin or missing coverage
     reads:
       - wiki/
       - warehouse/jsonl/entities.jsonl
       - warehouse/jsonl/claims.jsonl
       - warehouse/jsonl/segments.jsonl
+      - warehouse/graph_projection/
     writes: []
     notes:
       - This is the current Ask workspace contract exposed through the workbench adapter.
       - It is a routing and draft surface, not a hidden autonomous generation path.
+      - Graph projection remains derived/read-only and only contributes bounded hints.
   - key: save_query_analysis_draft
     description: Save a durable analysis page from a repo-local query preview and add bounded link-backs on confident related pages.
     inputs:
@@ -140,9 +141,10 @@ actions:
       - warehouse/jsonl/claims.jsonl
       - wiki/_meta/log.md
     notes:
-      - The current workbench contract allows canonical review-state edits only for claims, not arbitrary registry mutation.
+      - The current workbench contract allows canonical claim review updates only for claims, not arbitrary registry mutation.
+      - Review actions may also refresh derived claim contract fields such as support standing and lifecycle state.
   - key: run_workbench_maintenance_action
-    description: Run an explicit maintenance command through the workbench adapter for status, reindex, or lint.
+    description: Run an explicit maintenance command through the workbench adapter for status, reindex, lint, or doctor.
     inputs:
       - action key
     outputs:
@@ -152,4 +154,4 @@ actions:
     writes:
       - wiki/_meta/index.md when action is reindex
     notes:
-      - Allowed actions are intentionally limited to status, reindex, and lint.
+      - Allowed actions are intentionally limited to status, reindex, lint, and doctor.

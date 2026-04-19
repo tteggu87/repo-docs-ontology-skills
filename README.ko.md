@@ -52,10 +52,12 @@ _DocTology 워크벤치 질문 작업공간 — 현재 위키를 확인하고, r
 
 현재 workbench의 실제 성격은 자유 대화형 LLM 작업공간이라기보다, 생성된 위키와 관련 preview를 읽고 검토하는 화면에 가깝습니다. 즉, 아직 능동적인 conversational chat 면은 아닙니다.
 
-현재 구현 수준과 계층/버전 정책은 아래 문서를 우선 보세요.
+실시간 maturity snapshot과 ownership rule은 다음 문서를 우선 보세요.
 - [`docs/CURRENT_STATE.md`](docs/CURRENT_STATE.md)
 - [`docs/LAYERS.md`](docs/LAYERS.md)
 - [`docs/VERSIONING_POLICY.md`](docs/VERSIONING_POLICY.md)
+
+**중요한 repo-local note:** 체크인된 `wiki/` 트리 안에는 현재 runtime이 직접 쓰는 루트 `wiki/_meta/`, `wiki/sources/` 등과, 더 깊은 `wiki/wiki/` 샘플·과거 subtree가 함께 들어 있습니다. 현재 runtime 작업에서는 먼저 루트 레벨 `wiki/*` surface를 기준으로 보세요. 또한 현재 체크인된 sample workspace는 full hardened ontology-ready bootstrap contract라기보다 더 가벼운 minimal scaffold snapshot으로 취급하는 편이 맞습니다.
 
 ![참고 예시: 지식이 위키로 자라나는 모습](assets/readme/doctology-reference-obsidian-notes-forming-a-wiki.jpg)
 
