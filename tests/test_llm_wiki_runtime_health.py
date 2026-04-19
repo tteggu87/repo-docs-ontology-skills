@@ -132,6 +132,29 @@ class LlmWikiRuntimeHealthTests(unittest.TestCase):
         self.assertTrue(payload["graph_projection"]["available"])
         self.assertFalse(payload["docs_readiness"]["current_state_exists"])
 
+    def test_build_doctor_payload_ignores_superseded_source_pages_without_raw_path(self) -> None:
+        repo_root = self.make_repo()
+        (repo_root / "wiki" / "sources" / "source-legacy.md").write_text(
+            textwrap.dedent(
+                """\
+                ---
+                title: Source Legacy
+                type: source
+                status: superseded
+                ---
+
+                # Source Legacy
+                """
+            ),
+            encoding="utf-8",
+        )
+
+        payload = llm_wiki.build_doctor_payload(repo_root)
+
+        self.assertEqual(payload["wiki_health"]["source_page_count"], 3)
+        self.assertEqual(payload["source_page_health"]["missing_raw_path_count"], 0)
+        self.assertEqual(payload["source_page_health"]["missing_raw_path_pages"], [])
+
     def test_classify_working_tree_entries_groups_agent_runtime_and_live_workspace_paths(self) -> None:
         payload = llm_wiki.classify_working_tree_entries(
             [

@@ -160,6 +160,11 @@ def _extract_raw_path(content: str) -> str:
     return match.group(1).strip() if match else ""
 
 
+def _extract_status(content: str) -> str:
+    match = re.search(r'^status:\s*"?(.*?)"?\s*$', content, re.MULTILINE)
+    return match.group(1).strip().lower() if match else ""
+
+
 def _jsonl_row_count(path: Path) -> int:
     if not path.exists():
         return 0
@@ -299,10 +304,12 @@ def build_doctor_payload(root: Path = ROOT) -> dict[str, object]:
     raw_path_owners: dict[str, list[str]] = defaultdict(list)
     missing_raw_path: list[str] = []
     for path in source_pages:
-        raw_path = _extract_raw_path(read_text(path))
+        content = read_text(path)
+        raw_path = _extract_raw_path(content)
+        status = _extract_status(content)
         if raw_path:
             raw_path_owners[raw_path].append(path.stem)
-        else:
+        elif status not in {"superseded", "archived", "reference-only"}:
             missing_raw_path.append(path.stem)
     duplicate_raw_path_owners = [
         {"raw_path": raw_path, "owners": sorted(owners)}
