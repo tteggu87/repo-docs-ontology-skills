@@ -262,6 +262,58 @@ class ProductionOntologyIngestTests(unittest.TestCase):
         )
         self.assertEqual(inspect_payload["mode"], "available")
 
+    def test_production_ingest_promotes_uncertainty_state_and_relation_contracts(self) -> None:
+        repo_root = self.make_repo()
+
+        ingest = self.require_production_ingest()
+        ingest(repo_root, clean=True, build_graph_projection=True)
+        claims = read_jsonl(repo_root / "warehouse" / "jsonl" / "claims.jsonl")
+        derived_edges = read_jsonl(repo_root / "warehouse" / "jsonl" / "derived_edges.jsonl")
+        graph_edges = read_jsonl(repo_root / "warehouse" / "graph_projection" / "edges.jsonl")
+        repo = WorkbenchRepository(repo_root)
+        review_payload = repo.review_summary(limit=10)
+        source_payload = repo.source_detail("source-alpha")
+        preview_payload = repo.query_preview("neo4j graph memory", limit=5)
+
+        contradiction_claim = next(row for row in claims if row.get("contradiction_candidate"))
+        supporting_edge = next(row for row in derived_edges if row.get("label") == "about_subject")
+        graph_supporting_edge = next(row for row in graph_edges if row.get("label") == "about_subject")
+        review_item = review_payload["low_confidence_claims"][0]
+        queued_item = source_payload["review_queue"][0]
+
+        self.assertEqual(contradiction_claim["support_status"], "disputed")
+        self.assertEqual(contradiction_claim["truth_basis"], "raw_segment")
+        self.assertEqual(contradiction_claim["lifecycle_state"], "contested")
+        self.assertEqual(contradiction_claim["temporal_scope"], "ingest_snapshot")
+        self.assertEqual(contradiction_claim["evidence_count"], 1)
+        self.assertTrue(contradiction_claim["state_updated_at"])
+
+        self.assertEqual(supporting_edge["relation_type"], "about_subject")
+        self.assertEqual(supporting_edge["relation_origin"], "claim_projection")
+        self.assertEqual(supporting_edge["truth_basis"], "canonical_claim")
+        self.assertEqual(supporting_edge["temporal_scope"], "ingest_snapshot")
+        self.assertTrue(supporting_edge["source_claim_id"])
+        self.assertIn(supporting_edge["relation_state"], {"draft", "contested"})
+
+        self.assertEqual(graph_supporting_edge["relation_type"], "about_subject")
+        self.assertEqual(graph_supporting_edge["truth_basis"], "canonical_claim")
+        self.assertEqual(graph_supporting_edge["relation_origin"], "claim_projection")
+
+        self.assertEqual(review_item["truth_basis"], "raw_segment")
+        self.assertTrue(review_item["support_status"] in {"provisional", "disputed"})
+        self.assertIn(review_item["lifecycle_state"], {"draft", "contested"})
+        self.assertEqual(queued_item["truth_basis"], "raw_segment")
+        self.assertIn(queued_item["support_status"], {"provisional", "disputed"})
+
+        self.assertIn("knowledge_state_summary", source_payload)
+        self.assertGreaterEqual(source_payload["knowledge_state_summary"]["support_status_counts"].get("disputed", 0), 1)
+        self.assertEqual(source_payload["knowledge_state_summary"]["truth_basis_counts"]["raw_segment"], source_payload["coverage"]["claim_count"])
+
+        self.assertIn("uncertainty", preview_payload["contract"])
+        self.assertGreater(preview_payload["contract"]["uncertainty"]["claim_hit_count"], 0)
+        self.assertGreaterEqual(preview_payload["contract"]["uncertainty"]["support_status_counts"].get("disputed", 0), 1)
+        self.assertEqual(preview_payload["contract"]["temporal_scope"]["dominant_scope"], "ingest_snapshot")
+
     def test_partial_rerun_preserves_unrelated_rows_and_tracks_supersession(self) -> None:
         repo_root = self.make_repo()
 

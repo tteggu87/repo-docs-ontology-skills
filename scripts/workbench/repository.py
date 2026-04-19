@@ -8,6 +8,7 @@ import difflib
 import json
 import subprocess
 import unicodedata
+from collections import Counter
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -268,6 +269,22 @@ class WorkbenchRepository:
             "recent_analyses": top(analyses),
         }
 
+    @staticmethod
+    def _claim_semantics_summary(claims: list[dict[str, Any]]) -> dict[str, Any]:
+        support_status_counts = Counter(str(row.get("support_status") or "unknown") for row in claims)
+        truth_basis_counts = Counter(str(row.get("truth_basis") or "unknown") for row in claims)
+        lifecycle_state_counts = Counter(str(row.get("lifecycle_state") or "unknown") for row in claims)
+        temporal_scope_counts = Counter(str(row.get("temporal_scope") or "unknown") for row in claims)
+        dominant_scope = temporal_scope_counts.most_common(1)[0][0] if temporal_scope_counts else None
+        return {
+            "claim_count": len(claims),
+            "support_status_counts": dict(sorted(support_status_counts.items())),
+            "truth_basis_counts": dict(sorted(truth_basis_counts.items())),
+            "lifecycle_state_counts": dict(sorted(lifecycle_state_counts.items())),
+            "temporal_scope_counts": dict(sorted(temporal_scope_counts.items())),
+            "dominant_scope": dominant_scope,
+        }
+
     def review_summary(self, limit: int = 5) -> dict[str, Any]:
         records = self.all_page_records()
         documents_by_id = {
@@ -300,6 +317,11 @@ class WorkbenchRepository:
                     "subject_id": claim.get("subject_id"),
                     "review_state": review_state,
                     "confidence": confidence_value,
+                    "support_status": claim.get("support_status"),
+                    "truth_basis": claim.get("truth_basis"),
+                    "lifecycle_state": claim.get("lifecycle_state"),
+                    "temporal_scope": claim.get("temporal_scope"),
+                    "evidence_count": claim.get("evidence_count"),
                     "claim_text": claim.get("claim_text"),
                 }
             )
@@ -314,6 +336,10 @@ class WorkbenchRepository:
                         ).get("source_page"),
                         "subject_id": claim.get("subject_id"),
                         "confidence": confidence_value,
+                        "support_status": claim.get("support_status"),
+                        "truth_basis": claim.get("truth_basis"),
+                        "lifecycle_state": claim.get("lifecycle_state"),
+                        "temporal_scope": claim.get("temporal_scope"),
                         "claim_text": claim.get("claim_text"),
                     }
                 )
@@ -475,6 +501,16 @@ class WorkbenchRepository:
                     "fallback_reason": "empty_query",
                     "save_readiness": "blocked",
                     "save_reason": "Ask a more specific question before saving an analysis.",
+                    "uncertainty": {
+                        "claim_hit_count": 0,
+                        "support_status_counts": {},
+                        "truth_basis_counts": {},
+                        "lifecycle_state_counts": {},
+                    },
+                    "temporal_scope": {
+                        "dominant_scope": None,
+                        "counts": {},
+                    },
                 },
             }
 
@@ -539,6 +575,11 @@ class WorkbenchRepository:
                     {
                         "id": hit_id,
                         "review_state": row.get("review_state") if name == "claims" else None,
+                        "support_status": row.get("support_status") if name == "claims" else None,
+                        "truth_basis": row.get("truth_basis") if name == "claims" else None,
+                        "lifecycle_state": row.get("lifecycle_state") if name == "claims" else None,
+                        "temporal_scope": row.get("temporal_scope") if name == "claims" else None,
+                        "evidence_count": row.get("evidence_count") if name == "claims" else None,
                         "matched_terms": sorted(set(matched_terms)),
                         "preview": preview,
                     }
@@ -592,6 +633,8 @@ class WorkbenchRepository:
         if claim_seed:
             graph_seed_candidates.append(("claim", claim_seed))
         graph_hints = self._graph_hints_for_seeds(graph_seed_candidates)
+        claim_hits = registry_hits.get("claims", [])
+        claim_semantics = self._claim_semantics_summary(claim_hits)
         fallback_reason = None
         if coverage == "thin":
             fallback_reason = "thin_coverage"
@@ -620,6 +663,16 @@ class WorkbenchRepository:
             "fallback_reason": fallback_reason,
             "save_readiness": save_readiness,
             "save_reason": save_reason,
+            "uncertainty": {
+                "claim_hit_count": claim_semantics["claim_count"],
+                "support_status_counts": claim_semantics["support_status_counts"],
+                "truth_basis_counts": claim_semantics["truth_basis_counts"],
+                "lifecycle_state_counts": claim_semantics["lifecycle_state_counts"],
+            },
+            "temporal_scope": {
+                "dominant_scope": claim_semantics["dominant_scope"],
+                "counts": claim_semantics["temporal_scope_counts"],
+            },
         }
         graph_signal = next((hint for hint in graph_hints.get("path_hints") or [] if str(hint).strip()), None)
 
@@ -648,7 +701,6 @@ class WorkbenchRepository:
                 answer_lines.append(
                     f"- Canonical registries add {total_registry_hits} matching hit(s) across entities, claims, or segments."
                 )
-                claim_hits = registry_hits.get("claims", [])
                 if claim_hits:
                     approved_count = sum(
                         1 for item in claim_hits if str(item.get("review_state") or "unknown") == REVIEW_STATE_ACTIVE
@@ -659,6 +711,23 @@ class WorkbenchRepository:
                     answer_lines.append(
                         f"- Claim review states in scope: approved `{approved_count}`, needs_review `{pending_count}`, rejected claims hidden."
                     )
+                    support_counts = claim_semantics["support_status_counts"]
+                    if support_counts:
+                        answer_lines.append(
+                            "- Claim support standing in scope: "
+                            + ", ".join(f"{name} `{count}`" for name, count in support_counts.items())
+                            + "."
+                        )
+                    truth_basis_counts = claim_semantics["truth_basis_counts"]
+                    if truth_basis_counts:
+                        answer_lines.append(
+                            "- Truth basis in scope: "
+                            + ", ".join(f"{name} `{count}`" for name, count in truth_basis_counts.items())
+                            + "."
+                        )
+                    dominant_scope = claim_semantics.get("dominant_scope")
+                    if dominant_scope:
+                        answer_lines.append(f"- Dominant temporal scope: `{dominant_scope}`.")
             if graph_signal:
                 answer_lines.append(f"- Graph signal: {graph_signal}")
             if coverage == "thin":
@@ -1526,6 +1595,7 @@ class WorkbenchRepository:
         claims = read_jsonl(self.warehouse_jsonl_dir / "claims.jsonl")
         claim_evidence = read_jsonl(self.warehouse_jsonl_dir / "claim_evidence.jsonl")
         segments = read_jsonl(self.warehouse_jsonl_dir / "segments.jsonl")
+        derived_edges = read_jsonl(self.warehouse_jsonl_dir / "derived_edges.jsonl")
 
         related_documents = [
             row
@@ -1594,6 +1664,13 @@ class WorkbenchRepository:
             for row in segments
             if row.get("document_id") in related_document_ids
         ]
+        related_derived_edges = [
+            row
+            for row in derived_edges
+            if row.get("source_claim_id") in related_claim_ids
+            or row.get("source") in related_document_ids
+            or row.get("target") in related_document_ids
+        ]
         needs_review_claims = pending_claims
         low_confidence_claims = [
             row
@@ -1653,15 +1730,23 @@ class WorkbenchRepository:
             "rejected_claim_count": len(rejected_claims),
             "evidence_count": len(related_evidence),
             "segment_count": len(related_segments),
+            "derived_edge_count": len(related_derived_edges),
             "needs_review_claim_count": len(needs_review_claims),
             "low_confidence_claim_count": len(low_confidence_claims),
         }
+        relation_type_counts = Counter(str(row.get("relation_type") or row.get("label") or "unknown") for row in related_derived_edges)
+        knowledge_state_summary = self._claim_semantics_summary(related_claims)
+        knowledge_state_summary["relation_type_counts"] = dict(sorted(relation_type_counts.items()))
         review_queue = [
             {
                 "claim_id": row.get("claim_id"),
                 "predicate": row.get("predicate"),
                 "review_state": row.get("review_state"),
                 "confidence": row.get("confidence"),
+                "support_status": row.get("support_status"),
+                "truth_basis": row.get("truth_basis"),
+                "lifecycle_state": row.get("lifecycle_state"),
+                "temporal_scope": row.get("temporal_scope"),
                 "claim_text": row.get("claim_text"),
             }
             for row in sorted(
@@ -1684,6 +1769,7 @@ class WorkbenchRepository:
             "related_versions": related_versions[:5],
             "incremental_status": incremental_status,
             "coverage": coverage,
+            "knowledge_state_summary": knowledge_state_summary,
             "review_queue": review_queue,
             "related_pages": self.related_pages_for_stem(stem),
         }

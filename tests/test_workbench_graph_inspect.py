@@ -69,7 +69,7 @@ class WorkbenchGraphInspectTests(unittest.TestCase):
             encoding="utf-8",
         )
         (root / "warehouse" / "jsonl" / "claims.jsonl").write_text(
-            '{"claim_id":"claim:graph-memory-supports-operators","claim_text":"Graph memory supports operators","subject_id":"entity:graph-memory"}\n',
+            '{"claim_id":"claim:graph-memory-supports-operators","claim_text":"Graph memory supports operators","subject_id":"entity:graph-memory","review_state":"approved","confidence":0.94,"support_status":"supported","truth_basis":"raw_segment","lifecycle_state":"active","evidence_count":1,"temporal_scope":"ingest_snapshot"}\n',
             encoding="utf-8",
         )
         (root / "warehouse" / "graph_projection" / "nodes.jsonl").write_text(
@@ -87,9 +87,9 @@ class WorkbenchGraphInspectTests(unittest.TestCase):
         (root / "warehouse" / "graph_projection" / "edges.jsonl").write_text(
             "\n".join(
                 [
-                    '{"source":"entity:graph-memory","target":"claim:graph-memory-supports-operators","label":"supports"}',
-                    '{"source":"claim:graph-memory-supports-operators","target":"entity:operators","label":"about"}',
-                    '{"source":"source:source-alpha","target":"claim:graph-memory-supports-operators","label":"documents"}',
+                    '{"source":"entity:graph-memory","target":"claim:graph-memory-supports-operators","label":"supports","relation_type":"supports","truth_basis":"canonical_claim","relation_state":"active","source_claim_id":"claim:graph-memory-supports-operators","relation_origin":"claim_projection","confidence":0.94,"temporal_scope":"ingest_snapshot"}',
+                    '{"source":"claim:graph-memory-supports-operators","target":"entity:operators","label":"about","relation_type":"about","truth_basis":"canonical_claim","relation_state":"active","source_claim_id":"claim:graph-memory-supports-operators","relation_origin":"claim_projection","confidence":0.94,"temporal_scope":"ingest_snapshot"}',
+                    '{"source":"source:source-alpha","target":"claim:graph-memory-supports-operators","label":"documents","relation_type":"documents","truth_basis":"canonical_claim","relation_state":"active","source_claim_id":"claim:graph-memory-supports-operators","relation_origin":"claim_projection","confidence":0.94,"temporal_scope":"ingest_snapshot"}',
                 ]
             )
             + "\n",
@@ -147,6 +147,20 @@ class WorkbenchGraphInspectTests(unittest.TestCase):
         self.assertEqual(payload["contract"]["save_readiness"], "ready")
         self.assertIsNone(payload["contract"]["fallback_reason"])
         self.assertTrue(any(layer["name"] == "canonical_jsonl" and layer["used"] for layer in payload["contract"]["truth_layers"]))
+
+    def test_query_preview_exposes_uncertainty_and_truth_basis_contract(self) -> None:
+        repo_root = self.make_repo()
+        repo = WorkbenchRepository(repo_root)
+
+        payload = repo.query_preview("graph memory operators", limit=5)
+
+        self.assertIn("uncertainty", payload["contract"])
+        self.assertEqual(payload["contract"]["uncertainty"]["claim_hit_count"], 1)
+        self.assertEqual(payload["contract"]["uncertainty"]["support_status_counts"]["supported"], 1)
+        self.assertEqual(payload["contract"]["uncertainty"]["truth_basis_counts"]["raw_segment"], 1)
+        self.assertEqual(payload["contract"]["temporal_scope"]["dominant_scope"], "ingest_snapshot")
+        self.assertIn("supported `1`", payload["answer_markdown"])
+        self.assertIn("raw_segment `1`", payload["answer_markdown"])
 
     def test_query_preview_empty_query_returns_tokens_and_hides_graph_hints(self) -> None:
         repo_root = self.make_repo()

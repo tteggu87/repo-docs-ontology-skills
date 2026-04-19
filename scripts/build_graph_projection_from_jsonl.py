@@ -72,6 +72,9 @@ def build_graph_projection_from_jsonl(project_root_arg: str | Path, *, allow_mai
             source_page=row.get("source_page"),
             aliases=row.get("aliases"),
             entity_type=row.get("type"),
+            lifecycle_state=row.get("lifecycle_state"),
+            state_updated_at=row.get("state_updated_at"),
+            temporal_scope=row.get("temporal_scope"),
         )
     for row in claims:
         add_node(
@@ -81,6 +84,12 @@ def build_graph_projection_from_jsonl(project_root_arg: str | Path, *, allow_mai
             source_page=row.get("source_page"),
             review_state=row.get("review_state"),
             confidence=row.get("confidence"),
+            support_status=row.get("support_status"),
+            truth_basis=row.get("truth_basis"),
+            evidence_count=row.get("evidence_count"),
+            lifecycle_state=row.get("lifecycle_state"),
+            state_updated_at=row.get("state_updated_at"),
+            temporal_scope=row.get("temporal_scope"),
         )
 
     edges: list[dict[str, Any]] = []
@@ -97,7 +106,15 @@ def build_graph_projection_from_jsonl(project_root_arg: str | Path, *, allow_mai
         if key in seen_edges:
             continue
         seen_edges.add(key)
-        edges.append({"source": source, "target": target, "label": label})
+        payload = {"source": source, "target": target, "label": label}
+        payload.update(
+            {
+                key: value
+                for key, value in row.items()
+                if key not in {"source", "target", "label"} and value not in (None, "", [], {})
+            }
+        )
+        edges.append(payload)
 
     nodes_path = graph_dir / "nodes.jsonl"
     edges_path = graph_dir / "edges.jsonl"

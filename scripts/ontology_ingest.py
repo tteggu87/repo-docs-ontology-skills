@@ -84,6 +84,33 @@ except ModuleNotFoundError:
 INGEST_METHOD = "ontology_production_raw_v1"
 SOURCE_KIND = "raw_text_file"
 REVIEW_STATE = "needs_review"
+TEMPORAL_SCOPE = "ingest_snapshot"
+
+
+def claim_support_status(*, review_state: str, contradiction_candidate: bool, confidence: float | None) -> str:
+    if review_state == "rejected":
+        return "rejected"
+    if contradiction_candidate:
+        return "disputed"
+    if review_state == "approved":
+        return "supported"
+    if confidence is not None and confidence >= 0.9:
+        return "supported"
+    return "provisional"
+
+
+def claim_lifecycle_state(*, review_state: str, contradiction_candidate: bool) -> str:
+    if review_state == "rejected":
+        return "rejected"
+    if contradiction_candidate:
+        return "contested"
+    if review_state == "approved":
+        return "active"
+    return "draft"
+
+
+def relation_state_for_claim(claim: dict[str, Any]) -> str:
+    return str(claim.get("lifecycle_state") or "draft")
 
 
 def collect_wiki_page_lookup(project_root: Path, wiki_dir: Path | None = None) -> dict[str, dict[str, Any]]:
@@ -312,6 +339,7 @@ def build_entities(records: list[dict[str, Any]], wiki_lookup: dict[str, dict[st
                 )
 
     rows: list[dict[str, Any]] = []
+    state_updated_at = today_iso()
     for bucket in sorted(accumulators.values(), key=lambda item: item["normalized_key"]):
         aliases = sorted(bucket["aliases"])
         canonical_name = choose_canonical_alias(aliases)
@@ -327,6 +355,9 @@ def build_entities(records: list[dict[str, Any]], wiki_lookup: dict[str, dict[st
                 "source_page": sorted(bucket["source_pages"])[0],
                 "source_pages": sorted(bucket["source_pages"]),
                 "merge_candidate": len(aliases) > 1,
+                "lifecycle_state": "active",
+                "state_updated_at": state_updated_at,
+                "temporal_scope": TEMPORAL_SCOPE,
                 "ingest_method": INGEST_METHOD,
             }
         )
@@ -352,6 +383,7 @@ def build_claims_and_evidence(
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     claims: list[dict[str, Any]] = []
     evidence_rows: list[dict[str, Any]] = []
+    state_updated_at = today_iso()
     for record in records:
         source_stem = record["source_stem"]
         document_id = record["document"]["document_id"]
@@ -379,8 +411,18 @@ def build_claims_and_evidence(
                 "topic_key": sentence_topic(sentence, predicate),
                 "review_state": REVIEW_STATE,
                 "confidence": float(confidence),
+                "support_status": claim_support_status(
+                    review_state=REVIEW_STATE,
+                    contradiction_candidate=False,
+                    confidence=float(confidence),
+                ),
+                "truth_basis": "raw_segment",
+                "evidence_count": 1,
                 "source_page": source_stem,
                 "statement_kind": statement_kind,
+                "lifecycle_state": claim_lifecycle_state(review_state=REVIEW_STATE, contradiction_candidate=False),
+                "state_updated_at": state_updated_at,
+                "temporal_scope": TEMPORAL_SCOPE,
                 "extraction_method": INGEST_METHOD,
                 "contradiction_candidate": False,
             }
@@ -395,6 +437,7 @@ def build_claims_and_evidence(
                     "char_start": segment["char_start"],
                     "char_end": segment["char_end"],
                     "quote_text": sentence,
+                    "truth_basis": "raw_segment",
                     "ingest_method": INGEST_METHOD,
                 }
             )
@@ -407,6 +450,19 @@ def build_claims_and_evidence(
         if 1 in polarities and -1 in polarities:
             for claim in group_claims:
                 claim["contradiction_candidate"] = True
+    for claim in claims:
+        review_state = str(claim.get("review_state") or REVIEW_STATE)
+        contradiction_candidate = bool(claim.get("contradiction_candidate"))
+        confidence_value = float(claim["confidence"]) if isinstance(claim.get("confidence"), (int, float)) else None
+        claim["support_status"] = claim_support_status(
+            review_state=review_state,
+            contradiction_candidate=contradiction_candidate,
+            confidence=confidence_value,
+        )
+        claim["lifecycle_state"] = claim_lifecycle_state(
+            review_state=review_state,
+            contradiction_candidate=contradiction_candidate,
+        )
     return claims, evidence_rows
 
 
@@ -414,27 +470,61 @@ def build_derived_edges(claims: list[dict[str, Any]], entities: list[dict[str, A
     rows: list[dict[str, Any]] = []
     seen: set[tuple[str, str, str]] = set()
 
-    def add_edge(source: str | None, target: str | None, label: str) -> None:
+    def add_edge(source: str | None, target: str | None, label: str, **extra: Any) -> None:
         if not source or not target:
             return
         key = (source, target, label)
         if key in seen:
             return
         seen.add(key)
-        rows.append({"source": source, "target": target, "label": label, "ingest_method": INGEST_METHOD})
+        payload = {"source": source, "target": target, "label": label, "relation_type": label, "ingest_method": INGEST_METHOD}
+        payload.update({key: value for key, value in extra.items() if value not in (None, "", [], {})})
+        rows.append(payload)
 
     for claim in claims:
-        add_edge(str(claim.get("document_id") or ""), str(claim.get("claim_id") or ""), "documents")
-        add_edge(str(claim.get("claim_id") or ""), str(claim.get("subject_id") or ""), "about_subject")
-        add_edge(str(claim.get("claim_id") or ""), str(claim.get("object_id") or ""), "about_object")
+        common = {
+            "truth_basis": "canonical_claim",
+            "relation_state": relation_state_for_claim(claim),
+            "source_claim_id": str(claim.get("claim_id") or ""),
+            "relation_origin": "claim_projection",
+            "confidence": claim.get("confidence"),
+            "support_status": claim.get("support_status"),
+            "temporal_scope": claim.get("temporal_scope") or TEMPORAL_SCOPE,
+        }
+        add_edge(str(claim.get("document_id") or ""), str(claim.get("claim_id") or ""), "documents", **common)
+        add_edge(str(claim.get("claim_id") or ""), str(claim.get("subject_id") or ""), "about_subject", **common)
+        add_edge(str(claim.get("claim_id") or ""), str(claim.get("object_id") or ""), "about_object", **common)
     for row in entities:
         for document_id in row.get("source_document_ids") or []:
-            add_edge(str(document_id), str(row.get("entity_id") or ""), "mentions")
+            add_edge(
+                str(document_id),
+                str(row.get("entity_id") or ""),
+                "mentions",
+                truth_basis="canonical_entity",
+                relation_state=str(row.get("lifecycle_state") or "active"),
+                relation_origin="entity_aggregation",
+                temporal_scope=row.get("temporal_scope") or TEMPORAL_SCOPE,
+            )
     contradiction_claims = [claim for claim in claims if claim.get("contradiction_candidate")]
     for index, left in enumerate(contradiction_claims):
         for right in contradiction_claims[index + 1 :]:
             if left.get("subject_id") == right.get("subject_id") and left.get("topic_key") == right.get("topic_key"):
-                add_edge(str(left.get("claim_id") or ""), str(right.get("claim_id") or ""), "contradicts")
+                add_edge(
+                    str(left.get("claim_id") or ""),
+                    str(right.get("claim_id") or ""),
+                    "contradicts",
+                    truth_basis="canonical_claim",
+                    relation_state="contested",
+                    source_claim_id=str(left.get("claim_id") or ""),
+                    related_claim_id=str(right.get("claim_id") or ""),
+                    relation_origin="contradiction_detection",
+                    confidence=min(
+                        float(left.get("confidence") or 1.0),
+                        float(right.get("confidence") or 1.0),
+                    ),
+                    support_status="disputed",
+                    temporal_scope=TEMPORAL_SCOPE,
+                )
     return rows
 
 
