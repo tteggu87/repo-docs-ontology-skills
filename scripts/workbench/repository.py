@@ -8,7 +8,7 @@ import difflib
 import json
 import subprocess
 import unicodedata
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -85,6 +85,10 @@ else:
 @dataclass
 class WorkbenchRepository:
     root: Path
+    _graph_nodes_cache: list[dict[str, Any]] | None = field(default=None, init=False, repr=False)
+    _graph_edges_cache: list[dict[str, Any]] | None = field(default=None, init=False, repr=False)
+    _graph_nodes_signature: tuple[int, int] | None = field(default=None, init=False, repr=False)
+    _graph_edges_signature: tuple[int, int] | None = field(default=None, init=False, repr=False)
 
     @property
     def raw_dir(self) -> Path:
@@ -617,6 +621,7 @@ class WorkbenchRepository:
             "save_readiness": save_readiness,
             "save_reason": save_reason,
         }
+        graph_signal = next((hint for hint in graph_hints.get("path_hints") or [] if str(hint).strip()), None)
 
         answer_lines = [
             "# Local query preview",
@@ -654,6 +659,8 @@ class WorkbenchRepository:
                     answer_lines.append(
                         f"- Claim review states in scope: approved `{approved_count}`, needs_review `{pending_count}`, rejected claims hidden."
                     )
+            if graph_signal:
+                answer_lines.append(f"- Graph signal: {graph_signal}")
             if coverage == "thin":
                 answer_lines.append(
                     "- This is a thin-coverage answer draft. Treat it as a routing hint and inspect the linked pages before relying on it."
@@ -1081,17 +1088,31 @@ class WorkbenchRepository:
     def _graph_projection_paths(self) -> tuple[Path, Path]:
         return self.graph_dir / "nodes.jsonl", self.graph_dir / "edges.jsonl"
 
+    def _graph_projection_signature(self, path: Path) -> tuple[int, int] | None:
+        if not path.exists():
+            return None
+        stat = path.stat()
+        return (stat.st_mtime_ns, stat.st_size)
+
     def _graph_projection_available(self) -> bool:
         nodes_path, edges_path = self._graph_projection_paths()
         return nodes_path.exists() and edges_path.exists()
 
     def _graph_nodes(self) -> list[dict[str, Any]]:
         nodes_path, _ = self._graph_projection_paths()
-        return read_jsonl(nodes_path)
+        signature = self._graph_projection_signature(nodes_path)
+        if self._graph_nodes_cache is None or self._graph_nodes_signature != signature:
+            self._graph_nodes_cache = read_jsonl(nodes_path)
+            self._graph_nodes_signature = signature
+        return self._graph_nodes_cache
 
     def _graph_edges(self) -> list[dict[str, Any]]:
         _, edges_path = self._graph_projection_paths()
-        return read_jsonl(edges_path)
+        signature = self._graph_projection_signature(edges_path)
+        if self._graph_edges_cache is None or self._graph_edges_signature != signature:
+            self._graph_edges_cache = read_jsonl(edges_path)
+            self._graph_edges_signature = signature
+        return self._graph_edges_cache
 
     def _graph_string(self, value: Any) -> str:
         if value is None:
@@ -1112,6 +1133,58 @@ class WorkbenchRepository:
 
     def _graph_node_kind(self, node: dict[str, Any]) -> str:
         return str(node.get("kind") or node.get("type") or "node")
+
+    def _is_graph_noise_label(self, label: str) -> bool:
+        normalized = label.strip().lower()
+        if not normalized:
+            return True
+        if normalized in {"http", "https", "url", "all", "blog", "reddit", "from", "title", "excerpt", "readme", "snapshot"}:
+            return True
+        if normalized.startswith("url: http") or normalized.startswith("http://") or normalized.startswith("https://"):
+            return True
+        if normalized.startswith("fetched:") or " fetched:" in normalized or " title:" in normalized or "http status:" in normalized or "excerpt:" in normalized:
+            return True
+        if normalized.startswith("- ") and ("http" in normalized or "retrieval note:" in normalized):
+            return True
+        return False
+
+    def _graph_hint_candidate(self, source_label: str, edge_label: str, target_label: str) -> str | None:
+        if self._is_graph_noise_label(source_label) or self._is_graph_noise_label(target_label):
+            return None
+        hint = f"{source_label} --{edge_label}--> {target_label}"
+        if "http://" in hint.lower() or "https://" in hint.lower():
+            return None
+        return hint
+
+    def _graph_label_quality_score(self, label: str) -> int:
+        normalized = label.strip().lower()
+        if self._is_graph_noise_label(label):
+            return -100
+        score = 0
+        word_count = len(normalized.split())
+        score += max(0, 16 - min(word_count, 16))
+        score += max(0, 96 - min(len(normalized), 96)) // 6
+        if label[:1].isupper():
+            score += 2
+        if normalized in {"readme", "blog", "reddit", "snapshot", "excerpt"}:
+            score -= 8
+        if normalized.startswith("- ") or normalized.startswith("this folder contains") or normalized.startswith("these files are treated"):
+            score -= 12
+        if "`" in label:
+            score -= 4
+        return score
+
+    def _graph_hint_score(self, source_label: str, edge_label: str, target_label: str) -> int:
+        score = self._graph_label_quality_score(source_label) + self._graph_label_quality_score(target_label)
+        normalized_edge = edge_label.strip().lower()
+        if normalized_edge in {"supports", "documents", "mentions", "related_to"}:
+            score += 6
+        elif normalized_edge.startswith("about"):
+            score += 2
+        hint_length = len(f"{source_label} --{edge_label}--> {target_label}")
+        if hint_length > 180:
+            score -= 10
+        return score
 
     def _graph_seed_payload(self, seed_type: str, seed: str) -> tuple[str, list[str]]:
         normalized_type = seed_type.strip().lower()
@@ -1263,6 +1336,7 @@ class WorkbenchRepository:
 
         related_nodes: list[str] = []
         path_hints: list[str] = []
+        path_hint_scores: dict[str, int] = {}
         warnings: list[str] = []
         seed_payloads: list[dict[str, str]] = []
         any_available = False
@@ -1287,13 +1361,27 @@ class WorkbenchRepository:
                     }
                 if inspect.get("mode") == "available":
                     any_available = True
-                    for node in inspect.get("neighborhood", {}).get("nodes", []):
-                        label = str(node.get("label") or "").strip()
-                        if label and label not in related_nodes:
+                    node_labels = {
+                        str(node.get("id") or ""): str(node.get("label") or "").strip()
+                        for node in inspect.get("neighborhood", {}).get("nodes", [])
+                    }
+                    for label in node_labels.values():
+                        if label and not self._is_graph_noise_label(label) and label not in related_nodes:
                             related_nodes.append(label)
-                    for hint in inspect.get("path_hints", []):
-                        if hint not in path_hints:
-                            path_hints.append(hint)
+                    for edge in inspect.get("neighborhood", {}).get("edges", []):
+                        source = str(edge.get("source") or "")
+                        target = str(edge.get("target") or "")
+                        edge_label = str(edge.get("label") or "related_to")
+                        source_label = node_labels.get(source, source)
+                        target_label = node_labels.get(target, target)
+                        candidate = self._graph_hint_candidate(
+                            source_label,
+                            edge_label,
+                            target_label,
+                        )
+                        if candidate and candidate not in path_hints:
+                            path_hints.append(candidate)
+                            path_hint_scores[candidate] = self._graph_hint_score(source_label, edge_label, target_label)
                 for warning in inspect.get("warnings", []):
                     if warning not in warnings:
                         warnings.append(warning)
@@ -1317,8 +1405,8 @@ class WorkbenchRepository:
         return {
             "available": any_available,
             "summary": summary,
-            "related_nodes": related_nodes[:6],
-            "path_hints": path_hints[:5],
+            "related_nodes": sorted(related_nodes, key=self._graph_label_quality_score, reverse=True)[:6],
+            "path_hints": sorted(path_hints, key=lambda hint: path_hint_scores.get(hint, -1000), reverse=True)[:5],
             "warnings": warnings,
             "seeds": seed_payloads[:6],
         }

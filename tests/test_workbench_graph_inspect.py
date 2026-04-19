@@ -4,6 +4,7 @@ import tempfile
 import textwrap
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from scripts.workbench.repository import WorkbenchRepository
 from scripts.workbench.server import route_request
@@ -190,6 +191,94 @@ class WorkbenchGraphInspectTests(unittest.TestCase):
         self.assertFalse(payload["graph_hints"]["available"])
         self.assertEqual(payload["graph_hints"]["warnings"], ["graph_projection_invalid"])
         self.assertNotIn("## Graph hints", payload["answer_markdown"])
+
+    def test_query_preview_uses_clean_graph_signal_in_draft_answer(self) -> None:
+        repo_root = self.make_repo()
+        graph_dir = repo_root / "warehouse" / "graph_projection"
+        with (graph_dir / "nodes.jsonl").open("a", encoding="utf-8") as handle:
+            handle.write('{"id":"url:https://example.test/graph-memory","label":"URL: https://example.test/graph-memory","kind":"entity"}\n')
+            handle.write('{"id":"entity:http","label":"HTTP","kind":"entity"}\n')
+        with (graph_dir / "edges.jsonl").open("a", encoding="utf-8") as handle:
+            handle.write('{"source":"entity:graph-memory","target":"url:https://example.test/graph-memory","label":"links_to"}\n')
+            handle.write('{"source":"url:https://example.test/graph-memory","target":"entity:http","label":"about_subject"}\n')
+        repo = WorkbenchRepository(repo_root)
+
+        payload = repo.query_preview("graph memory operators", limit=5)
+
+        self.assertIn("- Graph signal:", payload["answer_markdown"])
+        self.assertIn("Graph Memory --supports--> Graph memory supports operators", payload["answer_markdown"])
+        self.assertNotIn("URL: https://example.test/graph-memory", payload["answer_markdown"])
+        self.assertNotIn(" --about_subject--> HTTP", payload["answer_markdown"])
+        self.assertNotIn("URL: https://example.test/graph-memory", " ".join(payload["graph_hints"]["related_nodes"]))
+        self.assertFalse(any("HTTP" in hint for hint in payload["graph_hints"]["path_hints"]))
+
+    def test_query_preview_preserves_labels_that_contain_graph_delimiters(self) -> None:
+        repo_root = self.make_repo()
+        (repo_root / "warehouse" / "graph_projection" / "nodes.jsonl").write_text(
+            "\n".join(
+                [
+                    '{"id":"entity:graph-memory","label":"Graph Memory -- tricky","kind":"entity"}',
+                    '{"id":"entity:operators","label":"Operators","kind":"entity"}',
+                ]
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        (repo_root / "warehouse" / "graph_projection" / "edges.jsonl").write_text(
+            '{"source":"entity:graph-memory","target":"entity:operators","label":"maps_to"}\n',
+            encoding="utf-8",
+        )
+        repo = WorkbenchRepository(repo_root)
+
+        payload = repo.query_preview("graph memory operators", limit=5)
+
+        self.assertIn("Graph Memory -- tricky --maps_to--> Operators", payload["answer_markdown"])
+        self.assertNotIn("Graph Memory --tricky", payload["answer_markdown"])
+
+    def test_query_preview_caches_graph_projection_reads_within_repository_instance(self) -> None:
+        repo_root = self.make_repo()
+        repo = WorkbenchRepository(repo_root)
+        original_read_jsonl = __import__("scripts.workbench.repository", fromlist=["read_jsonl"]).read_jsonl
+        read_paths: list[str] = []
+
+        def counting_read_jsonl(path: Path):
+            read_paths.append(str(path))
+            return original_read_jsonl(path)
+
+        with patch("scripts.workbench.repository.read_jsonl", side_effect=counting_read_jsonl):
+            repo.query_preview("graph memory operators", limit=5)
+
+        nodes_reads = [path for path in read_paths if path.endswith("warehouse/graph_projection/nodes.jsonl")]
+        edges_reads = [path for path in read_paths if path.endswith("warehouse/graph_projection/edges.jsonl")]
+        self.assertEqual(len(nodes_reads), 1)
+        self.assertEqual(len(edges_reads), 1)
+
+    def test_query_preview_reloads_graph_projection_when_files_change(self) -> None:
+        repo_root = self.make_repo()
+        repo = WorkbenchRepository(repo_root)
+
+        first = repo.query_preview("graph memory operators", limit=5)
+        self.assertIn("Graph Memory --supports--> Graph memory supports operators", first["answer_markdown"])
+
+        (repo_root / "warehouse" / "graph_projection" / "nodes.jsonl").write_text(
+            "\n".join(
+                [
+                    '{"id":"entity:graph-memory","label":"Graph Memory","kind":"entity"}',
+                    '{"id":"entity:operators","label":"Operators","kind":"entity"}',
+                ]
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        (repo_root / "warehouse" / "graph_projection" / "edges.jsonl").write_text(
+            '{"source":"entity:graph-memory","target":"entity:operators","label":"maps_to"}\n',
+            encoding="utf-8",
+        )
+
+        second = repo.query_preview("graph memory operators", limit=5)
+
+        self.assertIn("Graph Memory --maps_to--> Operators", second["answer_markdown"])
+        self.assertNotIn("Graph Memory --supports--> Graph memory supports operators", second["answer_markdown"])
 
     def test_review_summary_enriches_items_with_graph_hints(self) -> None:
         repo_root = self.make_repo()
