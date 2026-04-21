@@ -108,6 +108,14 @@ class GrowthOperatorMinimalTests(unittest.TestCase):
         self.assertTrue((repo_root / "warehouse" / "graph_projection" / "nodes.jsonl").exists())
         self.assertTrue((repo_root / "wiki" / "state" / "ontology_reconcile_preview.json").exists())
 
+    def test_repo_root_includes_source_page_template_for_ingest_registration(self) -> None:
+        template_path = Path(__file__).resolve().parents[1] / "templates" / "source_page_template.md"
+
+        self.assertTrue(template_path.exists(), msg=f"missing template: {template_path}")
+        content = template_path.read_text(encoding="utf-8")
+        self.assertIn("{{title}}", content)
+        self.assertIn("{{raw_path}}", content)
+
 
 if __name__ == "__main__":
     unittest.main()
