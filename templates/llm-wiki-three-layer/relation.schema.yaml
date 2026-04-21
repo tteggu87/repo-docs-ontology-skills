@@ -1,0 +1,30 @@
+schema_id: relation.schema.v1
+description: Structural contract for canonical relation export rows.
+
+required:
+  - relation_id
+  - source_entity_id
+  - relation_type
+  - target_entity_id
+  - evidence_claim_id
+  - confidence
+  - extraction_run_id
+
+constraints:
+  confidence:
+    type: float
+    minimum: 0.0
+    maximum: 1.0
+
+allowed_relation_types:
+  - mentions
+  - related_to
+  - supports
+  - derived_from
+  - contradicts
+
+notes:
+  - start with weak relation vocabulary
+  - do not harden into a strong ontology too early
+  - every relation should be traceable to supporting claim evidence
+

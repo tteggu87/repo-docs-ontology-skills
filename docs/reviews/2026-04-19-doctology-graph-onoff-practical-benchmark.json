@@ -1,0 +1,690 @@
+{
+  "baseline_root": "/Users/hoyasung007hotmail.com/Documents/my_project/DocTology",
+  "without_graph_root": "/private/var/folders/_0/srrg1xpj21sdm5jjt6b8pn_r0000gn/T/doctology-final-no-graph-1nc37403",
+  "summary": {
+    "query_count": 10,
+    "with_graph_avg_ms": 337.06,
+    "without_graph_avg_ms": 39.43,
+    "avg_latency_delta_ms": 297.63,
+    "with_graph_graph_signal_count": 7,
+    "without_graph_graph_signal_count": 0,
+    "with_graph_graph_section_count": 10,
+    "without_graph_graph_section_count": 0
+  },
+  "results": [
+    {
+      "query": "neo4j kuzu ladybug graph truth layer",
+      "with_graph": {
+        "avg_ms": 330.91,
+        "min_ms": 329.65,
+        "max_ms": 332.9,
+        "coverage": "supported",
+        "graph_signal": "- Graph signal: Source - Playground portfolio scan 2026-04-17 --mentions--> RAG",
+        "graph_available": true,
+        "graph_section": true,
+        "graph_seed_count": 5,
+        "graph_path_hint_count": 5,
+        "graph_related_node_count": 6,
+        "graph_paths": [
+          "Source - Playground portfolio scan 2026-04-17 --mentions--> RAG",
+          "Source - Playground portfolio scan 2026-04-17 --mentions--> AutoRAG",
+          "Source - Playground portfolio scan 2026-04-17 --mentions--> GraphRAG"
+        ],
+        "graph_nodes": [
+          "RAG",
+          "GraphRAG",
+          "AutoRAG",
+          "AutoRAG-Research",
+          "Source - Kuzu docs"
+        ],
+        "canonical_registry_count": 15,
+        "related_pages": [
+          "neo4j-vs-kuzu-vs-ladybug-for-graph-truth-layer",
+          "when-neo4j-beats-kuzu-and-when-kuzu-beats-neo4j",
+          "neo4j-need-assessment-for-little-crab-doctology-little-world"
+        ],
+        "related_sources": [
+          "source-neo4j-graphrag-python-docs",
+          "source-neo4j-knowledge-graph-builder-docs",
+          "source-kuzu-blog-corpus-scan-2026-04-18"
+        ]
+      },
+      "without_graph": {
+        "avg_ms": 38.69,
+        "min_ms": 38.44,
+        "max_ms": 39.19,
+        "coverage": "supported",
+        "graph_signal": null,
+        "graph_available": false,
+        "graph_section": false,
+        "graph_seed_count": 0,
+        "graph_path_hint_count": 0,
+        "graph_related_node_count": 0,
+        "graph_paths": [],
+        "graph_nodes": [],
+        "canonical_registry_count": 15,
+        "related_pages": [
+          "neo4j-vs-kuzu-vs-ladybug-for-graph-truth-layer",
+          "when-neo4j-beats-kuzu-and-when-kuzu-beats-neo4j",
+          "neo4j-need-assessment-for-little-crab-doctology-little-world"
+        ],
+        "related_sources": [
+          "source-neo4j-graphrag-python-docs",
+          "source-neo4j-knowledge-graph-builder-docs",
+          "source-kuzu-blog-corpus-scan-2026-04-18"
+        ]
+      },
+      "delta": {
+        "latency_ms": 292.22,
+        "graph_signal_gain": 1,
+        "graph_section_gain": 1,
+        "graph_path_gain": 5
+      }
+    },
+    {
+      "query": "ontology validation provenance human review",
+      "with_graph": {
+        "avg_ms": 337.69,
+        "min_ms": 335.06,
+        "max_ms": 341.98,
+        "coverage": "supported",
+        "graph_signal": null,
+        "graph_available": true,
+        "graph_section": true,
+        "graph_seed_count": 5,
+        "graph_path_hint_count": 0,
+        "graph_related_node_count": 6,
+        "graph_paths": [],
+        "graph_nodes": [
+          "Source - Chroma docs",
+          "Graph Rag And Runtime Sources",
+          "Source - LlamaIndex PropertyGraphIndex docs",
+          "Source - Kuzu blog corpus scan 2026-04-18",
+          "Source - Kuzu docs corpus scan 2026-04-18"
+        ],
+        "canonical_registry_count": 15,
+        "related_pages": [
+          "analysis-2026-04-18-doctology-ontology-benchmark-pipeline-implementation-and-benchmark",
+          "analysis-2026-04-18-doctology-ontology-backed-graph-benchmark",
+          "analysis-2026-04-18-doctology-production-ontology-ingest-upgrade-roadmap"
+        ],
+        "related_sources": [
+          "source-2026-04-19-external-best-practices-for-ontology-engines-2026-04-19",
+          "source-2026-04-19-opencrab-ontology-engine-value-collection-2026-04-19",
+          "source-my-project-portfolio-scan-2026-04-17"
+        ]
+      },
+      "without_graph": {
+        "avg_ms": 40.41,
+        "min_ms": 39.94,
+        "max_ms": 41.14,
+        "coverage": "supported",
+        "graph_signal": null,
+        "graph_available": false,
+        "graph_section": false,
+        "graph_seed_count": 0,
+        "graph_path_hint_count": 0,
+        "graph_related_node_count": 0,
+        "graph_paths": [],
+        "graph_nodes": [],
+        "canonical_registry_count": 15,
+        "related_pages": [
+          "analysis-2026-04-18-doctology-ontology-benchmark-pipeline-implementation-and-benchmark",
+          "analysis-2026-04-18-doctology-ontology-backed-graph-benchmark",
+          "analysis-2026-04-18-doctology-production-ontology-ingest-upgrade-roadmap"
+        ],
+        "related_sources": [
+          "source-2026-04-19-external-best-practices-for-ontology-engines-2026-04-19",
+          "source-2026-04-19-opencrab-ontology-engine-value-collection-2026-04-19",
+          "source-my-project-portfolio-scan-2026-04-17"
+        ]
+      },
+      "delta": {
+        "latency_ms": 297.28,
+        "graph_signal_gain": 0,
+        "graph_section_gain": 1,
+        "graph_path_gain": 0
+      }
+    },
+    {
+      "query": "opencrab ontology grammar promotion lifecycle",
+      "with_graph": {
+        "avg_ms": 349.52,
+        "min_ms": 348.38,
+        "max_ms": 351.64,
+        "coverage": "supported",
+        "graph_signal": "- Graph signal: OpenCrab ontology engine value collection 2026-04-19 --mentions--> BM25",
+        "graph_available": true,
+        "graph_section": true,
+        "graph_seed_count": 5,
+        "graph_path_hint_count": 5,
+        "graph_related_node_count": 6,
+        "graph_paths": [
+          "OpenCrab ontology engine value collection 2026-04-19 --mentions--> BM25",
+          "OpenCrab ontology engine value collection 2026-04-19 --mentions--> AlexAI-MCP",
+          "OpenCrab ontology engine value collection 2026-04-19 --mentions--> GraphRAG"
+        ],
+        "graph_nodes": [
+          "BM25",
+          "Across",
+          "AlexAI-MCP",
+          "GraphRAG",
+          "Graph Rag And Runtime Sources"
+        ],
+        "canonical_registry_count": 15,
+        "related_pages": [
+          "opencrab-feature-triage-for-little-crab",
+          "analysis-2026-04-18-doctology-production-ontology-ingest-upgrade-roadmap",
+          "opencrab-feature-triage-ceo-review-for-little-crab"
+        ],
+        "related_sources": [
+          "source-2026-04-19-opencrab-ontology-engine-value-collection-2026-04-19",
+          "source-2026-04-19-external-best-practices-for-ontology-engines-2026-04-19",
+          "source-my-project-portfolio-scan-2026-04-17"
+        ]
+      },
+      "without_graph": {
+        "avg_ms": 39.43,
+        "min_ms": 38.66,
+        "max_ms": 40.69,
+        "coverage": "supported",
+        "graph_signal": null,
+        "graph_available": false,
+        "graph_section": false,
+        "graph_seed_count": 0,
+        "graph_path_hint_count": 0,
+        "graph_related_node_count": 0,
+        "graph_paths": [],
+        "graph_nodes": [],
+        "canonical_registry_count": 15,
+        "related_pages": [
+          "opencrab-feature-triage-for-little-crab",
+          "analysis-2026-04-18-doctology-production-ontology-ingest-upgrade-roadmap",
+          "opencrab-feature-triage-ceo-review-for-little-crab"
+        ],
+        "related_sources": [
+          "source-2026-04-19-opencrab-ontology-engine-value-collection-2026-04-19",
+          "source-2026-04-19-external-best-practices-for-ontology-engines-2026-04-19",
+          "source-my-project-portfolio-scan-2026-04-17"
+        ]
+      },
+      "delta": {
+        "latency_ms": 310.09,
+        "graph_signal_gain": 1,
+        "graph_section_gain": 1,
+        "graph_path_gain": 5
+      }
+    },
+    {
+      "query": "little world little crab doctology comparison",
+      "with_graph": {
+        "avg_ms": 337.09,
+        "min_ms": 328.73,
+        "max_ms": 342.09,
+        "coverage": "supported",
+        "graph_signal": "- Graph signal: Source - my_project portfolio scan 2026-04-17 --mentions--> MCP",
+        "graph_available": true,
+        "graph_section": true,
+        "graph_seed_count": 5,
+        "graph_path_hint_count": 5,
+        "graph_related_node_count": 6,
+        "graph_paths": [
+          "Source - my_project portfolio scan 2026-04-17 --mentions--> MCP",
+          "Source - Chroma docs --mentions--> little-crab-storage-decision-duckdb-vs-sqlite-vs-neo4j",
+          "Source - my_project portfolio scan 2026-04-17 --mentions--> little-world-vs-little-crab-vs-doctology-comparison"
+        ],
+        "graph_nodes": [
+          "MCP",
+          "Source - Chroma docs",
+          "Graph Rag And Runtime Sources",
+          "little-crab-storage-decision-duckdb-vs-sqlite-vs-neo4j",
+          "little-world-vs-little-crab-vs-doctology-comparison"
+        ],
+        "canonical_registry_count": 15,
+        "related_pages": [
+          "little-world-and-little-crab-standalone-strategy",
+          "little-world-vs-little-crab-why-shell-choice",
+          "little-world-little-crab-doctology-absorption-integration"
+        ],
+        "related_sources": [
+          "source-2026-04-19-opencrab-ontology-engine-value-collection-2026-04-19",
+          "source-my-project-portfolio-scan-2026-04-17",
+          "source-chroma-docs"
+        ]
+      },
+      "without_graph": {
+        "avg_ms": 39.14,
+        "min_ms": 38.6,
+        "max_ms": 39.83,
+        "coverage": "supported",
+        "graph_signal": null,
+        "graph_available": false,
+        "graph_section": false,
+        "graph_seed_count": 0,
+        "graph_path_hint_count": 0,
+        "graph_related_node_count": 0,
+        "graph_paths": [],
+        "graph_nodes": [],
+        "canonical_registry_count": 15,
+        "related_pages": [
+          "little-world-and-little-crab-standalone-strategy",
+          "little-world-vs-little-crab-why-shell-choice",
+          "little-world-little-crab-doctology-absorption-integration"
+        ],
+        "related_sources": [
+          "source-2026-04-19-opencrab-ontology-engine-value-collection-2026-04-19",
+          "source-my-project-portfolio-scan-2026-04-17",
+          "source-chroma-docs"
+        ]
+      },
+      "delta": {
+        "latency_ms": 297.95,
+        "graph_signal_gain": 1,
+        "graph_section_gain": 1,
+        "graph_path_gain": 5
+      }
+    },
+    {
+      "query": "playground portfolio ontology graphrag fit",
+      "with_graph": {
+        "avg_ms": 340.17,
+        "min_ms": 334.56,
+        "max_ms": 344.94,
+        "coverage": "supported",
+        "graph_signal": "- Graph signal: External best practices for ontology engines 2026-04-19 --documents--> - SHACL Use Cases and Requirements",
+        "graph_available": true,
+        "graph_section": true,
+        "graph_seed_count": 5,
+        "graph_path_hint_count": 2,
+        "graph_related_node_count": 6,
+        "graph_paths": [
+          "External best practices for ontology engines 2026-04-19 --documents--> - SHACL Use Cases and Requirements",
+          "External best practices for ontology engines 2026-04-19 --documents--> - collected: 2026-04-19 - scope: papers, standards, blogs, open-source-adjacent materials, Reddit signals"
+        ],
+        "graph_nodes": [
+          "Graph Rag And Runtime Sources",
+          "Source - Microsoft GraphRAG paper",
+          "Source - Microsoft GraphRAG repository",
+          "Source - Microsoft GraphRAG overview docs",
+          "Source - my_project portfolio scan 2026-04-17"
+        ],
+        "canonical_registry_count": 15,
+        "related_pages": [
+          "ontology-graphrag",
+          "my-project-portfolio-vs-ontology-graphrag-fit",
+          "playground-portfolio-vs-ontology-graphrag-fit"
+        ],
+        "related_sources": [
+          "source-playground-portfolio-scan-2026-04-17",
+          "source-my-project-portfolio-scan-2026-04-17",
+          "source-local-ladybug-usage-in-portfolio"
+        ]
+      },
+      "without_graph": {
+        "avg_ms": 39.11,
+        "min_ms": 38.59,
+        "max_ms": 39.76,
+        "coverage": "supported",
+        "graph_signal": null,
+        "graph_available": false,
+        "graph_section": false,
+        "graph_seed_count": 0,
+        "graph_path_hint_count": 0,
+        "graph_related_node_count": 0,
+        "graph_paths": [],
+        "graph_nodes": [],
+        "canonical_registry_count": 15,
+        "related_pages": [
+          "ontology-graphrag",
+          "my-project-portfolio-vs-ontology-graphrag-fit",
+          "playground-portfolio-vs-ontology-graphrag-fit"
+        ],
+        "related_sources": [
+          "source-playground-portfolio-scan-2026-04-17",
+          "source-my-project-portfolio-scan-2026-04-17",
+          "source-local-ladybug-usage-in-portfolio"
+        ]
+      },
+      "delta": {
+        "latency_ms": 301.06,
+        "graph_signal_gain": 1,
+        "graph_section_gain": 1,
+        "graph_path_gain": 2
+      }
+    },
+    {
+      "query": "canonical truth vs graph projection",
+      "with_graph": {
+        "avg_ms": 332.58,
+        "min_ms": 330.28,
+        "max_ms": 336.97,
+        "coverage": "supported",
+        "graph_signal": null,
+        "graph_available": true,
+        "graph_section": true,
+        "graph_seed_count": 5,
+        "graph_path_hint_count": 0,
+        "graph_related_node_count": 6,
+        "graph_paths": [],
+        "graph_nodes": [
+          "Source - LightRAG paper",
+          "Graph Rag And Runtime Sources",
+          "Source - Microsoft GraphRAG paper",
+          "Source - LightRAG official site",
+          "Source - Microsoft GraphRAG repository"
+        ],
+        "canonical_registry_count": 15,
+        "related_pages": [
+          "my-project-portfolio-vs-ontology-graphrag-fit",
+          "personal-ontology-graphrag-implementation-guide",
+          "ontology-graph-truth-layer-and-recommended-stack"
+        ],
+        "related_sources": [
+          "source-llamaindex-property-graph-index-docs",
+          "source-microsoft-graphrag-overview",
+          "source-microsoft-graphrag-paper"
+        ]
+      },
+      "without_graph": {
+        "avg_ms": 38.99,
+        "min_ms": 38.59,
+        "max_ms": 39.22,
+        "coverage": "supported",
+        "graph_signal": null,
+        "graph_available": false,
+        "graph_section": false,
+        "graph_seed_count": 0,
+        "graph_path_hint_count": 0,
+        "graph_related_node_count": 0,
+        "graph_paths": [],
+        "graph_nodes": [],
+        "canonical_registry_count": 15,
+        "related_pages": [
+          "my-project-portfolio-vs-ontology-graphrag-fit",
+          "personal-ontology-graphrag-implementation-guide",
+          "ontology-graph-truth-layer-and-recommended-stack"
+        ],
+        "related_sources": [
+          "source-llamaindex-property-graph-index-docs",
+          "source-microsoft-graphrag-overview",
+          "source-microsoft-graphrag-paper"
+        ]
+      },
+      "delta": {
+        "latency_ms": 293.59,
+        "graph_signal_gain": 0,
+        "graph_section_gain": 1,
+        "graph_path_gain": 0
+      }
+    },
+    {
+      "query": "graph inspect sidecar ROI",
+      "with_graph": {
+        "avg_ms": 331.76,
+        "min_ms": 329.6,
+        "max_ms": 336.05,
+        "coverage": "supported",
+        "graph_signal": null,
+        "graph_available": true,
+        "graph_section": true,
+        "graph_seed_count": 5,
+        "graph_path_hint_count": 0,
+        "graph_related_node_count": 6,
+        "graph_paths": [],
+        "graph_nodes": [
+          "Source - Ladybug docs",
+          "Source - LightRAG paper",
+          "Graph Rag And Runtime Sources",
+          "Source - LightRAG official site",
+          "Source - Microsoft GraphRAG overview docs"
+        ],
+        "canonical_registry_count": 15,
+        "related_pages": [
+          "analysis-2026-04-18-doctology-ladybug-roi-priority",
+          "analysis-2026-04-18-graph-memory-operators",
+          "my-project-portfolio-vs-ontology-graphrag-fit"
+        ],
+        "related_sources": [
+          "source-llamaindex-property-graph-index-docs",
+          "source-microsoft-graphrag-overview",
+          "source-microsoft-graphrag-paper"
+        ]
+      },
+      "without_graph": {
+        "avg_ms": 40.17,
+        "min_ms": 39.55,
+        "max_ms": 40.84,
+        "coverage": "supported",
+        "graph_signal": null,
+        "graph_available": false,
+        "graph_section": false,
+        "graph_seed_count": 0,
+        "graph_path_hint_count": 0,
+        "graph_related_node_count": 0,
+        "graph_paths": [],
+        "graph_nodes": [],
+        "canonical_registry_count": 15,
+        "related_pages": [
+          "analysis-2026-04-18-doctology-ladybug-roi-priority",
+          "analysis-2026-04-18-graph-memory-operators",
+          "my-project-portfolio-vs-ontology-graphrag-fit"
+        ],
+        "related_sources": [
+          "source-llamaindex-property-graph-index-docs",
+          "source-microsoft-graphrag-overview",
+          "source-microsoft-graphrag-paper"
+        ]
+      },
+      "delta": {
+        "latency_ms": 291.59,
+        "graph_signal_gain": 0,
+        "graph_section_gain": 1,
+        "graph_path_gain": 0
+      }
+    },
+    {
+      "query": "kuzu docs vector fts extension",
+      "with_graph": {
+        "avg_ms": 334.46,
+        "min_ms": 330.23,
+        "max_ms": 340.42,
+        "coverage": "supported",
+        "graph_signal": "- Graph signal: Source - Chroma docs --mentions--> Chroma",
+        "graph_available": true,
+        "graph_section": true,
+        "graph_seed_count": 5,
+        "graph_path_hint_count": 4,
+        "graph_related_node_count": 6,
+        "graph_paths": [
+          "Source - Chroma docs --mentions--> Chroma",
+          "Source - Chroma docs --mentions--> Chroma Docs",
+          "Snapshot: Chroma presents itself as open-source data infrastructure for AI, with support for document storage, embeddings, dense/sparse/hybrid vector search, full-text and regex search, metadata filtering, and multimodal retrieval. --about_subject--> Chroma"
+        ],
+        "graph_nodes": [
+          "Chroma",
+          "Chroma Docs",
+          "Source - Kuzu docs",
+          "Source - Chroma docs",
+          "Source - Ladybug docs"
+        ],
+        "canonical_registry_count": 15,
+        "related_pages": [
+          "kuzu-docs-blog-deep-research-2026-04-18",
+          "neo4j-vs-kuzu-vs-ladybug-for-graph-truth-layer",
+          "when-neo4j-beats-kuzu-and-when-kuzu-beats-neo4j"
+        ],
+        "related_sources": [
+          "source-kuzu-docs",
+          "source-kuzu-docs-corpus-scan-2026-04-18",
+          "source-kuzu-blog-corpus-scan-2026-04-18"
+        ]
+      },
+      "without_graph": {
+        "avg_ms": 40.04,
+        "min_ms": 39.48,
+        "max_ms": 40.54,
+        "coverage": "supported",
+        "graph_signal": null,
+        "graph_available": false,
+        "graph_section": false,
+        "graph_seed_count": 0,
+        "graph_path_hint_count": 0,
+        "graph_related_node_count": 0,
+        "graph_paths": [],
+        "graph_nodes": [],
+        "canonical_registry_count": 15,
+        "related_pages": [
+          "kuzu-docs-blog-deep-research-2026-04-18",
+          "neo4j-vs-kuzu-vs-ladybug-for-graph-truth-layer",
+          "when-neo4j-beats-kuzu-and-when-kuzu-beats-neo4j"
+        ],
+        "related_sources": [
+          "source-kuzu-docs",
+          "source-kuzu-docs-corpus-scan-2026-04-18",
+          "source-kuzu-blog-corpus-scan-2026-04-18"
+        ]
+      },
+      "delta": {
+        "latency_ms": 294.42,
+        "graph_signal_gain": 1,
+        "graph_section_gain": 1,
+        "graph_path_gain": 4
+      }
+    },
+    {
+      "query": "ladybug derived runtime vs truth owner",
+      "with_graph": {
+        "avg_ms": 333.13,
+        "min_ms": 330.16,
+        "max_ms": 336.39,
+        "coverage": "supported",
+        "graph_signal": "- Graph signal: (dbtype duckdb)`, showing interoperability between a graph runtime and DuckDB files. --about_subject--> DuckDB",
+        "graph_available": true,
+        "graph_section": true,
+        "graph_seed_count": 5,
+        "graph_path_hint_count": 1,
+        "graph_related_node_count": 6,
+        "graph_paths": [
+          "(dbtype duckdb)`, showing interoperability between a graph runtime and DuckDB files. --about_subject--> DuckDB"
+        ],
+        "graph_nodes": [
+          "DBMSs",
+          "DuckDB",
+          "GDBMS",
+          "Source - Ladybug docs",
+          "Source - LightRAG paper"
+        ],
+        "canonical_registry_count": 15,
+        "related_pages": [
+          "analysis-2026-04-18-doctology-ladybug-roi-priority",
+          "db-centric-vs-file-centric-truth-layer-comparison",
+          "little-crab-vs-opencrab-structure-review"
+        ],
+        "related_sources": [
+          "source-local-ladybug-usage-in-portfolio",
+          "source-ladybug-docs",
+          "source-kuzu-docs-corpus-scan-2026-04-18"
+        ]
+      },
+      "without_graph": {
+        "avg_ms": 38.8,
+        "min_ms": 38.35,
+        "max_ms": 39.51,
+        "coverage": "supported",
+        "graph_signal": null,
+        "graph_available": false,
+        "graph_section": false,
+        "graph_seed_count": 0,
+        "graph_path_hint_count": 0,
+        "graph_related_node_count": 0,
+        "graph_paths": [],
+        "graph_nodes": [],
+        "canonical_registry_count": 15,
+        "related_pages": [
+          "analysis-2026-04-18-doctology-ladybug-roi-priority",
+          "db-centric-vs-file-centric-truth-layer-comparison",
+          "little-crab-vs-opencrab-structure-review"
+        ],
+        "related_sources": [
+          "source-local-ladybug-usage-in-portfolio",
+          "source-ladybug-docs",
+          "source-kuzu-docs-corpus-scan-2026-04-18"
+        ]
+      },
+      "delta": {
+        "latency_ms": 294.33,
+        "graph_signal_gain": 1,
+        "graph_section_gain": 1,
+        "graph_path_gain": 1
+      }
+    },
+    {
+      "query": "why ontology engine over plain RAG",
+      "with_graph": {
+        "avg_ms": 343.32,
+        "min_ms": 342.19,
+        "max_ms": 344.33,
+        "coverage": "supported",
+        "graph_signal": "- Graph signal: External best practices for ontology engines 2026-04-19 --documents--> - SHACL Use Cases and Requirements",
+        "graph_available": true,
+        "graph_section": true,
+        "graph_seed_count": 5,
+        "graph_path_hint_count": 2,
+        "graph_related_node_count": 6,
+        "graph_paths": [
+          "External best practices for ontology engines 2026-04-19 --documents--> - SHACL Use Cases and Requirements",
+          "External best practices for ontology engines 2026-04-19 --documents--> - collected: 2026-04-19 - scope: papers, standards, blogs, open-source-adjacent materials, Reddit signals"
+        ],
+        "graph_nodes": [
+          "Graph Rag And Runtime Sources",
+          "Source - Microsoft GraphRAG paper",
+          "Source - Microsoft GraphRAG repository",
+          "Source - Microsoft GraphRAG overview docs",
+          "Source - my_project portfolio scan 2026-04-17"
+        ],
+        "canonical_registry_count": 15,
+        "related_pages": [
+          "ontology-graphrag",
+          "my-project-portfolio-vs-ontology-graphrag-fit",
+          "analysis-2026-04-18-doctology-ontology-backed-graph-benchmark"
+        ],
+        "related_sources": [
+          "source-2026-04-19-opencrab-ontology-engine-value-collection-2026-04-19",
+          "source-microsoft-graphrag-overview",
+          "source-2026-04-19-external-best-practices-for-ontology-engines-2026-04-19"
+        ]
+      },
+      "without_graph": {
+        "avg_ms": 39.52,
+        "min_ms": 39.12,
+        "max_ms": 40.22,
+        "coverage": "supported",
+        "graph_signal": null,
+        "graph_available": false,
+        "graph_section": false,
+        "graph_seed_count": 0,
+        "graph_path_hint_count": 0,
+        "graph_related_node_count": 0,
+        "graph_paths": [],
+        "graph_nodes": [],
+        "canonical_registry_count": 15,
+        "related_pages": [
+          "ontology-graphrag",
+          "my-project-portfolio-vs-ontology-graphrag-fit",
+          "analysis-2026-04-18-doctology-ontology-backed-graph-benchmark"
+        ],
+        "related_sources": [
+          "source-2026-04-19-opencrab-ontology-engine-value-collection-2026-04-19",
+          "source-microsoft-graphrag-overview",
+          "source-2026-04-19-external-best-practices-for-ontology-engines-2026-04-19"
+        ]
+      },
+      "delta": {
+        "latency_ms": 303.8,
+        "graph_signal_gain": 1,
+        "graph_section_gain": 1,
+        "graph_path_gain": 2
+      }
+    }
+  ]
+}

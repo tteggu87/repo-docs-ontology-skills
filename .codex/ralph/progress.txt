@@ -1,0 +1,73 @@
+## Codebase Patterns
+- `.agents/skills/llm-wiki-bootstrap/references/` is the natural place for reusable architecture references.
+- `templates/llm-wiki-three-layer/` is the natural place for reusable schema and row-shape examples.
+- `docs/` currently holds the architecture package: PRD, issue breakdown, schema draft, flow draft, execution plan, rebuild matrix.
+
+## [2026-04-17 13:30 KST] - Ralph bootstrap
+- Created Ralph-ready branch and artifacts for three-layer runtime integration.
+- Active branch: `codex/three-layer-runtime-integration`
+- Next story: `TLR-1`
+---
+## [2026-04-17 13:45 KST] - TLR-1
+- Integrated three-layer references into llm-wiki-bootstrap docs.
+- Files changed: .agents/skills/llm-wiki-bootstrap/SKILL.md, .agents/skills/llm-wiki-bootstrap/references/scaffold-spec.md
+- Quality checks run and result
+  - `git diff --check` -> pass
+  - `rg -n "three-layer-taxonomy|three-layer-file-contract|templates/llm-wiki-three-layer" ...` -> pass
+---
+## [2026-04-17 14:00 KST] - TLR-2
+- Added SQLite operational reindex script stub under llm-wiki-bootstrap.
+- Files changed: .agents/skills/llm-wiki-bootstrap/scripts/reindex_sqlite_operational.py
+- Quality checks run and result
+  - `python3 -m py_compile .agents/skills/llm-wiki-bootstrap/scripts/reindex_sqlite_operational.py` -> pass
+  - `git diff --check` -> pass
+---
+## [2026-04-17 14:10 KST] - TLR-3
+- Added DuckDB analytical refresh script stub under llm-wiki-bootstrap.
+- Files changed: .agents/skills/llm-wiki-bootstrap/scripts/refresh_duckdb_analytics.py
+- Quality checks run and result
+  - `python3 -m py_compile .agents/skills/llm-wiki-bootstrap/scripts/refresh_duckdb_analytics.py` -> pass
+  - `git diff --check` -> pass
+---
+## [2026-04-17 14:20 KST] - TLR-4
+- Added three-layer drift verification stub under llm-wiki-bootstrap.
+- Files changed: .agents/skills/llm-wiki-bootstrap/scripts/verify_three_layer_drift.py
+- Quality checks run and result
+  - `python3 -m py_compile .agents/skills/llm-wiki-bootstrap/scripts/verify_three_layer_drift.py` -> pass
+  - `git diff --check` -> pass
+---
+## [2026-04-17 14:20 KST] - TLR-5
+- Synced operator-facing README docs with the three-layer operating model.
+- Files changed: README.md, README.ko.md
+- Quality checks run and result
+  - `rg -n "Three-layer operating model|files as canonical truth|SQLite as operational index|DuckDB as analytical warehouse" README.md README.ko.md` -> pass
+  - `git diff --check` -> pass
+---
+## [2026-04-17 14:40 KST] - TLR-6
+- Fixed code review issues in runtime stubs.
+- Files changed: reindex_sqlite_operational.py, refresh_duckdb_analytics.py
+- Quality checks run and result
+  - `python3 -m py_compile ...` -> pass
+  - `git diff --check` -> pass
+  - temporary repo smoke test for SQLite and DuckDB stubs -> pass
+---
+## [2026-04-17 15:10 KST] - TLR-7
+- Closed the bootstrap/runtime path gap for ontology-profile scaffolds.
+- Files changed:
+  - `.agents/skills/llm-wiki-bootstrap/scripts/bootstrap_llm_wiki.py`
+  - `.agents/skills/llm-wiki-bootstrap/scripts/reindex_sqlite_operational.py`
+  - `.agents/skills/llm-wiki-bootstrap/scripts/refresh_duckdb_analytics.py`
+  - `.agents/skills/llm-wiki-bootstrap/scripts/verify_three_layer_drift.py`
+  - `.agents/skills/llm-wiki-bootstrap/SKILL.md`
+  - `.agents/skills/llm-wiki-bootstrap/references/scaffold-spec.md`
+- Quality checks run and result
+  - `python3 -m py_compile ...` -> pass
+  - `python3 .agents/skills/llm-wiki-bootstrap/scripts/bootstrap_llm_wiki.py "$TMP" --profile wiki-plus-ontology` -> pass
+  - `python3 "$TMP/scripts/reindex_sqlite_operational.py" --repo-root "$TMP"` -> pass
+  - `python3 "$TMP/scripts/refresh_duckdb_analytics.py" --repo-root "$TMP"` -> pass
+  - `python3 "$TMP/scripts/verify_three_layer_drift.py" --repo-root "$TMP"` -> pass
+- Learnings for future iterations
+  - canonical path contract now centers on `raw/`, `wiki/`, `warehouse/jsonl/`, and `state/`
+  - SQLite and DuckDB remain rebuildable support layers, not canonical truth
+  - ontology-profile bootstrap now ships lightweight three-layer rebuild helpers
+---

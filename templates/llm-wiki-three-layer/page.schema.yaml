@@ -1,0 +1,37 @@
+schema_id: page.schema.v1
+description: Structural contract for maintained markdown wiki pages.
+
+required:
+  - page_id
+  - title
+  - page_type
+  - status
+  - created_at
+  - updated_at
+
+optional:
+  - aliases
+  - source_ids
+  - tags
+  - canonical_claim_ids
+
+page_types:
+  - concept
+  - entity
+  - person
+  - project
+  - timeline
+  - analysis
+  - source
+
+statuses:
+  - active
+  - draft
+  - archived
+  - deprecated
+
+notes:
+  - page_id must be stable across title or path changes
+  - page body is human-facing synthesis, not raw source truth
+  - pages may reference canonical claim ids, but pages are not claims
+

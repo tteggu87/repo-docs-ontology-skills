@@ -24,7 +24,6 @@ The main remaining gap is **operational closure**:
 - local `scripts/llm_wiki.py` CLI
 - `ingest`, `reindex`, `lint`, `status`, `reconcile-shadow`, `log`
 - `doctor` runtime/working-tree diagnostics
-- `scripts/doctology.py` single-entry operator CLI for `start` / `review` / `ask` / `refresh` / `daily`
 - durable wiki under `wiki/`
 
 ### 2. Workbench UI / backend

@@ -1,0 +1,20 @@
+{
+  "llmWiki": {
+    "enabled": true
+  },
+  "models": [
+    {
+      "title": "Ollama Gemma 4 26B",
+      "provider": "openai",
+      "model": "gemma4:26b",
+      "apiKey": "ollama-local",
+      "apiBase": "http://127.0.0.1:11434/v1"
+    }
+  ],
+  "embeddingsProvider": {
+    "provider": "openai",
+    "model": "qwen3-embedding:0.6b",
+    "apiKey": "ollama-local",
+    "apiBase": "http://127.0.0.1:11434/v1"
+  }
+}

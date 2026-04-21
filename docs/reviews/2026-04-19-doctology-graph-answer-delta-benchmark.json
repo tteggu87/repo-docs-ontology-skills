@@ -1,0 +1,408 @@
+{
+  "baseline_root": "/Users/hoyasung007hotmail.com/Documents/my_project/DocTology",
+  "without_graph_root": "/private/var/folders/_0/srrg1xpj21sdm5jjt6b8pn_r0000gn/T/doctology-final-no-graph-1nc37403",
+  "summary": {
+    "query_count": 5,
+    "answers_changed_count": 5,
+    "with_graph_graph_signal_count": 5,
+    "without_graph_graph_signal_count": 0,
+    "with_graph_avg_ms": 342.53,
+    "without_graph_avg_ms": 39.82,
+    "avg_latency_delta_ms": 302.7
+  },
+  "results": [
+    {
+      "query": "little world little crab doctology comparison",
+      "with_graph": {
+        "avg_ms": 335.31,
+        "min_ms": 332.09,
+        "max_ms": 340.18,
+        "coverage": "supported",
+        "graph_signal": "- Graph signal: Source - my_project portfolio scan 2026-04-17 --mentions--> MCP",
+        "graph_available": true,
+        "graph_section": true,
+        "graph_seed_count": 5,
+        "graph_path_hint_count": 5,
+        "graph_related_node_count": 6,
+        "graph_paths": [
+          "Source - my_project portfolio scan 2026-04-17 --mentions--> MCP",
+          "Source - Chroma docs --mentions--> little-crab-storage-decision-duckdb-vs-sqlite-vs-neo4j",
+          "Source - my_project portfolio scan 2026-04-17 --mentions--> little-world-vs-little-crab-vs-doctology-comparison"
+        ],
+        "graph_nodes": [
+          "MCP",
+          "Source - Chroma docs",
+          "Graph Rag And Runtime Sources",
+          "little-crab-storage-decision-duckdb-vs-sqlite-vs-neo4j",
+          "little-world-vs-little-crab-vs-doctology-comparison"
+        ],
+        "canonical_registry_count": 15,
+        "related_pages": [
+          "little-world-and-little-crab-standalone-strategy",
+          "little-world-vs-little-crab-why-shell-choice",
+          "little-world-little-crab-doctology-absorption-integration"
+        ],
+        "related_sources": [
+          "source-2026-04-19-opencrab-ontology-engine-value-collection-2026-04-19",
+          "source-my-project-portfolio-scan-2026-04-17",
+          "source-chroma-docs"
+        ]
+      },
+      "without_graph": {
+        "avg_ms": 39.56,
+        "min_ms": 39.48,
+        "max_ms": 39.61,
+        "coverage": "supported",
+        "graph_signal": null,
+        "graph_available": false,
+        "graph_section": false,
+        "graph_seed_count": 0,
+        "graph_path_hint_count": 0,
+        "graph_related_node_count": 0,
+        "graph_paths": [],
+        "graph_nodes": [],
+        "canonical_registry_count": 15,
+        "related_pages": [
+          "little-world-and-little-crab-standalone-strategy",
+          "little-world-vs-little-crab-why-shell-choice",
+          "little-world-little-crab-doctology-absorption-integration"
+        ],
+        "related_sources": [
+          "source-2026-04-19-opencrab-ontology-engine-value-collection-2026-04-19",
+          "source-my-project-portfolio-scan-2026-04-17",
+          "source-chroma-docs"
+        ]
+      },
+      "answer_changed": true,
+      "answer_diff_excerpt": [
+        "--- with_graph",
+        "+++ without_graph",
+        "@@ -12,3 +12,2 @@",
+        " - Claim review states in scope: approved `0`, needs_review `5`, rejected claims hidden.",
+        "-- Graph signal: Source - my_project portfolio scan 2026-04-17 --mentions--> MCP",
+        " ",
+        "@@ -35,22 +34 @@",
+        " - segments: 5",
+        "-",
+        "-## Graph hints",
+        "-",
+        "-- Graph hints are available for this query preview."
+      ],
+      "latency_delta_ms": 295.75
+    },
+    {
+      "query": "opencrab ontology grammar promotion lifecycle",
+      "with_graph": {
+        "avg_ms": 349.17,
+        "min_ms": 346.32,
+        "max_ms": 352.62,
+        "coverage": "supported",
+        "graph_signal": "- Graph signal: OpenCrab ontology engine value collection 2026-04-19 --mentions--> BM25",
+        "graph_available": true,
+        "graph_section": true,
+        "graph_seed_count": 5,
+        "graph_path_hint_count": 5,
+        "graph_related_node_count": 6,
+        "graph_paths": [
+          "OpenCrab ontology engine value collection 2026-04-19 --mentions--> BM25",
+          "OpenCrab ontology engine value collection 2026-04-19 --mentions--> AlexAI-MCP",
+          "OpenCrab ontology engine value collection 2026-04-19 --mentions--> GraphRAG"
+        ],
+        "graph_nodes": [
+          "BM25",
+          "Across",
+          "AlexAI-MCP",
+          "GraphRAG",
+          "Graph Rag And Runtime Sources"
+        ],
+        "canonical_registry_count": 15,
+        "related_pages": [
+          "opencrab-feature-triage-for-little-crab",
+          "analysis-2026-04-18-doctology-production-ontology-ingest-upgrade-roadmap",
+          "opencrab-feature-triage-ceo-review-for-little-crab"
+        ],
+        "related_sources": [
+          "source-2026-04-19-opencrab-ontology-engine-value-collection-2026-04-19",
+          "source-2026-04-19-external-best-practices-for-ontology-engines-2026-04-19",
+          "source-my-project-portfolio-scan-2026-04-17"
+        ]
+      },
+      "without_graph": {
+        "avg_ms": 38.81,
+        "min_ms": 38.48,
+        "max_ms": 39.41,
+        "coverage": "supported",
+        "graph_signal": null,
+        "graph_available": false,
+        "graph_section": false,
+        "graph_seed_count": 0,
+        "graph_path_hint_count": 0,
+        "graph_related_node_count": 0,
+        "graph_paths": [],
+        "graph_nodes": [],
+        "canonical_registry_count": 15,
+        "related_pages": [
+          "opencrab-feature-triage-for-little-crab",
+          "analysis-2026-04-18-doctology-production-ontology-ingest-upgrade-roadmap",
+          "opencrab-feature-triage-ceo-review-for-little-crab"
+        ],
+        "related_sources": [
+          "source-2026-04-19-opencrab-ontology-engine-value-collection-2026-04-19",
+          "source-2026-04-19-external-best-practices-for-ontology-engines-2026-04-19",
+          "source-my-project-portfolio-scan-2026-04-17"
+        ]
+      },
+      "answer_changed": true,
+      "answer_diff_excerpt": [
+        "--- with_graph",
+        "+++ without_graph",
+        "@@ -12,3 +12,2 @@",
+        " - Claim review states in scope: approved `0`, needs_review `5`, rejected claims hidden.",
+        "-- Graph signal: OpenCrab ontology engine value collection 2026-04-19 --mentions--> BM25",
+        " ",
+        "@@ -35,22 +34 @@",
+        " - segments: 5",
+        "-",
+        "-## Graph hints",
+        "-",
+        "-- Graph hints are available for this query preview."
+      ],
+      "latency_delta_ms": 310.36
+    },
+    {
+      "query": "opencrab ontology engine value collection",
+      "with_graph": {
+        "avg_ms": 344.4,
+        "min_ms": 341.26,
+        "max_ms": 349.31,
+        "coverage": "supported",
+        "graph_signal": "- Graph signal: OpenCrab ontology engine value collection 2026-04-19 --mentions--> BM25",
+        "graph_available": true,
+        "graph_section": true,
+        "graph_seed_count": 5,
+        "graph_path_hint_count": 5,
+        "graph_related_node_count": 6,
+        "graph_paths": [
+          "OpenCrab ontology engine value collection 2026-04-19 --mentions--> BM25",
+          "OpenCrab ontology engine value collection 2026-04-19 --mentions--> AlexAI-MCP",
+          "OpenCrab ontology engine value collection 2026-04-19 --mentions--> GraphRAG"
+        ],
+        "graph_nodes": [
+          "BM25",
+          "AlexAI-MCP",
+          "GraphRAG",
+          "Source - Chroma docs",
+          "Graph Rag And Runtime Sources"
+        ],
+        "canonical_registry_count": 15,
+        "related_pages": [
+          "opencrab-feature-triage-for-little-crab",
+          "analysis-2026-04-18-doctology-ontology-benchmark-pipeline-implementation-and-benchmark",
+          "analysis-2026-04-18-doctology-ontology-backed-graph-benchmark"
+        ],
+        "related_sources": [
+          "source-2026-04-19-opencrab-ontology-engine-value-collection-2026-04-19",
+          "source-2026-04-19-external-best-practices-for-ontology-engines-2026-04-19",
+          "source-kuzu-docs-corpus-scan-2026-04-18"
+        ]
+      },
+      "without_graph": {
+        "avg_ms": 40.16,
+        "min_ms": 39.75,
+        "max_ms": 40.96,
+        "coverage": "supported",
+        "graph_signal": null,
+        "graph_available": false,
+        "graph_section": false,
+        "graph_seed_count": 0,
+        "graph_path_hint_count": 0,
+        "graph_related_node_count": 0,
+        "graph_paths": [],
+        "graph_nodes": [],
+        "canonical_registry_count": 15,
+        "related_pages": [
+          "opencrab-feature-triage-for-little-crab",
+          "analysis-2026-04-18-doctology-ontology-benchmark-pipeline-implementation-and-benchmark",
+          "analysis-2026-04-18-doctology-ontology-backed-graph-benchmark"
+        ],
+        "related_sources": [
+          "source-2026-04-19-opencrab-ontology-engine-value-collection-2026-04-19",
+          "source-2026-04-19-external-best-practices-for-ontology-engines-2026-04-19",
+          "source-kuzu-docs-corpus-scan-2026-04-18"
+        ]
+      },
+      "answer_changed": true,
+      "answer_diff_excerpt": [
+        "--- with_graph",
+        "+++ without_graph",
+        "@@ -12,3 +12,2 @@",
+        " - Claim review states in scope: approved `0`, needs_review `5`, rejected claims hidden.",
+        "-- Graph signal: OpenCrab ontology engine value collection 2026-04-19 --mentions--> BM25",
+        " ",
+        "@@ -35,22 +34 @@",
+        " - segments: 5",
+        "-",
+        "-## Graph hints",
+        "-",
+        "-- Graph hints are available for this query preview."
+      ],
+      "latency_delta_ms": 304.24
+    },
+    {
+      "query": "why ontology engine over plain RAG",
+      "with_graph": {
+        "avg_ms": 343.8,
+        "min_ms": 343.31,
+        "max_ms": 344.42,
+        "coverage": "supported",
+        "graph_signal": "- Graph signal: External best practices for ontology engines 2026-04-19 --documents--> - SHACL Use Cases and Requirements",
+        "graph_available": true,
+        "graph_section": true,
+        "graph_seed_count": 5,
+        "graph_path_hint_count": 2,
+        "graph_related_node_count": 6,
+        "graph_paths": [
+          "External best practices for ontology engines 2026-04-19 --documents--> - SHACL Use Cases and Requirements",
+          "External best practices for ontology engines 2026-04-19 --documents--> - collected: 2026-04-19 - scope: papers, standards, blogs, open-source-adjacent materials, Reddit signals"
+        ],
+        "graph_nodes": [
+          "Graph Rag And Runtime Sources",
+          "Source - Microsoft GraphRAG paper",
+          "Source - Microsoft GraphRAG repository",
+          "Source - Microsoft GraphRAG overview docs",
+          "Source - my_project portfolio scan 2026-04-17"
+        ],
+        "canonical_registry_count": 15,
+        "related_pages": [
+          "ontology-graphrag",
+          "my-project-portfolio-vs-ontology-graphrag-fit",
+          "analysis-2026-04-18-doctology-ontology-backed-graph-benchmark"
+        ],
+        "related_sources": [
+          "source-2026-04-19-opencrab-ontology-engine-value-collection-2026-04-19",
+          "source-microsoft-graphrag-overview",
+          "source-2026-04-19-external-best-practices-for-ontology-engines-2026-04-19"
+        ]
+      },
+      "without_graph": {
+        "avg_ms": 40.95,
+        "min_ms": 40.68,
+        "max_ms": 41.23,
+        "coverage": "supported",
+        "graph_signal": null,
+        "graph_available": false,
+        "graph_section": false,
+        "graph_seed_count": 0,
+        "graph_path_hint_count": 0,
+        "graph_related_node_count": 0,
+        "graph_paths": [],
+        "graph_nodes": [],
+        "canonical_registry_count": 15,
+        "related_pages": [
+          "ontology-graphrag",
+          "my-project-portfolio-vs-ontology-graphrag-fit",
+          "analysis-2026-04-18-doctology-ontology-backed-graph-benchmark"
+        ],
+        "related_sources": [
+          "source-2026-04-19-opencrab-ontology-engine-value-collection-2026-04-19",
+          "source-microsoft-graphrag-overview",
+          "source-2026-04-19-external-best-practices-for-ontology-engines-2026-04-19"
+        ]
+      },
+      "answer_changed": true,
+      "answer_diff_excerpt": [
+        "--- with_graph",
+        "+++ without_graph",
+        "@@ -12,3 +12,2 @@",
+        " - Claim review states in scope: approved `0`, needs_review `5`, rejected claims hidden.",
+        "-- Graph signal: External best practices for ontology engines 2026-04-19 --documents--> - SHACL Use Cases and Requirements",
+        " ",
+        "@@ -35,19 +34 @@",
+        " - segments: 5",
+        "-",
+        "-## Graph hints",
+        "-",
+        "-- Graph hints are available for this query preview."
+      ],
+      "latency_delta_ms": 302.85
+    },
+    {
+      "query": "ontology engine best practices shacl provenance",
+      "with_graph": {
+        "avg_ms": 339.95,
+        "min_ms": 339.57,
+        "max_ms": 340.55,
+        "coverage": "supported",
+        "graph_signal": "- Graph signal: External best practices for ontology engines 2026-04-19 --documents--> - SHACL Use Cases and Requirements",
+        "graph_available": true,
+        "graph_section": true,
+        "graph_seed_count": 5,
+        "graph_path_hint_count": 2,
+        "graph_related_node_count": 6,
+        "graph_paths": [
+          "External best practices for ontology engines 2026-04-19 --documents--> - SHACL Use Cases and Requirements",
+          "External best practices for ontology engines 2026-04-19 --documents--> - collected: 2026-04-19 - scope: papers, standards, blogs, open-source-adjacent materials, Reddit signals"
+        ],
+        "graph_nodes": [
+          "Source - Chroma docs",
+          "Graph Rag And Runtime Sources",
+          "Source - Microsoft GraphRAG paper",
+          "Source - Microsoft GraphRAG overview docs",
+          "OpenCrab ontology engine value collection 2026-04-19"
+        ],
+        "canonical_registry_count": 15,
+        "related_pages": [
+          "ontology-graphrag",
+          "analysis-2026-04-18-doctology-ontology-benchmark-pipeline-implementation-and-benchmark",
+          "analysis-2026-04-18-doctology-ontology-backed-graph-benchmark"
+        ],
+        "related_sources": [
+          "source-2026-04-19-external-best-practices-for-ontology-engines-2026-04-19",
+          "source-2026-04-19-opencrab-ontology-engine-value-collection-2026-04-19",
+          "source-kuzu-docs-corpus-scan-2026-04-18"
+        ]
+      },
+      "without_graph": {
+        "avg_ms": 39.64,
+        "min_ms": 38.94,
+        "max_ms": 40.14,
+        "coverage": "supported",
+        "graph_signal": null,
+        "graph_available": false,
+        "graph_section": false,
+        "graph_seed_count": 0,
+        "graph_path_hint_count": 0,
+        "graph_related_node_count": 0,
+        "graph_paths": [],
+        "graph_nodes": [],
+        "canonical_registry_count": 15,
+        "related_pages": [
+          "ontology-graphrag",
+          "analysis-2026-04-18-doctology-ontology-benchmark-pipeline-implementation-and-benchmark",
+          "analysis-2026-04-18-doctology-ontology-backed-graph-benchmark"
+        ],
+        "related_sources": [
+          "source-2026-04-19-external-best-practices-for-ontology-engines-2026-04-19",
+          "source-2026-04-19-opencrab-ontology-engine-value-collection-2026-04-19",
+          "source-kuzu-docs-corpus-scan-2026-04-18"
+        ]
+      },
+      "answer_changed": true,
+      "answer_diff_excerpt": [
+        "--- with_graph",
+        "+++ without_graph",
+        "@@ -12,3 +12,2 @@",
+        " - Claim review states in scope: approved `0`, needs_review `5`, rejected claims hidden.",
+        "-- Graph signal: External best practices for ontology engines 2026-04-19 --documents--> - SHACL Use Cases and Requirements",
+        " ",
+        "@@ -35,19 +34 @@",
+        " - segments: 5",
+        "-",
+        "-## Graph hints",
+        "-",
+        "-- Graph hints are available for this query preview."
+      ],
+      "latency_delta_ms": 300.31
+    }
+  ]
+}
