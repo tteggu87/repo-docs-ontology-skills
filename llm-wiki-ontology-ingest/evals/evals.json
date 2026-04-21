@@ -1,0 +1,29 @@
+{
+  "skill_name": "llm-wiki-ontology-ingest",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Use the provided Obsidian-first wiki fixture to ingest a new chat-log source into both the canonical ontology registry and the human-facing wiki. Keep warehouse/jsonl canonical, update the source page, and refresh wiki meta pages.",
+      "expected_output": "The result updates canonical ontology outputs under warehouse/jsonl, refreshes the relevant wiki pages, and keeps wiki/_meta/index.md and wiki/_meta/log.md current.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Use the provided wiki fixture to ingest a new source, but do not pretend the local CLI ingest command already performs ontology extraction. Treat local ingest as source registration only and then run the ontology-backed wiki projection flow.",
+      "expected_output": "The result distinguishes source registration from ontology-backed ingest and does not collapse the two steps into a single false claim.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Use the provided LLM Wiki fixture to process a new source when warehouse/jsonl and intelligence contracts are partially missing. Report the missing ontology-ready structure clearly, create only the minimum necessary support inside the existing wiki-shaped repo, and avoid claiming canonical success without the required layer.",
+      "expected_output": "The result reports missing ontology-ready structure honestly, adds or requests the minimum required contracts, and avoids claiming a fully healthy ontology-backed ingest when the canonical layer is incomplete.",
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "Use the provided plain DocTology fixture that has ontology contracts but no real wiki layer. Do not pretend this skill can bootstrap the wiki from zero. Stop, report that the wiki-shaped repo structure is missing, and ask for a scaffold or equivalent setup first.",
+      "expected_output": "The result rejects using this skill as a bootstrap substitute and clearly states that a real `raw/` plus `wiki/` plus `AGENTS.md` layout must exist before ontology-backed wiki ingest can be considered healthy.",
+      "files": []
+    }
+  ]
+}

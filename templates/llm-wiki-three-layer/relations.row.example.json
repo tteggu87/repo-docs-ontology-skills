@@ -1,9 +1,0 @@
-{
-  "relation_id": "rel-2026-04-17-001",
-  "source_entity_id": "ent-duckdb",
-  "relation_type": "supports",
-  "target_entity_id": "ent-warehouse",
-  "evidence_claim_id": "clm-2026-04-17-001",
-  "confidence": 0.77,
-  "extraction_run_id": "run-extract-2026-04-17-001"
-}
