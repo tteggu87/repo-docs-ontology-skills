@@ -1,17 +1,6 @@
-.DS_Store
-.venv/
 __pycache__/
 *.pyc
 *.pyo
-node_modules/
-dist/
-test-results/
-continue.json
-.gstack/
-.omx/
-RESEARCH/
-
-# Agent-local runtime artifacts
-.agents/tmp/
-.agents/context/
-.agents/skills/**/.agents/
+*.pyd
+.DS_Store
+Thumbs.db
