@@ -1,0 +1,22 @@
+policies:
+  - key: truth-priority
+    intent: Keep repository truth boundaries explicit and ordered.
+    rules:
+      - raw/ is immutable source truth
+      - warehouse/jsonl/ is canonical structured machine truth
+      - wiki/ is maintained human-facing synthesis
+      - warehouse/graph_projection/ is derived and read-only
+  - key: workbench-mutation-boundary
+    intent: Keep the sidecar workbench additive and bounded.
+    rules:
+      - Browser surfaces must not write directly to raw/
+      - Browser surfaces must not mutate canonical registries except through explicit backend-gated claim review
+      - Backend-gated analysis saves may write only within the documented allowed wiki scope
+      - Graph projection remains read-only in the workbench
+  - key: canonical-entrypoints
+    intent: Preserve the actual live entrypoints instead of promoting wrappers to primary truth.
+    rules:
+      - scripts/llm_wiki.py is the canonical local wiki-maintenance CLI
+      - scripts/incremental_ingest.py is the canonical repeated-export ingest CLI
+      - scripts/workbench_api.py is a compatibility wrapper over scripts/workbench/*
+      - intelligence/manifests/*.yaml describe contracts but do not replace Python execution
