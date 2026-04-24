@@ -351,7 +351,10 @@ def parse_frontmatter_date(content: str, field: str) -> dt.date | None:
     match = re.search(rf"^{field}:\s*(\d{{4}}-\d{{2}}-\d{{2}})\s*$", content, re.MULTILINE)
     if not match:
         return None
-    return dt.date.fromisoformat(match.group(1))
+    try:
+        return dt.date.fromisoformat(match.group(1))
+    except ValueError:
+        return None
 
 
 def content_line_count(content: str) -> int:

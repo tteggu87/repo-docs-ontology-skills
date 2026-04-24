@@ -98,6 +98,25 @@ class MaintenancePlanTests(unittest.TestCase):
         self.assertIn("unregistered.md", flagged)
         self.assertNotIn("registered.md", flagged)
 
+    def test_invalid_updated_frontmatter_date_does_not_crash(self) -> None:
+        invalid_date_page = self.root / "wiki" / "concepts" / "invalid-date.md"
+        invalid_date_page.write_text(
+            "---\n"
+            "title: Invalid Date\n"
+            "type: concept\n"
+            "status: active\n"
+            "created: 2026-01-01\n"
+            "updated: 2026-99-99\n"
+            "---\n\n"
+            "# Invalid Date\n\n"
+            "Page body.\n",
+            encoding="utf-8",
+        )
+
+        plan = llm_wiki.build_maintenance_plan()
+        stale_page_names = {path.name for path, _ in plan["stale_pages"]}
+        self.assertNotIn("invalid-date.md", stale_page_names)
+
     def test_maintenance_does_not_modify_raw_files(self) -> None:
         before = self.unregistered_raw.read_text(encoding="utf-8")
         llm_wiki.maintenance_plan(write_plan=True)
