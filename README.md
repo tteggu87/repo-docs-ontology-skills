@@ -223,7 +223,33 @@ Before substantial wiki work in a fresh conversation, the agent should:
 2. read `wiki/_meta/index.md`
 3. scan the newest relevant entries in `wiki/_meta/log.md`
 
-### D. Use The Optional Sidecar Workbench
+### D. Generate A Bounded Maintenance Plan
+
+Run:
+
+```bash
+python3 scripts/llm_wiki.py maintain
+python3 scripts/llm_wiki.py maintain --write-plan
+```
+
+The maintenance report checks:
+
+- broken wikilinks
+- missing frontmatter
+- unindexed pages
+- oversized pages
+- orphan pages
+- duplicate titles
+- low-coverage durable pages
+- stale pages
+- uncertainty markers
+- unregistered files in `raw/inbox/`
+
+With `--write-plan`, it writes `wiki/_meta/maintenance-plan.md` and refreshes `wiki/_meta/log.md` + `wiki/_meta/index.md`.
+
+This is intentionally bounded: it does not silently rewrite semantic wiki pages and does not mutate canonical warehouse JSONL registries.
+
+### E. Use The Optional Sidecar Workbench
 
 In one terminal:
 
