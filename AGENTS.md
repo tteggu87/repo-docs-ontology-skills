@@ -5,6 +5,100 @@ This repository is an Obsidian-first LLM Wiki.
 The human curates sources and asks questions.
 The agent maintains the wiki.
 
+## Agent Entry Contract
+
+When operating in this repository, treat it as a persistent LLM Wiki workspace.
+Before answering any non-trivial question or making any change:
+
+1. Read this `AGENTS.md`.
+2. Read `wiki/_meta/orientation.md` if it exists.
+3. Read `wiki/_meta/index.md` if it exists.
+4. Read the newest relevant entries in `wiki/_meta/log.md` if it exists.
+5. Read the smallest relevant wiki pages before reading raw files.
+6. Use `warehouse/jsonl/` only for provenance, source coverage, contradiction checks, or claim validation.
+7. Do not leave durable work only in chat; save or propose saving it under `wiki/analyses/`.
+8. If a required tool is unavailable, do not skip silently; use the documented fallback and explicitly report what could not be performed.
+
+## Operation Classifier
+
+Classify each user request into exactly one primary operation:
+
+- `ingest`: user provides or references a raw source to add
+- `query`: user asks what the wiki knows
+- `analysis`: user asks for synthesis, comparison, recommendation, or decision memo
+- `maintenance`: user asks for health checks, lint, cleanup, stale pages, or missing links
+- `claim-review`: user asks to validate, approve, reject, or inspect claims
+- `refactor`: user asks to rename, merge, split, or restructure pages
+- `tooling`: user asks to change scripts, workbench, tests, manifests, or repo rules
+
+Each operation must produce:
+
+- operation kind
+- files read
+- files changed (or proposed)
+- provenance basis
+- post-check result
+- unresolved follow-ups
+
+## Capability And Fallback Matrix
+
+- If shell is available: run documented commands for status, lint, maintain, and tests.
+- If shell is unavailable: read files directly, perform manual checks, and report shell verification limits.
+- If file writes are available: make bounded writes according to the write policy.
+- If file writes are unavailable: produce a patch or exact file replacement blocks.
+- If git is available: report changed files and a suggested commit message.
+- If git is unavailable: provide a commit-ready summary and patch.
+- If hooks are unavailable: follow this `AGENTS.md` manually. Hooks are optional accelerators, not the source of truth.
+
+## Write Policy
+
+Safe automatic writes:
+
+- `wiki/sources/` source stubs and source summaries
+- `wiki/analyses/` saved answers and comparison memos
+- `wiki/_meta/index.md`
+- `wiki/_meta/log.md`
+- `wiki/_meta/orientation.md`
+- obvious backlinks from affected pages when the target page exists
+
+Review-required writes:
+
+- concept/entity/project/timeline semantic rewrites
+- contradiction resolution
+- claim approval/rejection
+- page merges, renames, or splits
+- changes touching more than 5 non-meta wiki pages
+
+Forbidden unless explicitly requested:
+
+- editing `raw/`
+- deleting meaningful wiki content
+- silently overwriting warehouse registries
+- treating graph projection or retrieval output as canonical truth
+
+## Durable Answer Rule
+
+A response is durable if it does any of the following:
+
+- compares systems, repositories, people, or concepts
+- synthesizes more than one wiki/source page
+- produces a decision memo or recommendation
+- answers a question likely to recur
+- updates the meaning of an existing concept/entity/project
+- identifies gaps, contradictions, or future work
+
+For durable answers:
+
+1. Save to `wiki/analyses/` when writes are available.
+2. If writes are unavailable, output a commit-ready markdown page.
+3. Link the analysis from relevant source/concept/project pages when confidence is high.
+4. Append a query log entry.
+
+## Hookless Environment Rule
+
+Do not require hooks for compliance.
+Use `AGENTS.md`, repo-local docs, deterministic CLI commands, machine-readable manifests, and tests as the portable contract surface.
+
 ## Mission
 
 Maintain a persistent, high-signal markdown wiki that sits between raw sources and future reasoning.

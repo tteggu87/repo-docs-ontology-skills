@@ -38,6 +38,24 @@ At the time of this update, the repo already includes:
 
 So treat this repo as an active knowledge workspace, not an empty template.
 
+
+## Contract-First Agent Runtime
+
+This repo is AGENTS-first and contract-first by default:
+
+- `AGENTS.md` is the canonical execution contract
+- hooks are optional accelerators, not required infrastructure
+- portability comes from repo-local docs, deterministic CLI behavior, manifests, and tests
+
+Agent startup order for non-trivial work:
+
+1. `AGENTS.md`
+2. `wiki/_meta/orientation.md` (if present)
+3. `wiki/_meta/index.md`
+4. newest relevant `wiki/_meta/log.md` entries
+
+For durable answers (comparisons, synthesis, recommendations, recurring questions), save back under `wiki/analyses/` whenever writes are available.
+
 ## Folder Layout
 
 ```text
@@ -145,6 +163,7 @@ Helpful plugins:
 python3 scripts/llm_wiki.py status
 python3 scripts/llm_wiki.py lint
 python3 -m unittest -q
+python3 -m unittest tests.test_agent_contract -q
 ```
 
 ### 3. Add Sources
