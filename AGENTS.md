@@ -317,6 +317,28 @@ Examples:
 - If a source changes the meaning of an older page, revise the older page
 - If a source conflicts with earlier material, note the conflict explicitly
 
+## Bounded Autonomous Maintenance
+
+Use bounded autonomous maintenance loops rather than unconstrained wiki rewrites.
+
+Auto-apply is allowed for mechanical tasks:
+
+- source stub creation
+- `wiki/_meta/index.md` refresh
+- `wiki/_meta/log.md` append/update
+- obvious backlink additions
+- maintenance plan generation under `wiki/_meta/maintenance-plan.md`
+
+Auto-apply is not allowed without explicit review/approval for semantic tasks:
+
+- broad semantic rewrites of existing pages
+- contradiction resolution that changes meaning
+- page merge/rename operations with wide link impact
+- claim review-state changes in canonical registries
+
+Always preserve provenance and uncertainty markers.
+After meaningful maintenance, report which surfaces were affected.
+
 ## Safe Boundaries
 
 - Do not silently delete meaningful content

@@ -32,6 +32,18 @@ VALID_PAGE_DIRS = [
 
 MAX_PAGE_LINES = 200
 LOG_ROTATION_THRESHOLD = 500
+LOW_COVERAGE_MIN_CONTENT_LINES = 6
+STALE_PAGE_DAYS = 90
+UNCERTAINTY_MARKERS = [
+    "todo",
+    "tbd",
+    "unclear",
+    "uncertain",
+    "needs review",
+    "maybe",
+    "possibly",
+    "unknown",
+]
 
 
 def today() -> str:
@@ -335,6 +347,229 @@ def lint_wiki() -> int:
     return 1 if broken or no_frontmatter else 0
 
 
+def parse_frontmatter_date(content: str, field: str) -> dt.date | None:
+    match = re.search(rf"^{field}:\s*(\d{{4}}-\d{{2}}-\d{{2}})\s*$", content, re.MULTILINE)
+    if not match:
+        return None
+    try:
+        return dt.date.fromisoformat(match.group(1))
+    except ValueError:
+        return None
+
+
+def content_line_count(content: str) -> int:
+    count = 0
+    for line in content.splitlines():
+        stripped = line.strip()
+        if not stripped:
+            continue
+        if stripped == "---":
+            continue
+        if re.match(r"^(title|type|status|created|updated|tags|sources):", stripped):
+            continue
+        if stripped == "#":
+            continue
+        count += 1
+    return count
+
+
+def build_maintenance_plan() -> dict[str, object]:
+    lookup = page_lookup()
+    indexed_stems = indexed_page_stems()
+
+    broken: list[tuple[Path, str]] = []
+    no_frontmatter: list[Path] = []
+    unindexed: list[Path] = []
+    oversized: list[tuple[Path, int]] = []
+    orphaned: list[Path] = []
+    duplicate_titles: dict[str, list[tuple[str, Path]]] = defaultdict(list)
+    low_coverage: list[tuple[Path, int]] = []
+    stale: list[tuple[Path, str]] = []
+    uncertainty: list[Path] = []
+    inbound: dict[str, int] = defaultdict(int)
+
+    for path in iter_markdown_pages():
+        rel = path.relative_to(WIKI_DIR)
+        content = read_text(path)
+        title = page_title_from_content(path, content)
+        duplicate_titles[title.casefold()].append((title, path))
+
+        if rel != Path("_meta/index.md") and path.stem not in indexed_stems:
+            unindexed.append(path)
+
+        if not has_frontmatter(content):
+            no_frontmatter.append(path)
+
+        line_count = len(content.splitlines())
+        if rel.parts[0] != "_meta" and line_count > MAX_PAGE_LINES:
+            oversized.append((path, line_count))
+
+        if rel.parts[0] in {"concepts", "entities", "people", "projects", "timelines"}:
+            body_lines = content_line_count(content)
+            if body_lines < LOW_COVERAGE_MIN_CONTENT_LINES:
+                low_coverage.append((path, body_lines))
+
+        updated_at = parse_frontmatter_date(content, "updated")
+        if updated_at is not None:
+            age_days = (dt.date.today() - updated_at).days
+            if age_days > STALE_PAGE_DAYS and rel.parts[0] != "_meta":
+                stale.append((path, updated_at.isoformat()))
+
+        lowered = content.casefold()
+        if any(marker in lowered for marker in UNCERTAINTY_MARKERS):
+            uncertainty.append(path)
+
+        for link in wikilinks(content):
+            if link in lookup:
+                inbound[link] += 1
+            else:
+                broken.append((path, link))
+
+    for stem, path in lookup.items():
+        rel = path.relative_to(WIKI_DIR)
+        if rel.parts[0] == "_meta":
+            continue
+        if inbound.get(stem, 0) == 0:
+            orphaned.append(path)
+
+    duplicate_title_hits = [entries for entries in duplicate_titles.values() if len(entries) > 1]
+
+    registered_raw_paths: set[str] = set()
+    for path in (WIKI_DIR / "sources").glob("*.md"):
+        content = read_text(path)
+        registered_raw_paths.update(re.findall(r"raw/(?:inbox|processed|notes)/[^\s`)\]]+", content))
+
+    unregistered_raw_inbox = []
+    for raw_file in sorted((RAW_DIR / "inbox").rglob("*")):
+        if not raw_file.is_file():
+            continue
+        rel_raw = raw_file.relative_to(ROOT).as_posix()
+        if rel_raw not in registered_raw_paths:
+            unregistered_raw_inbox.append(raw_file)
+
+    return {
+        "generated_on": today(),
+        "broken_wikilinks": broken,
+        "missing_frontmatter": no_frontmatter,
+        "unindexed_pages": unindexed,
+        "oversized_pages": oversized,
+        "orphan_pages": orphaned,
+        "duplicate_titles": duplicate_title_hits,
+        "low_coverage_pages": low_coverage,
+        "stale_pages": stale,
+        "uncertainty_candidates": uncertainty,
+        "unregistered_raw_inbox_files": unregistered_raw_inbox,
+    }
+
+
+def render_maintenance_plan(plan: dict[str, object]) -> str:
+    def section(title: str, items: list[str]) -> list[str]:
+        lines = [f"## {title}", ""]
+        if not items:
+            lines.append("- None")
+        else:
+            lines.extend(f"- {item}" for item in items)
+        lines.append("")
+        return lines
+
+    lines = [
+        "---",
+        "title: Maintenance Plan",
+        "type: meta",
+        "status: active",
+        f"created: {today()}",
+        f"updated: {today()}",
+        "---",
+        "",
+        "# Maintenance Plan",
+        "",
+        f"Generated by `python3 scripts/llm_wiki.py maintain` on {plan['generated_on']}.",
+        "",
+        "This plan reports mechanical maintenance candidates. It does not apply semantic rewrites to wiki pages or modify canonical warehouse registries.",
+        "",
+    ]
+
+    lines.extend(
+        section(
+            "Broken wikilinks",
+            [f"`{path.relative_to(ROOT)}` -> `[[{link}]]`" for path, link in plan["broken_wikilinks"]],
+        )
+    )
+    lines.extend(section("Missing frontmatter", [f"`{path.relative_to(ROOT)}`" for path in plan["missing_frontmatter"]]))
+    lines.extend(section("Unindexed pages", [f"`{path.relative_to(ROOT)}`" for path in plan["unindexed_pages"]]))
+    lines.extend(
+        section(
+            f"Oversized pages (>{MAX_PAGE_LINES} lines)",
+            [f"`{path.relative_to(ROOT)}` ({line_count} lines)" for path, line_count in plan["oversized_pages"]],
+        )
+    )
+    lines.extend(section("Orphan pages", [f"`{path.relative_to(ROOT)}`" for path in plan["orphan_pages"]]))
+    lines.extend(
+        section(
+            "Duplicate titles",
+            [
+                ", ".join(f"`{path.relative_to(ROOT)}`" for _, path in entries)
+                for entries in plan["duplicate_titles"]
+            ],
+        )
+    )
+    lines.extend(
+        section(
+            "Low-coverage durable pages",
+            [f"`{path.relative_to(ROOT)}` ({count} content lines)" for path, count in plan["low_coverage_pages"]],
+        )
+    )
+    lines.extend(
+        section(
+            f"Stale pages (updated > {STALE_PAGE_DAYS} days ago)",
+            [f"`{path.relative_to(ROOT)}` (updated {updated})" for path, updated in plan["stale_pages"]],
+        )
+    )
+    lines.extend(
+        section(
+            "Uncertainty candidates",
+            [f"`{path.relative_to(ROOT)}`" for path in plan["uncertainty_candidates"]],
+        )
+    )
+    lines.extend(
+        section(
+            "Unregistered raw inbox files",
+            [f"`{path.relative_to(ROOT)}`" for path in plan["unregistered_raw_inbox_files"]],
+        )
+    )
+    return "\n".join(lines).rstrip() + "\n"
+
+
+def maintenance_plan(write_plan: bool = False) -> int:
+    plan = build_maintenance_plan()
+    print("Maintenance plan summary")
+    print(f"- Broken wikilinks: {len(plan['broken_wikilinks'])}")
+    print(f"- Missing frontmatter: {len(plan['missing_frontmatter'])}")
+    print(f"- Unindexed pages: {len(plan['unindexed_pages'])}")
+    print(f"- Oversized pages: {len(plan['oversized_pages'])}")
+    print(f"- Orphan pages: {len(plan['orphan_pages'])}")
+    print(f"- Duplicate titles: {len(plan['duplicate_titles'])}")
+    print(f"- Low-coverage durable pages: {len(plan['low_coverage_pages'])}")
+    print(f"- Stale pages: {len(plan['stale_pages'])}")
+    print(f"- Uncertainty candidates: {len(plan['uncertainty_candidates'])}")
+    print(f"- Unregistered raw inbox files: {len(plan['unregistered_raw_inbox_files'])}")
+
+    if write_plan:
+        plan_path = META_DIR / "maintenance-plan.md"
+        write_text(plan_path, render_maintenance_plan(plan))
+        append_log(
+            "maintain",
+            "Bounded maintenance plan refresh",
+            [
+                f"Updated `[[{plan_path.stem}]]`",
+                "Refreshed wiki maintenance findings without semantic rewrite",
+            ],
+        )
+        rebuild_index()
+        print(f"Wrote {plan_path.relative_to(ROOT)}")
+    return 0
+
+
 def status() -> int:
     markdown_pages = iter_markdown_pages()
     raw_files = [path for path in RAW_DIR.rglob("*") if path.is_file()]
@@ -378,6 +613,15 @@ def build_parser() -> argparse.ArgumentParser:
 
     sub.add_parser("reindex", help="Rebuild wiki/_meta/index.md")
     sub.add_parser("lint", help="Check for broken links, orphans, and missing frontmatter.")
+    maintain = sub.add_parser(
+        "maintain",
+        help="Generate a bounded maintenance report for wiki hygiene and source registration coverage.",
+    )
+    maintain.add_argument(
+        "--write-plan",
+        action="store_true",
+        help="Write wiki/_meta/maintenance-plan.md and update log/index.",
+    )
     sub.add_parser("status", help="Show counts and basic wiki health metrics.")
 
     log_parser = sub.add_parser("log", help="Append a structured log entry.")
@@ -404,6 +648,8 @@ def main() -> int:
         return 0
     if args.command == "lint":
         return lint_wiki()
+    if args.command == "maintain":
+        return maintenance_plan(args.write_plan)
     if args.command == "status":
         return status()
     if args.command == "log":
