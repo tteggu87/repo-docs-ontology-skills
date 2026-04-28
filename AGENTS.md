@@ -25,6 +25,7 @@ Classify each user request into exactly one primary operation:
 
 - `ingest`: user provides or references a raw source to add
 - `query`: user asks what the wiki knows
+- `ontology-query`: user asks about exact machine-truth state, entities, claims, evidence, source coverage, source lineage, registry counts, relationships, or contradictions
 - `analysis`: user asks for synthesis, comparison, recommendation, or decision memo
 - `maintenance`: user asks for health checks, lint, cleanup, stale pages, or missing links
 - `claim-review`: user asks to validate, approve, reject, or inspect claims
@@ -75,6 +76,48 @@ Forbidden unless explicitly requested:
 - deleting meaningful wiki content
 - silently overwriting warehouse registries
 - treating graph projection or retrieval output as canonical truth
+
+## Ontology Read Contract
+
+Use `wiki/` as the default human-facing reading surface, but do not answer from wiki pages alone when the user asks about exact provenance, source coverage, contradiction, claim validation, entity relationships, registry counts, source lineage, or machine-truth state.
+
+For `ontology-query` and `claim-review` operations, read the smallest relevant canonical registry files under `warehouse/jsonl/` before answering:
+
+- `documents.jsonl` for source documents, raw paths, source pages, and source families
+- `source_versions.jsonl` for repeated-export lineage and affected surfaces
+- `messages.jsonl` and `segments.jsonl` for source-local text coverage
+- `entities.jsonl` for canonical entities and aliases
+- `claims.jsonl` for extracted claims, review states, support status, confidence, and contradiction candidates
+- `claim_evidence.jsonl` for evidence-to-claim linkage
+- `derived_edges.jsonl` for derived canonical relationship hints
+
+When graph projection, retrieval output, wiki synthesis, and canonical registries disagree, use the truth priority order: `raw/` first, then `warehouse/jsonl/`, then `wiki/`, then graph/retrieval aids.
+
+## Ontology Write Contract
+
+Treat `warehouse/jsonl/` as canonical structured machine truth. Do not mutate registry files through ad hoc wiki edits.
+
+Allowed ontology writes are limited to documented backend or CLI flows:
+
+- ontology-backed ingest or incremental ingest may upsert canonical source, message, entity, claim, evidence, segment, and derived-edge records
+- claim review may update `warehouse/jsonl/claims.jsonl` review metadata and append a wiki log entry
+- maintenance commands may inspect registries but must not silently rewrite canonical warehouse records
+
+Any semantic wiki update that depends on canonical facts must distinguish:
+
+- canonical machine truth read from `warehouse/jsonl/`
+- human-facing wiki synthesis
+- inference or unresolved uncertainty
+
+## Ontology Postflight
+
+After ontology-backed ingest, claim review, or tooling changes that affect registry contracts:
+
+1. Run `python3 scripts/llm_wiki.py ontology-check --json`.
+2. Confirm graph projection is treated as derived/non-canonical if consulted.
+3. Refresh or propose refreshing `wiki/_meta/orientation.md` when ontology health or entrypoint guidance changes.
+4. Save durable query outputs with ontology provenance when they were generated from registry-backed coverage.
+5. Report unresolved registry, lineage, or foreign-key issues explicitly.
 
 ## Durable Answer Rule
 

@@ -696,6 +696,12 @@ class WorkbenchRepository:
             "tags:",
             "  - workbench-query",
             f"coverage: {preview['coverage']}",
+            "ontology:",
+            "  provenance: warehouse/jsonl",
+            "  registries:",
+            "    - entities",
+            "    - claims",
+            "    - segments",
         ]
         if related_source_links:
             lines.append("sources:")

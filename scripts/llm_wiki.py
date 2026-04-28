@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
+import json
 import re
 import sys
 from collections import defaultdict
@@ -19,6 +20,7 @@ WIKI_DIR = ROOT / "wiki"
 META_DIR = WIKI_DIR / "_meta"
 RAW_DIR = ROOT / "raw"
 TEMPLATE_PATH = ROOT / "templates" / "source_page_template.md"
+ONTOLOGY_REGISTRY_CONTRACT = ROOT / "intelligence" / "manifests" / "ontology_registries.yaml"
 
 VALID_PAGE_DIRS = [
     "analyses",
@@ -45,6 +47,72 @@ UNCERTAINTY_MARKERS = [
     "unknown",
 ]
 
+ONTOLOGY_REGISTRIES: dict[str, dict[str, object]] = {
+    "source_versions": {
+        "path": "warehouse/jsonl/source_versions.jsonl",
+        "primary_key": ["export_version_id"],
+        "required_fields": [
+            "export_version_id",
+            "source_family_id",
+            "document_id",
+            "raw_path",
+            "content_hash",
+            "ingested_at",
+        ],
+        "references": [("document_id", "documents", "document_id")],
+    },
+    "documents": {
+        "path": "warehouse/jsonl/documents.jsonl",
+        "primary_key": ["document_id"],
+        "required_fields": ["document_id", "title", "raw_path", "source_page", "content_hash"],
+        "references": [],
+    },
+    "messages": {
+        "path": "warehouse/jsonl/messages.jsonl",
+        "primary_key": ["message_id"],
+        "required_fields": ["message_id", "document_id", "text", "sequence"],
+        "references": [("document_id", "documents", "document_id")],
+    },
+    "entities": {
+        "path": "warehouse/jsonl/entities.jsonl",
+        "primary_key": ["entity_id"],
+        "required_fields": ["entity_id", "label", "type"],
+        "references": [],
+    },
+    "claims": {
+        "path": "warehouse/jsonl/claims.jsonl",
+        "primary_key": ["claim_id"],
+        "required_fields": ["claim_id", "claim_text", "document_id", "review_state", "confidence"],
+        "references": [
+            ("document_id", "documents", "document_id"),
+            ("subject_id", "entities", "entity_id"),
+            ("object_id", "entities", "entity_id"),
+        ],
+    },
+    "claim_evidence": {
+        "path": "warehouse/jsonl/claim_evidence.jsonl",
+        "primary_key": ["claim_id", "segment_id"],
+        "required_fields": ["claim_id", "source_document_id", "evidence_kind"],
+        "references": [
+            ("claim_id", "claims", "claim_id"),
+            ("source_document_id", "documents", "document_id"),
+            ("segment_id", "segments", "segment_id"),
+        ],
+    },
+    "segments": {
+        "path": "warehouse/jsonl/segments.jsonl",
+        "primary_key": ["segment_id"],
+        "required_fields": ["segment_id", "document_id", "text", "position"],
+        "references": [("document_id", "documents", "document_id")],
+    },
+    "derived_edges": {
+        "path": "warehouse/jsonl/derived_edges.jsonl",
+        "primary_key": ["source", "target", "relation_type"],
+        "required_fields": ["source", "target", "relation_type"],
+        "references": [],
+    },
+}
+
 
 def today() -> str:
     return dt.date.today().isoformat()
@@ -63,6 +131,28 @@ def read_text(path: Path) -> str:
 def write_text(path: Path, content: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(content, encoding="utf-8")
+
+
+def read_jsonl_with_errors(path: Path) -> tuple[list[dict[str, object]], list[str]]:
+    if not path.exists():
+        return [], [f"missing registry file: {path.relative_to(ROOT)}"]
+
+    rows: list[dict[str, object]] = []
+    errors: list[str] = []
+    for line_number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+        stripped = line.strip()
+        if not stripped:
+            continue
+        try:
+            parsed = json.loads(stripped)
+        except json.JSONDecodeError as exc:
+            errors.append(f"{path.relative_to(ROOT)}:{line_number}: invalid JSON: {exc.msg}")
+            continue
+        if not isinstance(parsed, dict):
+            errors.append(f"{path.relative_to(ROOT)}:{line_number}: row must be a JSON object")
+            continue
+        rows.append(parsed)
+    return rows, errors
 
 
 def iter_markdown_pages() -> list[Path]:
@@ -570,6 +660,137 @@ def maintenance_plan(write_plan: bool = False) -> int:
     return 0
 
 
+def ontology_check_payload() -> dict[str, object]:
+    registry_rows: dict[str, list[dict[str, object]]] = {}
+    registry_key_values: dict[str, dict[str, set[str]]] = defaultdict(lambda: defaultdict(set))
+    registry_summaries: list[dict[str, object]] = []
+    errors: list[str] = []
+    warnings: list[str] = []
+    duplicate_primary_key_warnings: list[str] = []
+
+    if not ONTOLOGY_REGISTRY_CONTRACT.exists():
+        warnings.append(f"missing contract manifest: {ONTOLOGY_REGISTRY_CONTRACT.relative_to(ROOT)}")
+
+    for registry_key, contract in ONTOLOGY_REGISTRIES.items():
+        path = ROOT / str(contract["path"])
+        rows, parse_errors = read_jsonl_with_errors(path)
+        registry_rows[registry_key] = rows
+        errors.extend(parse_errors)
+
+        primary_key_fields = list(contract["primary_key"])
+        required_fields = list(contract["required_fields"])
+        seen_primary_keys: set[str] = set()
+        missing_required_count = 0
+        duplicate_primary_key_count = 0
+
+        for index, row in enumerate(rows, start=1):
+            missing_fields = [field for field in required_fields if field not in row or row.get(field) in ("", None)]
+            if missing_fields:
+                missing_required_count += 1
+                errors.append(
+                    f"{contract['path']}:{index}: missing required field(s): {', '.join(missing_fields)}"
+                )
+
+            primary_values = [str(row.get(field) or "") for field in primary_key_fields]
+            primary_key = "|".join(primary_values)
+            if not all(primary_values):
+                errors.append(
+                    f"{contract['path']}:{index}: missing primary key field(s): {', '.join(primary_key_fields)}"
+                )
+            elif primary_key in seen_primary_keys:
+                duplicate_primary_key_count += 1
+                duplicate_primary_key_warnings.append(f"{contract['path']}:{index}: duplicate primary key: {primary_key}")
+            else:
+                seen_primary_keys.add(primary_key)
+
+            for field, value in row.items():
+                if isinstance(value, str) and value:
+                    registry_key_values[registry_key][field].add(value)
+
+        registry_summaries.append(
+            {
+                "key": registry_key,
+                "path": contract["path"],
+                "count": len(rows),
+                "primary_key": primary_key_fields,
+                "required_fields": required_fields,
+                "missing_required_rows": missing_required_count,
+                "duplicate_primary_keys": duplicate_primary_key_count,
+            }
+        )
+
+    unresolved_references: list[dict[str, object]] = []
+    for registry_key, contract in ONTOLOGY_REGISTRIES.items():
+        rows = registry_rows.get(registry_key, [])
+        for index, row in enumerate(rows, start=1):
+            for source_field, target_registry, target_field in list(contract["references"]):
+                source_value = row.get(source_field)
+                if source_value in ("", None):
+                    continue
+                if str(source_value) not in registry_key_values[target_registry][target_field]:
+                    issue = {
+                        "registry": registry_key,
+                        "row": index,
+                        "field": source_field,
+                        "value": source_value,
+                        "target_registry": target_registry,
+                        "target_field": target_field,
+                    }
+                    unresolved_references.append(issue)
+                    warnings.append(
+                        f"{contract['path']}:{index}: unresolved reference "
+                        f"{source_field}={source_value!r} -> {target_registry}.{target_field}"
+                    )
+
+    graph_dir = ROOT / "warehouse" / "graph_projection"
+    graph_projection = {
+        "path": "warehouse/graph_projection/",
+        "truth_class": "derived",
+        "canonical": False,
+        "available": graph_dir.exists(),
+    }
+
+    warnings.extend(duplicate_primary_key_warnings)
+    status_value = "error" if errors else "warning" if warnings else "ok"
+
+    return {
+        "status": status_value,
+        "generated_on": today(),
+        "contract_manifest": str(ONTOLOGY_REGISTRY_CONTRACT.relative_to(ROOT)),
+        "truth_priority": ["raw/", "warehouse/jsonl/", "wiki/", "warehouse/graph_projection/"],
+        "registries": registry_summaries,
+        "unresolved_references": unresolved_references,
+        "graph_projection": graph_projection,
+        "warnings": warnings,
+        "errors": errors,
+    }
+
+
+def ontology_check(json_output: bool = False, strict: bool = False) -> int:
+    payload = ontology_check_payload()
+    if json_output:
+        print(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True))
+    else:
+        print("Ontology check")
+        print(f"- Status: {payload['status']}")
+        for registry in payload["registries"]:
+            print(f"- {registry['key']}: {registry['count']} rows")
+        print(f"- Unresolved references: {len(payload['unresolved_references'])}")
+        print(f"- Warnings: {len(payload['warnings'])}")
+        print(f"- Errors: {len(payload['errors'])}")
+        if payload["warnings"]:
+            for warning in payload["warnings"][:20]:
+                print(f"  - warning: {warning}")
+        if payload["errors"]:
+            for error in payload["errors"][:20]:
+                print(f"  - error: {error}")
+    if payload["errors"]:
+        return 1
+    if strict and payload["warnings"]:
+        return 1
+    return 0
+
+
 def status() -> int:
     markdown_pages = iter_markdown_pages()
     raw_files = [path for path in RAW_DIR.rglob("*") if path.is_file()]
@@ -623,6 +844,12 @@ def build_parser() -> argparse.ArgumentParser:
         help="Write wiki/_meta/maintenance-plan.md and update log/index.",
     )
     sub.add_parser("status", help="Show counts and basic wiki health metrics.")
+    ontology = sub.add_parser(
+        "ontology-check",
+        help="Validate canonical warehouse JSONL registries and ontology references.",
+    )
+    ontology.add_argument("--json", action="store_true", help="Emit machine-readable JSON.")
+    ontology.add_argument("--strict", action="store_true", help="Exit non-zero on warnings as well as errors.")
 
     log_parser = sub.add_parser("log", help="Append a structured log entry.")
     log_parser.add_argument("kind", help="Entry type such as ingest, query, lint, or refactor.")
@@ -652,6 +879,8 @@ def main() -> int:
         return maintenance_plan(args.write_plan)
     if args.command == "status":
         return status()
+    if args.command == "ontology-check":
+        return ontology_check(args.json, args.strict)
     if args.command == "log":
         return log_command(args.kind, args.title, args.details)
 

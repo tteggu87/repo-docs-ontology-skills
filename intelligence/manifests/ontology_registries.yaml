@@ -1,0 +1,149 @@
+registries:
+  - key: source_versions
+    path: warehouse/jsonl/source_versions.jsonl
+    truth_class: canonical
+    primary_key: export_version_id
+    required_fields:
+      - export_version_id
+      - source_family_id
+      - document_id
+      - raw_path
+      - content_hash
+      - ingested_at
+    references:
+      - field: document_id
+        registry: documents
+        target_field: document_id
+    read_for:
+      - repeated-export lineage
+      - affected registry paths
+      - affected wiki paths
+  - key: documents
+    path: warehouse/jsonl/documents.jsonl
+    truth_class: canonical
+    primary_key: document_id
+    required_fields:
+      - document_id
+      - title
+      - raw_path
+      - source_page
+      - content_hash
+    read_for:
+      - source coverage
+      - raw source lineage
+      - source page mapping
+  - key: messages
+    path: warehouse/jsonl/messages.jsonl
+    truth_class: canonical
+    primary_key: message_id
+    required_fields:
+      - message_id
+      - document_id
+      - text
+      - sequence
+    references:
+      - field: document_id
+        registry: documents
+        target_field: document_id
+    read_for:
+      - source-local statement coverage
+      - chronological or sequential evidence
+  - key: entities
+    path: warehouse/jsonl/entities.jsonl
+    truth_class: canonical
+    primary_key: entity_id
+    required_fields:
+      - entity_id
+      - label
+      - type
+    read_for:
+      - entity identity
+      - aliases
+      - relationship endpoints
+  - key: claims
+    path: warehouse/jsonl/claims.jsonl
+    truth_class: canonical
+    primary_key: claim_id
+    required_fields:
+      - claim_id
+      - claim_text
+      - document_id
+      - review_state
+      - confidence
+    references:
+      - field: document_id
+        registry: documents
+        target_field: document_id
+      - field: subject_id
+        registry: entities
+        target_field: entity_id
+      - field: object_id
+        registry: entities
+        target_field: entity_id
+    read_for:
+      - claim validation
+      - contradiction checks
+      - support status
+      - review queues
+  - key: claim_evidence
+    path: warehouse/jsonl/claim_evidence.jsonl
+    truth_class: canonical
+    primary_key:
+      - claim_id
+      - segment_id
+    required_fields:
+      - claim_id
+      - source_document_id
+      - evidence_kind
+    references:
+      - field: claim_id
+        registry: claims
+        target_field: claim_id
+      - field: source_document_id
+        registry: documents
+        target_field: document_id
+      - field: segment_id
+        registry: segments
+        target_field: segment_id
+    read_for:
+      - evidence provenance
+      - source quote validation
+  - key: segments
+    path: warehouse/jsonl/segments.jsonl
+    truth_class: canonical
+    primary_key: segment_id
+    required_fields:
+      - segment_id
+      - document_id
+      - text
+      - position
+    references:
+      - field: document_id
+        registry: documents
+        target_field: document_id
+    read_for:
+      - raw text coverage
+      - claim evidence context
+  - key: derived_edges
+    path: warehouse/jsonl/derived_edges.jsonl
+    truth_class: canonical-derived
+    primary_key:
+      - source
+      - target
+      - relation_type
+    required_fields:
+      - source
+      - target
+      - relation_type
+    read_for:
+      - relationship hints
+      - graph projection inputs
+
+validation:
+  command: python3 scripts/llm_wiki.py ontology-check --json
+  rules:
+    - every JSONL registry must parse line-by-line
+    - every row must include its registry required fields
+    - primary keys must be present; duplicate legacy keys are reported as warnings unless strict mode is used
+    - configured foreign-key references are checked and unresolved legacy references are reported as warnings unless strict mode is used
+    - graph projection remains derived and never overrides raw or warehouse truth
