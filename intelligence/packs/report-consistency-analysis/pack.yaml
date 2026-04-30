@@ -1,0 +1,13 @@
+profile_id: report-consistency-analysis
+pack_id: report-consistency-analysis
+version: 0.1.0
+status: built_in
+source_families: [report-md-txt]
+unit_kinds: [report_section]
+observation_types: [report.finding, report.consistency_signal, common.open_question]
+analysis_outputs: [report.consistency_memo]
+capabilities:
+  parse:
+    python: scripts.ingest.adapters.report_md_txt:parse_report_source
+  analyze:
+    python: scripts.analysis_profiles.report_consistency:write_consistency_memo

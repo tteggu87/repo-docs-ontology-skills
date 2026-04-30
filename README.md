@@ -234,9 +234,9 @@ This workflow:
 
 Important:
 
-- the current implementation is lightweight and intentionally narrow
-- today it is effectively specialized around the Agent Korea KakaoTalk export family
-- the manifest makes expansion easier, but generic parser coverage is not finished yet
+- the KakaoTalk corpus path is retained as a regression **test fixture** family
+- practical built-in analysis targets are now email/education/report md/txt profiles
+- generic/profile ingest paths should be used for new analysis use cases
 
 ### C. Ask The Agent To Maintain The Wiki
 

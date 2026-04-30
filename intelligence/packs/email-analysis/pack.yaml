@@ -1,0 +1,13 @@
+profile_id: email-analysis
+pack_id: email-analysis
+version: 0.1.0
+status: built_in
+source_families: [email-md-txt]
+unit_kinds: [email_message]
+observation_types: [email.topic_mention, email.stance, common.action_item, common.open_question]
+analysis_outputs: [email.weekly_digest, email.topic_review, email.watchlist]
+capabilities:
+  parse:
+    python: scripts.ingest.adapters.email_md_txt:parse_email_source
+  analyze:
+    python: scripts.analysis_profiles.email:write_weekly_digest
