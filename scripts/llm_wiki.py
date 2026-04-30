@@ -606,10 +606,17 @@ def build_parser() -> argparse.ArgumentParser:
 
     ingest = sub.add_parser(
         "ingest",
-        help="Register a raw source and create a source page stub. This is not ontology-backed ingest.",
+        help="Register a raw source (legacy name). Source registration only; not ontology-backed ingest.",
     )
     ingest.add_argument("path", help="Path to the raw source, absolute or relative to project root.")
     ingest.add_argument("--title", help="Human-readable title for the source page.")
+
+    register_source = sub.add_parser(
+        "register-source",
+        help="Register a raw source and create a source page stub. Source registration only; not ontology-backed ingest.",
+    )
+    register_source.add_argument("path", help="Path to the raw source, absolute or relative to project root.")
+    register_source.add_argument("--title", help="Human-readable title for the source page.")
 
     sub.add_parser("reindex", help="Rebuild wiki/_meta/index.md")
     sub.add_parser("lint", help="Check for broken links, orphans, and missing frontmatter.")
@@ -640,7 +647,7 @@ def main() -> int:
     parser = build_parser()
     args = parser.parse_args()
 
-    if args.command == "ingest":
+    if args.command in {"ingest", "register-source"}:
         return ingest_source(args.path, args.title)
     if args.command == "reindex":
         out = rebuild_index()
