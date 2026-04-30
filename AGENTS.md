@@ -258,6 +258,12 @@ Default startup assumptions:
 - The local CLI in `scripts/llm_wiki.py` is support tooling, not the source of truth.
 - If a future agent can answer from existing wiki pages, it should avoid rereading the full raw corpus unless needed for verification or coverage.
 
+## Built-in Profiles And Pack Boundary
+
+DocTology currently treats practical analysis capabilities as **built-in profiles** implemented inside this repository.
+Use lightweight profile manifests and shared registries so behavior stays pack-ready, but do **not** assume an external plugin runtime exists.
+Until explicitly upgraded, avoid designing for pack marketplace features (dynamic loading, dependency resolution, hot swap, external Python execution).
+
 ## AGENTS Vs Skills
 
 For this repository:

@@ -184,6 +184,17 @@ If a source is a PDF, web page, or image-heavy document, keep the raw file in `r
 - also save a companion markdown/text note into `raw/notes/`, or
 - ask the agent to read the file directly and write the wiki updates
 
+## Built-in Analysis Profile Strategy
+
+Current direction is **built-in profiles first, pack-ready later**:
+
+- implement `email-analysis`, `education-analysis`, and `report-consistency-analysis` as repo-local built-ins
+- add lightweight profile manifests under `intelligence/packs/`
+- keep common registries and validators pack-ready
+- defer external plugin runtime concerns until there is clear multi-repo/operator demand
+
+For the detailed implementation breakdown, see `docs/ANALYSIS_PROFILE_IMPLEMENTATION_PLAN.md`.
+
 ## Workflows
 
 ### A. Register A One-Off Source
@@ -191,7 +202,8 @@ If a source is a PDF, web page, or image-heavy document, keep the raw file in `r
 Run:
 
 ```bash
-python3 scripts/llm_wiki.py ingest raw/inbox/my-source.md --title "My Source Title"
+python3 scripts/llm_wiki.py register-source raw/inbox/my-source.md --title "My Source Title"
+# (alias) python3 scripts/llm_wiki.py ingest raw/inbox/my-source.md --title "My Source Title"
 ```
 
 This does three things:
@@ -200,9 +212,9 @@ This does three things:
 - appends an ingest entry to `wiki/_meta/log.md`
 - rebuilds `wiki/_meta/index.md`
 
-This is source registration only.
-It does not auto-summarize the source or perform ontology-backed extraction.
-That synthesis is still expected from the agent.
+This is source registration only (not ontology-backed semantic ingest).
+It does not auto-summarize the source or perform full ontology extraction.
+For profile analysis pipelines, use the dedicated ingest/analysis pipeline flow.
 
 ### B. Run Incremental Ingest For A Repeated Export
 
@@ -222,9 +234,9 @@ This workflow:
 
 Important:
 
-- the current implementation is lightweight and intentionally narrow
-- today it is effectively specialized around the Agent Korea KakaoTalk export family
-- the manifest makes expansion easier, but generic parser coverage is not finished yet
+- the KakaoTalk corpus path is retained as a regression **test fixture** family
+- practical built-in analysis targets are now email/education/report md/txt profiles
+- generic/profile ingest paths should be used for new analysis use cases
 
 ### C. Ask The Agent To Maintain The Wiki
 

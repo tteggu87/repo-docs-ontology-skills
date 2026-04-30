@@ -1,0 +1,13 @@
+profile_id: education-analysis
+pack_id: education-analysis
+version: 0.1.0
+status: built_in
+source_families: [education-md-txt]
+unit_kinds: [education_section]
+observation_types: [education.key_concept, education.definition, common.open_question]
+analysis_outputs: [education.concept_summary, education.cited_qa]
+capabilities:
+  parse:
+    python: scripts.ingest.adapters.education_md_txt:parse_education_source
+  analyze:
+    python: scripts.analysis_profiles.education:write_education_summary
