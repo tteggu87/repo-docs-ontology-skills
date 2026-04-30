@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="apps/workbench/public/doctology-logo.jpeg" alt="DocTology logo" width="460">
+</p>
+
 # LLM Wiki for Obsidian
 
 An Obsidian-first, agent-maintained living knowledge workspace inspired by Andrej Karpathy's `LLM Wiki` idea:
