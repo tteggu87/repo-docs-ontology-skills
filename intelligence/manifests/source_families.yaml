@@ -16,6 +16,9 @@ source_families:
     match:
       path_contains:
         - /email/
+      extensions:
+        - .md
+        - .txt
     default_parser: email_md_txt
 
   - key: education-md-txt
@@ -24,6 +27,9 @@ source_families:
     match:
       path_contains:
         - /education/
+      extensions:
+        - .md
+        - .txt
     default_parser: education_md_txt
 
   - key: report-md-txt
@@ -32,6 +38,9 @@ source_families:
     match:
       path_contains:
         - /reports/
+      extensions:
+        - .md
+        - .txt
     default_parser: report_md_txt
 
   - key: markdown-note-export
@@ -39,6 +48,7 @@ source_families:
     match:
       path_contains:
         - note-export-
+      extensions:
         - .md
     default_parser: markdown_note
 

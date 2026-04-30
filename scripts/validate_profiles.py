@@ -1,21 +1,25 @@
 #!/usr/bin/env python3
-import sys, importlib
+import importlib
+import sys
 from pathlib import Path
+
 ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
+
 from scripts.packs.loader import load_profiles
 
 ALLOWED_PREFIXES = ("scripts.ingest.adapters.", "scripts.analysis_profiles.")
 
 
 def _load_families() -> set[str]:
-    families=set()
-    for line in (ROOT/"intelligence/manifests/source_families.yaml").read_text(encoding="utf-8").splitlines():
-        s=line.strip()
-        if s.startswith("- key:"):
-            families.add(s.split(":",1)[1].strip())
-    return families
+    path = ROOT / "intelligence/manifests/source_families.yaml"
+    try:
+        import yaml  # type: ignore
+        data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+        return {row["key"] for row in data.get("source_families", [])}
+    except Exception:
+        return {line.split(":",1)[1].strip() for line in path.read_text(encoding="utf-8").splitlines() if line.strip().startswith("- key:")}
 
 
 def _check_target(target: str):
@@ -28,14 +32,13 @@ def _check_target(target: str):
     if not hasattr(mod, fn):
         raise SystemExit(f"Missing function target: {target}")
 
+
 profiles = load_profiles(ROOT)
 families = _load_families()
-covered_built_in = set()
 for p in profiles:
     for f in p.source_families:
         if f not in families:
             raise SystemExit(f"Unknown source family '{f}' in profile '{p.profile_id}'")
-        covered_built_in.add(f)
     for obs in p.observation_types:
         if "." not in obs:
             raise SystemExit(f"Invalid observation type: {obs}")
