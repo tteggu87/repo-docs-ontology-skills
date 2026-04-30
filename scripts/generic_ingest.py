@@ -2,7 +2,7 @@
 from __future__ import annotations
 import sys, argparse, json
 from pathlib import Path
-from datetime import date, datetime
+from datetime import datetime
 
 ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path: sys.path.insert(0, str(ROOT))
@@ -34,7 +34,10 @@ def upsert_jsonl(path: Path, key: str, rows: list[dict]):
 def _safety(root: Path, src: Path) -> str:
     if not src.exists(): raise ValueError("source path does not exist")
     if not src.is_file(): raise ValueError("source path is not a file")
-    rp = src.resolve().relative_to(root.resolve()).as_posix()
+    try:
+        rp = src.resolve().relative_to(root.resolve()).as_posix()
+    except ValueError as exc:
+        raise ValueError("source path must live inside this repository") from exc
     if not any(rp.startswith(p+"/") for p in ALLOWED_RAW_PREFIXES):
         raise ValueError(f"source path must be under {ALLOWED_RAW_PREFIXES}")
     if src.suffix.lower() not in {".md", ".txt"}:
@@ -42,40 +45,54 @@ def _safety(root: Path, src: Path) -> str:
     return rp
 
 
-def ingest_source(root: Path, source: str, profile_id: str | None = None) -> dict:
+def ingest_source(root: Path, source: str, profile_id: str | None = None, allow_profile_family_mismatch: bool = False) -> dict:
     src = (root / source).resolve() if not Path(source).is_absolute() else Path(source).resolve()
     raw_path = _safety(root, src)
-    detected = resolve_family(root, src)
-    warning = None
+    warnings: list[str] = []
+
     if profile_id:
         profile = get_profile(root, profile_id)
         family = profile.source_families[0]
-        if detected != family:
-            warning = f"profile/family mismatch: detected={detected} profile_family={family}"
+        try:
+            detected = resolve_family(root, src)
+            if detected != family:
+                msg = f"profile/family mismatch: detected={detected} profile_family={family}"
+                if allow_profile_family_mismatch:
+                    warnings.append(msg)
+                else:
+                    raise ValueError(msg)
+        except ValueError as exc:
+            if "Ambiguous source family" in str(exc):
+                warnings.append(f"family detection ambiguous; profile family forced: {family}")
+            else:
+                raise
     else:
-        family = detected
+        family = resolve_family(root, src)
         profile_id = PROFILE_BY_FAMILY.get(family, "generic-analysis")
+
     if profile_id=='email-analysis': parsed=parse_email_source(src, profile_id=profile_id, source_family_id=family, raw_path=raw_path)
-    elif profile_id=='education-analysis': parsed=parse_education_source(src, profile_id=profile_id, source_family_id=family)
-    elif profile_id=='report-consistency-analysis': parsed=parse_report_source(src, profile_id=profile_id, source_family_id=family)
+    elif profile_id=='education-analysis': parsed=parse_education_source(src, profile_id=profile_id, source_family_id=family, raw_path=raw_path)
+    elif profile_id=='report-consistency-analysis': parsed=parse_report_source(src, profile_id=profile_id, source_family_id=family, raw_path=raw_path)
     else: parsed=parse_markdown(src, profile_id, family, raw_path=raw_path)
 
+    warnings.extend(parsed.document.get("warnings", []))
     content_hash=file_content_hash(src)
     srcver=source_version_id(parsed.document['document_id'], content_hash)
     now = datetime.utcnow().isoformat()+'Z'
+    registry_paths=["warehouse/jsonl/documents.jsonl","warehouse/jsonl/content_units.jsonl","warehouse/jsonl/source_versions.jsonl"]
     doc = dict(parsed.document)
     doc.update({"raw_path": raw_path, "content_hash": content_hash, "latest_source_version_id": srcver, "ingested_at": now, "title": src.stem})
-    srcver_row={"source_version_id":srcver,"document_id":doc['document_id'],"raw_path":raw_path,"content_hash":content_hash,"unit_count":len(parsed.units),"ingested_at":now}
+    srcver_row={"source_version_id":srcver,"document_id":doc['document_id'],"raw_path":raw_path,"content_hash":content_hash,"profile_id":profile_id,"source_family_id":family,"unit_count":len(parsed.units),"adapter":f"{profile_id}:parse","affected_registry_paths":registry_paths,"affected_wiki_paths":[],"warnings":warnings,"ingested_at":now}
 
     upsert_jsonl(root/'warehouse/jsonl/documents.jsonl', 'document_id', [doc])
     upsert_jsonl(root/'warehouse/jsonl/content_units.jsonl', 'unit_id', parsed.units)
     upsert_jsonl(root/'warehouse/jsonl/source_versions.jsonl', 'source_version_id', [srcver_row])
-    return {"profile_id":profile_id,"source_family_id":family,"warning":warning,"units":len(parsed.units),"affected_registry_paths":["warehouse/jsonl/documents.jsonl","warehouse/jsonl/content_units.jsonl","warehouse/jsonl/source_versions.jsonl"],"affected_wiki_paths":[]}
+    return {"profile_id":profile_id,"source_family_id":family,"warnings":warnings,"units":len(parsed.units),"affected_registry_paths":registry_paths,"affected_wiki_paths":[]}
 
 
 def main():
-    ap=argparse.ArgumentParser(); ap.add_argument('source'); ap.add_argument('--profile')
-    args=ap.parse_args(); print(json.dumps(ingest_source(ROOT,args.source,args.profile), ensure_ascii=False))
+    ap=argparse.ArgumentParser(); ap.add_argument('source'); ap.add_argument('--profile'); ap.add_argument('--allow-profile-family-mismatch', action='store_true')
+    args=ap.parse_args(); print(json.dumps(ingest_source(ROOT,args.source,args.profile,args.allow_profile_family_mismatch), ensure_ascii=False))
 
 if __name__=='__main__':
     main()
