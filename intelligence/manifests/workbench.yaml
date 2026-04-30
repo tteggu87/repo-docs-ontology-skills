@@ -136,6 +136,43 @@ workbench:
         - sample previews
         - canonical versus derived summary
 
+    - key: ingest_inbox
+      method: GET
+      path: /api/ingest/inbox
+      reads:
+        - raw/inbox/
+        - intelligence/manifests/source_families.yaml
+      returns:
+        - md/txt inbox paths
+        - detected profile id
+        - detected source family id
+        - warnings
+
+    - key: ingest_preview
+      method: GET
+      path: /api/ingest/preview?path=<raw-path>
+      reads:
+        - raw/inbox/
+        - raw/processed/
+        - raw/notes/
+        - intelligence/manifests/source_families.yaml
+      returns:
+        - detected profile id
+        - detected source family id
+        - expected unit count
+        - unit kinds
+        - warnings
+
+    - key: analysis_history
+      method: GET
+      path: /api/analysis/history
+      reads:
+        - warehouse/jsonl/analysis_runs.jsonl
+        - warehouse/jsonl/analysis_findings.jsonl
+      returns:
+        - analysis runs
+        - finding timeline grouped by finding_key
+
     - key: recent_log
       method: GET
       path: /api/meta/log/recent

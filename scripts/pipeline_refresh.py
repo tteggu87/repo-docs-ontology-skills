@@ -12,6 +12,9 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from scripts.generic_ingest import ingest_source
+from scripts.analysis_profiles.education import write_education_summary
+from scripts.analysis_profiles.email import write_weekly_digest
+from scripts.analysis_profiles.report_consistency import write_consistency_memo
 
 
 def _run(script: str) -> dict:
@@ -25,6 +28,9 @@ def main():
     ap.add_argument("--source", required=True)
     ap.add_argument("--validate", action="store_true")
     ap.add_argument("--allow-profile-family-mismatch", action="store_true")
+    ap.add_argument("--analyze", action="store_true")
+    ap.add_argument("--write-analysis", action="store_true")
+    ap.add_argument("--question")
     args = ap.parse_args()
 
     vr = {"profiles": None, "registries": None}
@@ -35,6 +41,18 @@ def main():
             raise SystemExit(1)
 
     summary = ingest_source(ROOT, args.source, args.profile, allow_profile_family_mismatch=args.allow_profile_family_mismatch)
+    if args.analyze or args.write_analysis:
+        profile_id = summary["profile_id"]
+        if profile_id == "education-analysis":
+            summary["analysis"] = write_education_summary(ROOT, question=args.question or "핵심 개념 요약")
+        elif profile_id == "email-analysis":
+            summary["analysis"] = write_weekly_digest(ROOT)
+        elif profile_id == "report-consistency-analysis":
+            summary["analysis"] = write_consistency_memo(ROOT)
+        else:
+            summary["analysis"] = {"status": "skipped", "message": f"no analyzer for profile {profile_id}"}
+        if summary.get("analysis", {}).get("output_path"):
+            summary["analysis_output_path"] = summary["analysis"]["output_path"]
 
     if args.validate:
         vr["registries"] = _run("scripts/validate_registries.py")

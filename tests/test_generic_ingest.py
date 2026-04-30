@@ -1,12 +1,30 @@
 import tempfile
 import unittest
 from pathlib import Path
+import shutil
 
 from scripts.generic_ingest import ingest_source
 from scripts.ingest.adapters.common import file_document_id
 from scripts.ingest.resolver import resolve_family
+from scripts.citation import make_citation
+from scripts.analysis_profiles.education import write_education_summary
+from scripts.workbench.repository import WorkbenchRepository
+from scripts.workbench.server import route_request
 
 ROOT = Path(__file__).resolve().parent.parent
+
+
+def build_temp_repo(td: str | Path) -> Path:
+    repo = Path(td)
+    shutil.copytree(ROOT / "intelligence" / "packs", repo / "intelligence" / "packs")
+    (repo / "intelligence" / "manifests").mkdir(parents=True, exist_ok=True)
+    shutil.copy2(ROOT / "intelligence" / "manifests" / "source_families.yaml", repo / "intelligence" / "manifests" / "source_families.yaml")
+    (repo / "warehouse" / "jsonl").mkdir(parents=True, exist_ok=True)
+    (repo / "wiki" / "_meta").mkdir(parents=True, exist_ok=True)
+    (repo / "wiki" / "_meta" / "orientation.md").write_text("---\ntitle: Orientation\ntype: meta\n---\n# Orientation\n", encoding="utf-8")
+    (repo / "wiki" / "_meta" / "index.md").write_text("---\ntitle: Index\ntype: meta\ncreated: 2026-01-01\n---\n# Index\n", encoding="utf-8")
+    (repo / "wiki" / "_meta" / "log.md").write_text("---\ntitle: Log\ntype: meta\ncreated: 2026-01-01\n---\n# Log\n", encoding="utf-8")
+    return repo
 
 
 class TestGenericIngest(unittest.TestCase):
@@ -16,27 +34,59 @@ class TestGenericIngest(unittest.TestCase):
 
     def test_profile_mismatch_errors(self):
         with tempfile.TemporaryDirectory() as td:
-            p = Path(td) / "r.md"
-            p.write_text("hello", encoding="utf-8")
-            rel = p.relative_to(Path(td)).as_posix()
-            # emulate repository shape
-            repo = Path(td)
+            repo = build_temp_repo(td)
             (repo / "raw/inbox/reports").mkdir(parents=True, exist_ok=True)
             src = repo / "raw/inbox/reports/r.md"
             src.write_text("x", encoding="utf-8")
             with self.assertRaises(ValueError):
-                ingest_source(ROOT, src.as_posix(), profile_id="email-analysis")
+                ingest_source(repo, src.as_posix(), profile_id="email-analysis")
 
     def test_education_raw_path_stable_doc_id(self):
-        src = ROOT / "raw/inbox/education/test-stable.md"
-        src.parent.mkdir(parents=True, exist_ok=True)
-        src.write_text("# h\n\nbody", encoding="utf-8")
-        out = ingest_source(ROOT, src.as_posix(), profile_id="education-analysis", allow_profile_family_mismatch=True)
-        self.assertEqual(out["source_family_id"], "education-md-txt")
-        expected = file_document_id("raw/inbox/education/test-stable.md")
-        # pull the latest document row quickly
-        rows = (ROOT / "warehouse/jsonl/documents.jsonl").read_text(encoding="utf-8").splitlines()
-        self.assertTrue(any(expected in line for line in rows))
+        with tempfile.TemporaryDirectory() as td:
+            repo = build_temp_repo(td)
+            src = repo / "raw/inbox/education/test-stable.md"
+            src.parent.mkdir(parents=True, exist_ok=True)
+            src.write_text("# h\n\nbody", encoding="utf-8")
+            out = ingest_source(repo, src.as_posix(), profile_id="education-analysis")
+            self.assertEqual(out["source_family_id"], "education-md-txt")
+            self.assertTrue(out["affected_wiki_paths"])
+            expected = file_document_id("raw/inbox/education/test-stable.md")
+            rows = (repo / "warehouse/jsonl/documents.jsonl").read_text(encoding="utf-8").splitlines()
+            self.assertTrue(any(expected in line for line in rows))
+            self.assertTrue(list((repo / "wiki/sources").glob("source-*.md")))
+
+    def test_citation_helper_and_education_analysis_use_temp_repo(self):
+        with tempfile.TemporaryDirectory() as td:
+            repo = build_temp_repo(td)
+            src = repo / "raw/inbox/education/attention.md"
+            src.parent.mkdir(parents=True, exist_ok=True)
+            src.write_text("# Self Attention\n\nAttention connects tokens to context.\n\n# Training\n\nOptimization uses gradients.", encoding="utf-8")
+            ingest_source(repo, src.as_posix(), profile_id="education-analysis")
+            units = (repo / "warehouse/jsonl/content_units.jsonl").read_text(encoding="utf-8")
+            unit_id = units.split('"unit_id": "')[1].split('"', 1)[0]
+            citation = make_citation(repo, unit_id)
+            self.assertTrue(citation["ok"])
+            self.assertIn("[[source-", citation["citation"])
+            self.assertIn("lines", citation["citation"])
+            analysis = write_education_summary(repo, question="attention")
+            self.assertEqual(analysis["status"], "ok")
+            self.assertTrue((repo / analysis["output_path"]).exists())
+            self.assertTrue(analysis["concept_paths"])
+            self.assertTrue((repo / analysis["concept_paths"][0]).exists())
+
+    def test_workbench_ingest_preview_routes_use_temp_repo(self):
+        with tempfile.TemporaryDirectory() as td:
+            repo = build_temp_repo(td)
+            src = repo / "raw/inbox/education/preview.md"
+            src.parent.mkdir(parents=True, exist_ok=True)
+            src.write_text("# Preview\n\nA preview body.", encoding="utf-8")
+            workbench = WorkbenchRepository(repo)
+            status, inbox = route_request(workbench, "GET", "/api/ingest/inbox")
+            self.assertEqual(status, 200)
+            self.assertEqual(inbox["items"][0]["detected_profile_id"], "education-analysis")
+            status, preview = route_request(workbench, "GET", "/api/ingest/preview?path=raw/inbox/education/preview.md")
+            self.assertEqual(status, 200)
+            self.assertEqual(preview["expected_unit_count"], 1)
 
 
 if __name__ == "__main__":

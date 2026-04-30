@@ -199,6 +199,64 @@ Current direction is **built-in profiles first, pack-ready later**:
 
 For the detailed implementation breakdown, see `docs/ANALYSIS_PROFILE_IMPLEMENTATION_PLAN.md`.
 
+## Personal Profile Workflow
+
+Use profile ingest when you want DocTology to update canonical JSONL registries, create an Obsidian source page, and optionally write an analysis draft.
+Use `llm_wiki.py register-source` only when you want a lightweight wiki source stub without profile parsing.
+
+### Input folders
+
+- Email corpus: `raw/inbox/email/*.md` or `raw/inbox/email/*.txt`
+- Education notes: `raw/inbox/education/*.md` or `raw/inbox/education/*.txt`
+- Reports: `raw/inbox/reports/*.md` or `raw/inbox/reports/*.txt`
+
+### Email input example
+
+```md
+--- email ---
+From: alex@example.com
+To: me@example.com
+Date: 2026-04-30
+Subject: Launch plan
+Thread-ID: launch-q2
+
+We need to confirm the action items before next week.
+```
+
+### Education input example
+
+```md
+# Self-Attention
+
+Self-attention connects each token to relevant context tokens.
+```
+
+### Report input example
+
+```md
+# Executive Summary
+
+The current launch risk is operational readiness.
+```
+
+### Ingest and analysis commands
+
+```bash
+python3 scripts/pipeline_refresh.py \
+  --profile education-analysis \
+  --source raw/inbox/education/attention.md \
+  --write-analysis \
+  --question "Self-attention이 뭐야?" \
+  --validate
+```
+
+Outputs:
+
+- Source page: `wiki/sources/source-<date>-<slug>.md`
+- Analysis page: `wiki/analyses/*.md`
+- Concept pages for education headings: `wiki/concepts/*.md`
+- Canonical registries: `warehouse/jsonl/documents.jsonl`, `content_units.jsonl`, `source_versions.jsonl`, `analysis_runs.jsonl`, and for report consistency `analysis_findings.jsonl`
+
 ## Workflows
 
 ### A. Register A One-Off Source

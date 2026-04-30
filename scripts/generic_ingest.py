@@ -2,7 +2,7 @@
 from __future__ import annotations
 import sys, argparse, json
 from pathlib import Path
-from datetime import datetime
+from datetime import UTC, datetime
 
 ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path: sys.path.insert(0, str(ROOT))
@@ -14,6 +14,7 @@ from scripts.ingest.adapters.education_md_txt import parse_education_source
 from scripts.ingest.adapters.report_md_txt import parse_report_source
 from scripts.ingest.adapters.markdown import parse_markdown
 from scripts.packs.loader import get_profile
+from scripts.wiki_projection import refresh_wiki_after_ingest
 
 ALLOWED_RAW_PREFIXES = ["raw/inbox", "raw/processed", "raw/notes"]
 
@@ -78,16 +79,18 @@ def ingest_source(root: Path, source: str, profile_id: str | None = None, allow_
     warnings.extend(parsed.document.get("warnings", []))
     content_hash=file_content_hash(src)
     srcver=source_version_id(parsed.document['document_id'], content_hash)
-    now = datetime.utcnow().isoformat()+'Z'
+    now = datetime.now(UTC).isoformat().replace("+00:00", "Z")
     registry_paths=["warehouse/jsonl/documents.jsonl","warehouse/jsonl/content_units.jsonl","warehouse/jsonl/source_versions.jsonl"]
     doc = dict(parsed.document)
     doc.update({"raw_path": raw_path, "content_hash": content_hash, "latest_source_version_id": srcver, "ingested_at": now, "title": src.stem})
     srcver_row={"source_version_id":srcver,"document_id":doc['document_id'],"raw_path":raw_path,"content_hash":content_hash,"profile_id":profile_id,"source_family_id":family,"unit_count":len(parsed.units),"adapter":f"{profile_id}:parse","affected_registry_paths":registry_paths,"affected_wiki_paths":[],"warnings":warnings,"ingested_at":now}
+    affected_wiki_paths = refresh_wiki_after_ingest(root, doc, srcver_row, parsed.units, warnings, raw_path)
+    srcver_row["affected_wiki_paths"] = affected_wiki_paths
 
     upsert_jsonl(root/'warehouse/jsonl/documents.jsonl', 'document_id', [doc])
     upsert_jsonl(root/'warehouse/jsonl/content_units.jsonl', 'unit_id', parsed.units)
     upsert_jsonl(root/'warehouse/jsonl/source_versions.jsonl', 'source_version_id', [srcver_row])
-    return {"profile_id":profile_id,"source_family_id":family,"warnings":warnings,"units":len(parsed.units),"affected_registry_paths":registry_paths,"affected_wiki_paths":[]}
+    return {"profile_id":profile_id,"source_family_id":family,"warnings":warnings,"units":len(parsed.units),"affected_registry_paths":registry_paths,"affected_wiki_paths":affected_wiki_paths}
 
 
 def main():

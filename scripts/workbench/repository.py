@@ -263,6 +263,84 @@ class WorkbenchRepository:
             "recent_analyses": top(analyses),
         }
 
+    def ingest_inbox(self) -> dict[str, Any]:
+        from scripts.ingest.resolver import PROFILE_BY_FAMILY, resolve_family
+
+        items: list[dict[str, Any]] = []
+        inbox = self.raw_dir / "inbox"
+        for path in sorted(inbox.rglob("*")) if inbox.exists() else []:
+            if not path.is_file() or path.suffix.lower() not in {".md", ".txt"}:
+                continue
+            rel = path.relative_to(self.root).as_posix()
+            warnings: list[str] = []
+            try:
+                family = resolve_family(self.root, path)
+            except ValueError as error:
+                family = None
+                warnings.append(str(error))
+            items.append(
+                {
+                    "path": rel,
+                    "detected_source_family_id": family,
+                    "detected_profile_id": PROFILE_BY_FAMILY.get(family or "", "generic-analysis"),
+                    "warnings": warnings,
+                }
+            )
+        return {"items": items}
+
+    def ingest_preview(self, raw_path: str) -> dict[str, Any]:
+        from scripts.ingest.adapters.education_md_txt import parse_education_source
+        from scripts.ingest.adapters.email_md_txt import parse_email_source
+        from scripts.ingest.adapters.markdown import parse_markdown
+        from scripts.ingest.adapters.report_md_txt import parse_report_source
+        from scripts.ingest.resolver import PROFILE_BY_FAMILY, resolve_family
+
+        source = (self.root / raw_path).resolve()
+        resolved_root = self.root.resolve()
+        if resolved_root not in source.parents and source != resolved_root:
+            raise ValueError("path must stay inside repository")
+        if not source.exists() or not source.is_file():
+            raise FileNotFoundError(raw_path)
+        if source.suffix.lower() not in {".md", ".txt"}:
+            raise ValueError("only md/txt preview is supported")
+        rel = source.relative_to(resolved_root).as_posix()
+        if not rel.startswith(("raw/inbox/", "raw/processed/", "raw/notes/")):
+            raise ValueError("preview path must be under raw/inbox/, raw/processed/, or raw/notes/")
+        warnings: list[str] = []
+        try:
+            family = resolve_family(self.root, source)
+        except ValueError as error:
+            family = "generic-md-note"
+            warnings.append(str(error))
+        profile = PROFILE_BY_FAMILY.get(family, "generic-analysis")
+        if profile == "email-analysis":
+            parsed = parse_email_source(source, raw_path=rel)
+        elif profile == "education-analysis":
+            parsed = parse_education_source(source, raw_path=rel)
+        elif profile == "report-consistency-analysis":
+            parsed = parse_report_source(source, raw_path=rel)
+        else:
+            parsed = parse_markdown(source, profile, family, raw_path=rel)
+        warnings.extend(parsed.document.get("warnings", []))
+        return {
+            "path": rel,
+            "detected_source_family_id": family,
+            "detected_profile_id": profile,
+            "expected_unit_count": len(parsed.units),
+            "unit_kinds": sorted({unit.get("unit_kind") for unit in parsed.units}),
+            "warnings": warnings,
+        }
+
+    def analysis_history(self, limit: int = 20, consistency_status: str | None = None) -> dict[str, Any]:
+        runs = read_jsonl(self.warehouse_jsonl_dir / "analysis_runs.jsonl")[-limit:]
+        findings = read_jsonl(self.warehouse_jsonl_dir / "analysis_findings.jsonl")
+        if consistency_status:
+            findings = [row for row in findings if row.get("consistency_status") == consistency_status]
+        timeline: dict[str, list[dict[str, Any]]] = {}
+        for finding in findings:
+            timeline.setdefault(str(finding.get("finding_key") or "unknown"), []).append(finding)
+        return {"analysis_runs": runs, "finding_timeline": timeline}
+
     def review_summary(self, limit: int = 5) -> dict[str, Any]:
         records = self.all_page_records()
         documents_by_id = {

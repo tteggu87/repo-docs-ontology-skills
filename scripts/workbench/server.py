@@ -65,6 +65,17 @@ def route_request(
         if path == "/api/workbench/review":
             limit = int(query.get("limit", ["5"])[0])
             return 200, repo.review_summary(limit=limit)
+        if path == "/api/ingest/inbox":
+            return 200, repo.ingest_inbox()
+        if path == "/api/ingest/preview":
+            raw_path = query.get("path", [""])[0]
+            if not raw_path:
+                raise ValueError("path is required")
+            return 200, repo.ingest_preview(raw_path)
+        if path == "/api/analysis/history":
+            limit = int(query.get("limit", ["20"])[0])
+            status_filter = query.get("consistency_status", [None])[0]
+            return 200, repo.analysis_history(limit=limit, consistency_status=status_filter)
         if path == "/api/wiki/index":
             return 200, repo.wiki_index()
         if path.startswith("/api/wiki/related/"):
