@@ -109,3 +109,38 @@ datasets:
     role: declarative contract for sidecar workbench routes, actions, and mutation boundaries
     truth_class: contract
     owner: operator
+  - key: contract_index
+    path: intelligence/contract_index.yaml
+    role: entrypoint listing the current YAML contract read order for agents and validators
+    truth_class: contract
+    owner: operator
+  - key: semantic_boundary_policy
+    path: intelligence/policies/semantic_boundary.yaml
+    role: deterministic-vs-LLM semantic boundary and no-fallback policy
+    truth_class: contract
+    owner: operator
+  - key: semantic_workflows_manifest
+    path: intelligence/manifests/semantic_workflows.yaml
+    role: strict LLM-first compile/query workflow contract
+    truth_class: contract
+    owner: operator
+  - key: page_policy_manifest
+    path: intelligence/manifests/page_policy.yaml
+    role: runtime query-evidence filtering policy for wiki pages
+    truth_class: contract
+    owner: operator
+  - key: meta_surfaces_manifest
+    path: intelligence/manifests/meta_surfaces.yaml
+    role: map-first wiki navigation surface contract for LLM query and compile bundles
+    truth_class: contract
+    owner: operator
+  - key: relation_types_manifest
+    path: intelligence/manifests/relation_types.yaml
+    role: relation vocabulary and structural policy contract, not asserted relation facts
+    truth_class: contract
+    owner: operator
+  - key: registries_manifest
+    path: intelligence/manifests/registries.yaml
+    role: JSONL registry shape and reference contract
+    truth_class: contract
+    owner: operator

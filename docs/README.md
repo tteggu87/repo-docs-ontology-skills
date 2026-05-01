@@ -1,6 +1,6 @@
 # Docs Portal
 
-This directory is the repository-facing documentation portal for the live `llm-wiki-obsidian` implementation.
+This directory is the repository-facing documentation portal for the live DocTology LLM Wiki / ontology implementation.
 
 Start here when you need current truth from the codebase rather than historical discussion:
 
@@ -14,10 +14,22 @@ Start here when you need current truth from the codebase rather than historical 
 Current repository posture:
 
 - canonical local wiki-maintenance CLI: `scripts/llm_wiki.py`
+- profile-aware source ingest path: `scripts/generic_ingest.py`
 - canonical repeated-export ingest path: `scripts/incremental_ingest.py`
+- strict LLM source compile workflow: `scripts/llm_compile_source.py`
+- strict LLM query workflow: `scripts/llm_query.py`
 - optional local sidecar workbench: `apps/workbench/` via `scripts/workbench_api.py`
 - declarative contracts live under `intelligence/`, but execution still lives in Python
+- contract entrypoint: `intelligence/contract_index.yaml`
+- contract validators: `scripts/validate_intelligence.py`, `scripts/validate_profiles.py`, `scripts/validate_registries.py`
 
 Legacy note:
 
 - `scripts/workbench_api.py` is still live, but it is intentionally a compatibility wrapper over the package-style modules in `scripts/workbench/`
+
+Strict LLM-first note:
+
+- deterministic code may create citation anchors, source pages, indexes, and validation reports
+- semantic compile/query must use the configured helper LLM or fail
+- explicit prompt/bundle emission flags are inspection surfaces, not semantic success
+- unreviewed compile proposals are draft pages and must not become query evidence

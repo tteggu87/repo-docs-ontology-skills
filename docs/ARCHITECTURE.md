@@ -1,6 +1,6 @@
 # Architecture
 
-Updated: 2026-04-13
+Updated: 2026-05-02
 
 ## Canonical entrypoints
 
@@ -12,6 +12,21 @@ Updated: 2026-04-13
   - resolves source families from `intelligence/manifests/source_families.yaml`
   - upserts canonical sequential records into `warehouse/jsonl/`
   - refreshes affected wiki source pages and meta pages
+- `scripts/generic_ingest.py`
+  - profile-aware ingest for md/txt sources
+  - resolves source family from `intelligence/manifests/source_families.yaml`
+  - resolves profile mapping from `intelligence/packs/*/pack.yaml`
+  - writes documents, source versions, content units, and source page projection
+- `scripts/llm_compile_source.py`
+  - strict helper-LLM source compile workflow
+  - reads source page, content units, related pages, and compile-stage meta surfaces declared in `meta_surfaces.yaml`
+  - writes draft compile proposals only
+- `scripts/llm_query.py`
+  - strict helper-LLM query workflow
+  - selection stage reads map surfaces and page inventory, not page bodies
+  - answer stage reads selected page bodies and wikilink neighborhood
+- `scripts/validate_intelligence.py`
+  - validates contract entrypoint, strict semantic workflows, page policy, relation policy shape, and meta surfaces
 - `scripts/workbench_api.py`
   - live compatibility wrapper
   - imports the actual workbench implementation from `scripts/workbench/`
@@ -53,6 +68,24 @@ Updated: 2026-04-13
 4. The workflow writes or updates a source-family incremental status page under `wiki/sources/`
 5. The workflow rebuilds `wiki/_meta/index.md` and appends `wiki/_meta/log.md`
 
+### Strict source compile
+
+1. Source ingest creates or updates a source page and citation-anchored `content_units`
+2. Wiki graph navigation surfaces are refreshed under `wiki/_meta/`
+3. `scripts/llm_compile_source.py --source-page <page>` builds an LLM bundle
+4. Compile-stage meta surfaces are selected from `intelligence/manifests/meta_surfaces.yaml`
+5. If helper LLM is missing, the workflow exits with an error
+6. If helper LLM is available, output is saved as a draft compile proposal under `wiki/analyses/`
+7. Active concept/entity/project pages are not modified automatically
+
+### Strict query
+
+1. `scripts/llm_query.py <question>` builds a selection prompt from page inventory plus query-selection meta surfaces
+2. The helper LLM returns strict JSON page selections
+3. JSON parse failure fails the workflow instead of falling back to regex
+4. The answer bundle reads selected pages and wikilink neighborhood
+5. Draft compile proposals and `_meta` pages are excluded as direct query evidence by `page_policy.yaml`
+
 ### Workbench query and review flow
 
 1. The frontend in `apps/workbench/` calls explicit adapter routes only
@@ -89,3 +122,5 @@ Updated: 2026-04-13
 
 - unit tests cover incremental ingest behavior in `tests/test_incremental_ingest.py`
 - route and repository behavior are covered in `tests/test_workbench_api.py`
+- strict compile/query and contract behavior are covered in `tests/test_generic_ingest.py`
+- contract validators are executable through `scripts/validate_intelligence.py`, `scripts/validate_profiles.py`, and `scripts/validate_registries.py`

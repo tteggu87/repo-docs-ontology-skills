@@ -2,7 +2,7 @@
 title: "Current State"
 status: active
 source_of_truth: yes
-updated: 2026-04-14
+updated: 2026-05-02
 ---
 
 # Current State
@@ -13,6 +13,7 @@ updated: 2026-04-14
 - **Canonical machine truth:** `warehouse/jsonl/`
 - **Optional local sidecar workbench:** `apps/workbench/` via `scripts/workbench_api.py`
 - **Current shipped frontend focus:** `Ask` lexical diagnostics plus `Wiki` reader
+- **Strict semantic path:** helper-LLM compile/query over wiki, ontology, meta surfaces, and citation anchors
 
 The workbench is additive. It does not replace the vault and it must not mutate canonical truth directly.
 
@@ -22,6 +23,35 @@ The workbench is additive. It does not replace the vault and it must not mutate 
 2. `warehouse/jsonl/` is canonical structured ontology truth
 3. `wiki/` is maintained human-facing synthesis
 4. `warehouse/graph_projection/` is derived and read-only
+5. `intelligence/` is a contract layer, not a semantic truth layer
+
+## Strict LLM-first semantic workflow
+
+Semantic judgment has exactly one default path:
+
+1. source material is ingested into source pages and citation-anchored content units
+2. `scripts/wiki_graph_navigation.py` refreshes map surfaces such as MOC, link map, contradiction review, orphan review, and source coverage
+3. `scripts/llm_compile_source.py` reads the source page, content units, related pages, and `meta_surfaces.yaml`-declared compile surfaces
+4. compile output is saved only as a draft human-review proposal under `wiki/analyses/`
+5. reviewed wiki/ontology pages become the primary reasoning surface
+6. `scripts/llm_query.py` uses page metadata and query selection meta surfaces first, then reads selected page bodies for the answer step
+
+If no helper LLM is configured, compile/query fails. Deterministic lexical preview remains diagnostics only and must not become a semantic answer path.
+
+## Contract layer
+
+The current YAML contract entrypoint is `intelligence/contract_index.yaml`.
+
+Important contracts:
+
+- `intelligence/policies/semantic_boundary.yaml`
+- `intelligence/manifests/semantic_workflows.yaml`
+- `intelligence/manifests/page_policy.yaml`
+- `intelligence/manifests/meta_surfaces.yaml`
+- `intelligence/manifests/relation_types.yaml`
+- `intelligence/manifests/registries.yaml`
+
+These files define boundaries, policies, workflow contracts, relation vocabulary, and registry shape. They must not contain source summaries, answer drafts, or semantic claims.
 
 ## Workbench write contract
 
@@ -55,6 +85,15 @@ The local Ask workspace now operates as a **repo-local lexical diagnostics surfa
 - it supports related-page navigation from Ask and the current Wiki reader
 
 Semantic answers and durable answer saves belong to the strict LLM query workflow plus human review.
+
+## Current validators
+
+- `python3 scripts/validate_intelligence.py`
+- `python3 scripts/validate_profiles.py`
+- `python3 scripts/validate_registries.py`
+- `python3 -m pytest -q`
+
+The validator suite guards the no-fallback semantic boundary, profile compile targets, pack manifests, queryable page policy, relation type policy shape, registry shapes, and registry references.
 
 ## Operator review surfaces
 

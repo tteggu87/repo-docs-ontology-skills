@@ -20,7 +20,7 @@ capabilities:
     implementation: scripts/incremental_ingest.py:ingest_incremental
     entrypoint: python3 scripts/incremental_ingest.py <raw_source> [--project-root ...]
   - key: workbench.query.lexical_diagnostics
-    action: inspect_query_matches
+    action: preview_query_local
     implementation: scripts/workbench/repository.py:query_preview
     entrypoint: GET /api/query/preview?q=<question>
   - key: workbench.query.llm

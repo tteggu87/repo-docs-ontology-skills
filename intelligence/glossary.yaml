@@ -71,3 +71,23 @@ terms:
     aliases:
       - claim moderation
       - claim triage
+  - key: strict_llm_first_semantic_workflow
+    definition: Semantic compile/query path that must call a configured helper LLM and must fail instead of falling back to deterministic answer drafts when no helper LLM is available.
+    aliases:
+      - strict LLM mode
+      - no-fallback semantic workflow
+  - key: contract_layer
+    definition: YAML-backed repository contract surface that defines policies, workflows, vocabularies, registries, and navigation surfaces without storing semantic judgments or answer drafts.
+    aliases:
+      - YAML contract layer
+      - docs intelligence contract
+  - key: meta_surface
+    definition: Wiki navigation aid such as MOC, link map, orphan review, contradiction review, or source coverage used by LLM workflows to navigate the wiki before reading page bodies.
+    aliases:
+      - wiki map surface
+      - graph navigation surface
+  - key: compile_proposal
+    definition: Draft LLM compile output saved for human review before any semantic changes are applied to active wiki pages.
+    aliases:
+      - human-review proposal
+      - LLM compile draft

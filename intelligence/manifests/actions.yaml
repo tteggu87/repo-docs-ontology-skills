@@ -120,6 +120,45 @@ actions:
     notes:
       - This is backend-gated and fails when no helper LLM is configured.
       - Durable analysis saving must be a separate human-reviewed action.
+  - key: compile_source_with_llm
+    description: Compile one wiki source page into a human-review proposal through the strict LLM source compile workflow.
+    inputs:
+      - wiki/sources/<source-page>
+      - warehouse/jsonl/content_units.jsonl
+      - intelligence/manifests/meta_surfaces.yaml
+    outputs:
+      - wiki/analyses/*compile-proposal*.md
+      - explicit error when no helper LLM is configured
+      - explicit prompt bundle when --emit-bundle is used
+    reads:
+      - wiki/sources/
+      - raw/
+      - warehouse/jsonl/content_units.jsonl
+      - wiki/_meta/
+      - intelligence/manifests/meta_surfaces.yaml
+    writes:
+      - wiki/analyses/*compile-proposal*.md
+    notes:
+      - Compile output is draft-only and must not directly mutate active concept/entity/project pages.
+      - Content units are citation anchors, not RAG answer chunks.
+  - key: refresh_wiki_graph_navigation
+    description: Refresh map-first wiki navigation surfaces used by strict LLM query and compile workflows.
+    inputs:
+      - wiki/
+      - warehouse/jsonl/
+    outputs:
+      - wiki/_meta/moc.md
+      - wiki/_meta/link-map.md
+      - wiki/_meta/orphan-review.md
+      - wiki/_meta/contradiction-review.md
+      - wiki/_meta/source-coverage.md
+    reads:
+      - wiki/
+      - warehouse/jsonl/
+    writes:
+      - wiki/_meta/
+    notes:
+      - These surfaces help LLMs navigate structure; they are not semantic answer drafts.
   - key: review_claim_state
     description: Update canonical claim review state through the backend while keeping browser-side mutation restricted.
     inputs:
