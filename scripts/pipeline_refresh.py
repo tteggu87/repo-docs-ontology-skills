@@ -12,9 +12,6 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from scripts.generic_ingest import ingest_source
-from scripts.analysis_profiles.education import write_education_summary
-from scripts.analysis_profiles.email import write_weekly_digest
-from scripts.analysis_profiles.report_consistency import write_consistency_memo
 from scripts.llm_compile_source import compile_source
 
 
@@ -31,7 +28,6 @@ def main():
     ap.add_argument("--allow-profile-family-mismatch", action="store_true")
     ap.add_argument("--analyze", action="store_true")
     ap.add_argument("--write-analysis", action="store_true")
-    ap.add_argument("--heuristic-draft", action="store_true")
     ap.add_argument("--question")
     args = ap.parse_args()
 
@@ -49,19 +45,8 @@ def main():
             summary["analysis"] = compile_source(ROOT, source_pages[0])
         else:
             summary["analysis"] = {"status": "skipped", "message": "no projected source page available for LLM compile"}
-        if summary.get("analysis", {}).get("output_path"):
-            summary["analysis_output_path"] = summary["analysis"]["output_path"]
-
-    if args.heuristic_draft:
-        profile_id = summary["profile_id"]
-        if profile_id == "education-analysis":
-            summary["heuristic_draft"] = write_education_summary(ROOT, question=args.question or "핵심 개념 요약")
-        elif profile_id == "email-analysis":
-            summary["heuristic_draft"] = write_weekly_digest(ROOT)
-        elif profile_id == "report-consistency-analysis":
-            summary["heuristic_draft"] = write_consistency_memo(ROOT)
-        else:
-            summary["heuristic_draft"] = {"status": "skipped", "message": f"no heuristic draft analyzer for profile {profile_id}"}
+        if summary.get("analysis", {}).get("proposal_path"):
+            summary["analysis_output_path"] = summary["analysis"]["proposal_path"]
 
     if args.validate:
         vr["registries"] = _run("scripts/validate_registries.py")

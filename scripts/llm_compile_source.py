@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import datetime as dt
 import json
 import re
 import sys
@@ -109,6 +110,7 @@ def build_compile_bundle(root: Path, source_page: str, max_page_chars: int = 120
         "wiki_moc": _read(root / "wiki/_meta/moc.md", max_page_chars),
         "wiki_link_map": _read(root / "wiki/_meta/link-map.md", max_page_chars),
         "contradiction_review": _read(root / "wiki/_meta/contradiction-review.md", max_page_chars // 2),
+        "source_coverage": _read(root / "wiki/_meta/source-coverage.md", max_page_chars // 2),
         "related_existing_pages": related_pages,
     }
 
@@ -130,37 +132,119 @@ def build_user_prompt(bundle: dict[str, Any]) -> str:
     return json.dumps(bundle, ensure_ascii=False, indent=2)
 
 
-def compile_source(root: Path, source_page: str, use_llm: bool = True) -> dict[str, Any]:
+def _slug(value: str) -> str:
+    slug = re.sub(r"[^A-Za-z0-9가-힣._-]+", "-", value).strip("-._")
+    return slug[:96] or "source"
+
+
+def _proposal_markdown(bundle: dict[str, Any], llm_output: str) -> str:
+    today = dt.date.today().isoformat()
+    source_stem = Path(str(bundle["source_page"])).stem
+    return "\n".join(
+        [
+            "---",
+            f'title: "Compile Proposal - {source_stem}"',
+            "type: analysis",
+            "status: draft",
+            "analysis_method: llm_compile_proposal",
+            "trust_level: human_review_required",
+            f"created: {today}",
+            f"updated: {today}",
+            "tags:",
+            "  - llm-compile-proposal",
+            "---",
+            "",
+            "# Compile Proposal",
+            "",
+            "## Source",
+            "",
+            f"- [[{source_stem}]]",
+            f"- Source page path: `{bundle['source_page']}`",
+            f"- Document ID: `{bundle.get('document_id') or 'unknown'}`",
+            f"- Raw path: `{bundle.get('raw_path') or 'unknown'}`",
+            "",
+            "## Pages To Update",
+            "",
+            "_Review the LLM output below. Do not apply changes to active concept/entity/project pages until a human accepts them._",
+            "",
+            "## New Page Candidates",
+            "",
+            "_Review the LLM output below._",
+            "",
+            "## Citation Links",
+            "",
+            "_Every accepted semantic claim should keep source-page/content-unit citations._",
+            "",
+            "## Uncertainties",
+            "",
+            "_Preserve unresolved uncertainty instead of converting it into asserted wiki facts._",
+            "",
+            "## Human Review Checklist",
+            "",
+            "- [ ] Verify every proposed page update against cited source evidence.",
+            "- [ ] Decide which proposed new pages should be created.",
+            "- [ ] Reject unsupported or speculative semantic claims.",
+            "- [ ] Apply accepted changes manually to active wiki pages.",
+            "- [ ] Rebuild wiki graph navigation after applying changes.",
+            "",
+            "## LLM Compile Output",
+            "",
+            llm_output.strip(),
+            "",
+        ]
+    )
+
+
+def _save_compile_proposal(root: Path, bundle: dict[str, Any], llm_output: str) -> str:
+    today = dt.date.today().isoformat()
+    source_stem = Path(str(bundle["source_page"])).stem
+    stem = f"analysis-{today}-compile-proposal-{_slug(source_stem)}"
+    path = root / "wiki" / "analyses" / f"{stem}.md"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(_proposal_markdown(bundle, llm_output), encoding="utf-8")
+    return _safe_rel(root, path)
+
+
+def compile_source(root: Path, source_page: str, *, emit_bundle: bool = False, save_proposal: bool = True) -> dict[str, Any]:
     bundle = build_compile_bundle(root, source_page)
     user_prompt = build_user_prompt(bundle)
     config = load_continue_helper_config(root)
-    if not use_llm or not config or not config.get("enabled", True):
+    if emit_bundle:
         return {
-            "status": "needs_llm",
+            "status": "prompt_bundle",
             "mode": "llm_compile_source",
             "source_page": bundle["source_page"],
             "llm_system_prompt": SYSTEM_PROMPT,
             "llm_user_prompt": user_prompt,
             "bundle": bundle,
-            "message": "No enabled wikiconfig.json helper model was found; hand this prompt bundle to an LLM.",
+            "message": "Explicit prompt bundle emission only; this is not semantic success.",
         }
+    if not config or not config.get("enabled", True):
+        raise RuntimeError("No enabled wikiconfig.json helper model found. Strict LLM mode refuses semantic compile without an LLM.")
     output = run_helper_chat_completion(config, system_prompt=SYSTEM_PROMPT, user_prompt=user_prompt, temperature=0.1)
-    return {
+    result = {
         "status": "ok",
         "mode": "llm_compile_source",
         "source_page": bundle["source_page"],
         "helper_model": helper_model_public_summary(config),
         "llm_output": output,
     }
+    if save_proposal:
+        result["proposal_path"] = _save_compile_proposal(root, bundle, output)
+    return result
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="LLM-first source compile workflow for DocTology.")
     parser.add_argument("--source-page", required=True, help="Source page stem or path, e.g. source-2026-... or wiki/sources/source-....md")
-    parser.add_argument("--no-llm", action="store_true", help="Only print the LLM prompt/evidence bundle.")
+    parser.add_argument("--emit-bundle", action="store_true", help="Explicitly print the LLM prompt/evidence bundle instead of calling the helper model.")
     args = parser.parse_args()
-    print(json.dumps(compile_source(ROOT, args.source_page, use_llm=not args.no_llm), ensure_ascii=False, indent=2))
-    return 0
+    try:
+        print(json.dumps(compile_source(ROOT, args.source_page, emit_bundle=args.emit_bundle), ensure_ascii=False, indent=2))
+        return 0
+    except RuntimeError as error:
+        print(json.dumps({"status": "error", "message": str(error)}, ensure_ascii=False), file=sys.stderr)
+        return 1
 
 
 if __name__ == "__main__":

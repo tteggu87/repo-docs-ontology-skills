@@ -19,14 +19,14 @@ capabilities:
     action: ingest_incremental_export
     implementation: scripts/incremental_ingest.py:ingest_incremental
     entrypoint: python3 scripts/incremental_ingest.py <raw_source> [--project-root ...]
-  - key: workbench.query.preview
-    action: preview_query_local
+  - key: workbench.query.lexical_diagnostics
+    action: inspect_query_matches
     implementation: scripts/workbench/repository.py:query_preview
     entrypoint: GET /api/query/preview?q=<question>
-  - key: workbench.analysis.save
-    action: save_query_analysis_draft
-    implementation: scripts/workbench/repository.py:save_query_analysis
-    entrypoint: POST /api/actions/save-analysis
+  - key: workbench.query.llm
+    action: answer_query_with_llm_wiki
+    implementation: scripts/llm_query.py:llm_query
+    entrypoint: GET /api/query/llm?q=<question>
   - key: llm.source.compile
     action: compile_source_with_llm
     implementation: scripts/llm_compile_source.py:compile_source

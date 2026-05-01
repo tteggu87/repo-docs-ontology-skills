@@ -114,14 +114,23 @@ workbench:
         - uncertainty review candidates
         - low-confidence claim review queue
 
-    - key: query_preview
+    - key: query_lexical_diagnostics
       method: GET
       path: /api/query/preview?q=<question>
       reads:
         - wiki/
         - warehouse/jsonl/
       returns:
-        - repo-local query preview
+        - repo-local lexical diagnostics
+
+    - key: query_llm
+      method: GET
+      path: /api/query/llm?q=<question>
+      reads:
+        - wiki/
+        - wiki/_meta/
+      returns:
+        - LLM-generated citation-grounded answer or strict missing-LLM error
         - related pages and source pages
         - provenance sections
         - explicit thin/empty coverage warnings

@@ -10,4 +10,4 @@ capabilities:
   parse:
     python: scripts.ingest.adapters.email_md_txt:parse_email_source
   analyze:
-    python: scripts.analysis_profiles.email:write_weekly_digest
+    python: scripts.llm_compile_source:compile_source

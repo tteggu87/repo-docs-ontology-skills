@@ -105,27 +105,21 @@ actions:
     writes: []
     notes:
       - This is the current Ask workspace contract exposed through the workbench adapter.
-      - It is a routing and draft surface, not a hidden autonomous generation path.
-  - key: save_query_analysis_draft
-    description: Save a durable analysis page from a repo-local query preview and add bounded link-backs on confident related pages.
+      - It is a lexical routing diagnostics surface, not a semantic answer path.
+  - key: answer_query_with_llm_wiki
+    description: Answer a question through the strict LLM wiki/ontology query workflow.
     inputs:
-      - query preview result
       - user question
     outputs:
-      - wiki/analyses/<analysis-page>
-      - wiki/_meta/log.md
-      - wiki/_meta/index.md
-      - related wiki page link-backs when confidence is sufficient
+      - citation-grounded answer markdown when a helper LLM is configured
+      - explicit error when no helper LLM is configured
     reads:
       - wiki/
       - warehouse/jsonl/
-    writes:
-      - wiki/analyses/
-      - wiki/_meta/log.md
-      - wiki/_meta/index.md
-      - selected wiki pages under the allowed workbench write scope
+    writes: []
     notes:
-      - This is backend-gated and intentionally bounded to wiki-facing durable outputs.
+      - This is backend-gated and fails when no helper LLM is configured.
+      - Durable analysis saving must be a separate human-reviewed action.
   - key: review_claim_state
     description: Update canonical claim review state through the backend while keeping browser-side mutation restricted.
     inputs:

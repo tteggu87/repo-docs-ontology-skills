@@ -69,14 +69,11 @@ Do not invent facts beyond the provided wiki/ontology/source material."""
 
 
 def _parse_selected_stems(text: str) -> list[str]:
-    try:
-        data = json.loads(text)
-        stems = data.get("selected_page_stems", [])
-        if isinstance(stems, list):
-            return [str(stem) for stem in stems if str(stem).strip()]
-    except json.JSONDecodeError:
-        pass
-    return sorted(set(re.findall(r"[\w가-힣.-]+", text)))[:8]
+    data = json.loads(text)
+    stems = data.get("selected_page_stems", [])
+    if not isinstance(stems, list):
+        raise ValueError("LLM page selection must return selected_page_stems as a list.")
+    return [str(stem) for stem in stems if str(stem).strip()]
 
 
 def build_query_bundle(root: Path, question: str, selected_stems: list[str] | None = None, max_pages: int = 8) -> dict[str, Any]:
@@ -109,23 +106,26 @@ def build_query_bundle(root: Path, question: str, selected_stems: list[str] | No
         "wiki_link_map": _read(root / "wiki/_meta/link-map.md"),
         "orphan_review": _read(root / "wiki/_meta/orphan-review.md", 8000),
         "contradiction_review": _read(root / "wiki/_meta/contradiction-review.md", 8000),
+        "source_coverage": _read(root / "wiki/_meta/source-coverage.md", 8000),
         "selected_pages": pages,
         "page_inventory_count": len(inventory),
     }
 
 
-def llm_query(root: Path, question: str, use_llm: bool = True) -> dict[str, Any]:
+def llm_query(root: Path, question: str, *, emit_selection_prompt: bool = False) -> dict[str, Any]:
     inventory = _page_inventory(root)
     selection_prompt = json.dumps({"question": question, "page_inventory": inventory}, ensure_ascii=False, indent=2)
     config = load_continue_helper_config(root)
-    if not use_llm or not config or not config.get("enabled", True):
+    if emit_selection_prompt:
         return {
-            "status": "needs_llm",
+            "status": "selection_prompt",
             "mode": "llm_query",
             "llm_selection_system_prompt": SELECT_SYSTEM_PROMPT,
             "llm_selection_user_prompt": selection_prompt,
-            "message": "No enabled wikiconfig.json helper model was found; hand this prompt to an LLM to select pages, then run again with selected stems or continue manually.",
+            "message": "Explicit selection prompt emission only; this is not semantic success.",
         }
+    if not config or not config.get("enabled", True):
+        raise RuntimeError("No enabled wikiconfig.json helper model found. Strict LLM mode refuses semantic query without an LLM.")
 
     selection_output = run_helper_chat_completion(config, system_prompt=SELECT_SYSTEM_PROMPT, user_prompt=selection_prompt, temperature=0.1)
     selected_stems = _parse_selected_stems(selection_output)
@@ -145,10 +145,14 @@ def llm_query(root: Path, question: str, use_llm: bool = True) -> dict[str, Any]
 def main() -> int:
     parser = argparse.ArgumentParser(description="LLM-first wiki/ontology query workflow for DocTology.")
     parser.add_argument("question")
-    parser.add_argument("--no-llm", action="store_true", help="Only print the first LLM page-selection prompt.")
+    parser.add_argument("--emit-selection-prompt", action="store_true", help="Explicitly print the first LLM page-selection prompt instead of calling the helper model.")
     args = parser.parse_args()
-    print(json.dumps(llm_query(ROOT, args.question, use_llm=not args.no_llm), ensure_ascii=False, indent=2))
-    return 0
+    try:
+        print(json.dumps(llm_query(ROOT, args.question, emit_selection_prompt=args.emit_selection_prompt), ensure_ascii=False, indent=2))
+        return 0
+    except (RuntimeError, ValueError, json.JSONDecodeError) as error:
+        print(json.dumps({"status": "error", "message": str(error)}, ensure_ascii=False), file=sys.stderr)
+        return 1
 
 
 if __name__ == "__main__":

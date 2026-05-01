@@ -2,16 +2,16 @@ import tempfile
 import unittest
 from pathlib import Path
 import shutil
+from unittest.mock import patch
 
 from scripts.generic_ingest import ingest_source
 from scripts.ingest.adapters.common import file_document_id
 from scripts.ingest.resolver import resolve_family
 from scripts.citation import make_citation
-from scripts.analysis_profiles.education import write_education_summary
 from scripts.workbench.repository import WorkbenchRepository
 from scripts.workbench.server import route_request
 from scripts.llm_compile_source import compile_source
-from scripts.llm_query import llm_query
+from scripts.llm_query import _parse_selected_stems, llm_query
 from scripts.wiki_graph_navigation import write_navigation_pages
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -58,7 +58,7 @@ class TestGenericIngest(unittest.TestCase):
             self.assertTrue(any(expected in line for line in rows))
             self.assertTrue(list((repo / "wiki/sources").glob("source-*.md")))
 
-    def test_citation_helper_and_education_analysis_use_temp_repo(self):
+    def test_citation_helper_uses_temp_repo(self):
         with tempfile.TemporaryDirectory() as td:
             repo = build_temp_repo(td)
             src = repo / "raw/inbox/education/attention.md"
@@ -71,11 +71,6 @@ class TestGenericIngest(unittest.TestCase):
             self.assertTrue(citation["ok"])
             self.assertIn("[[source-", citation["citation"])
             self.assertIn("lines", citation["citation"])
-            analysis = write_education_summary(repo, question="attention")
-            self.assertEqual(analysis["status"], "ok")
-            self.assertTrue((repo / analysis["output_path"]).exists())
-            self.assertTrue(analysis["concept_paths"])
-            self.assertTrue((repo / analysis["concept_paths"][0]).exists())
 
     def test_workbench_ingest_preview_routes_use_temp_repo(self):
         with tempfile.TemporaryDirectory() as td:
@@ -91,7 +86,7 @@ class TestGenericIngest(unittest.TestCase):
             self.assertEqual(status, 200)
             self.assertEqual(preview["expected_unit_count"], 1)
 
-    def test_llm_first_workflows_return_prompt_bundle_without_config(self):
+    def test_strict_llm_workflows_fail_without_config_unless_prompt_is_explicit(self):
         with tempfile.TemporaryDirectory() as td:
             repo = build_temp_repo(td)
             src = repo / "raw/inbox/education/llm.md"
@@ -99,12 +94,48 @@ class TestGenericIngest(unittest.TestCase):
             src.write_text("# LLM Reasoning\n\nOntology links should guide reasoning.", encoding="utf-8")
             summary = ingest_source(repo, src.as_posix(), profile_id="education-analysis")
             source_page = [path for path in summary["affected_wiki_paths"] if path.startswith("wiki/sources/")][0]
-            compiled = compile_source(repo, source_page)
-            self.assertEqual(compiled["status"], "needs_llm")
+            with self.assertRaises(RuntimeError):
+                compile_source(repo, source_page)
+            compiled = compile_source(repo, source_page, emit_bundle=True)
+            self.assertEqual(compiled["status"], "prompt_bundle")
             self.assertIn("llm_system_prompt", compiled)
-            queried = llm_query(repo, "How should ontology links guide reasoning?")
-            self.assertEqual(queried["status"], "needs_llm")
+            with self.assertRaises(RuntimeError):
+                llm_query(repo, "How should ontology links guide reasoning?")
+            queried = llm_query(repo, "How should ontology links guide reasoning?", emit_selection_prompt=True)
+            self.assertEqual(queried["status"], "selection_prompt")
             self.assertIn("llm_selection_system_prompt", queried)
+
+    def test_llm_compile_saves_proposal_without_touching_active_pages(self):
+        with tempfile.TemporaryDirectory() as td:
+            repo = build_temp_repo(td)
+            src = repo / "raw/inbox/education/compile.md"
+            src.parent.mkdir(parents=True, exist_ok=True)
+            src.write_text("# Compile\n\nLLM should propose wiki changes for human review.", encoding="utf-8")
+            summary = ingest_source(repo, src.as_posix(), profile_id="education-analysis")
+            source_page = [path for path in summary["affected_wiki_paths"] if path.startswith("wiki/sources/")][0]
+
+            with (
+                patch("scripts.llm_compile_source.load_continue_helper_config", return_value={"enabled": True, "provider": "test"}),
+                patch("scripts.llm_compile_source.helper_model_public_summary", return_value={"provider": "test"}),
+                patch(
+                    "scripts.llm_compile_source.run_helper_chat_completion",
+                    return_value='{"pages_to_update":[],"new_page_candidates":[],"citation_links":[],"uncertainties":[]}',
+                ),
+            ):
+                result = compile_source(repo, source_page)
+
+            self.assertEqual(result["status"], "ok")
+            self.assertIn("proposal_path", result)
+            proposal_path = repo / result["proposal_path"]
+            self.assertTrue(proposal_path.exists())
+            proposal_text = proposal_path.read_text(encoding="utf-8")
+            self.assertIn("# Compile Proposal", proposal_text)
+            self.assertIn("## Human Review Checklist", proposal_text)
+            self.assertFalse((repo / "wiki/concepts/compile.md").exists())
+
+    def test_llm_page_selection_has_no_regex_fallback(self):
+        with self.assertRaises(Exception):
+            _parse_selected_stems("concept-a source-b")
 
     def test_wiki_graph_navigation_writes_meta_pages(self):
         with tempfile.TemporaryDirectory() as td:
@@ -123,6 +154,7 @@ class TestGenericIngest(unittest.TestCase):
             self.assertEqual(result["status"], "ok")
             self.assertTrue((repo / "wiki/_meta/moc.md").exists())
             self.assertTrue((repo / "wiki/_meta/link-map.md").exists())
+            self.assertTrue((repo / "wiki/_meta/source-coverage.md").exists())
             self.assertIn("[[source-a]]", (repo / "wiki/_meta/link-map.md").read_text(encoding="utf-8"))
             self.assertIn("[[source-a]]", (repo / "wiki/_meta/contradiction-review.md").read_text(encoding="utf-8"))
 

@@ -10,4 +10,4 @@ capabilities:
   parse:
     python: scripts.ingest.adapters.report_md_txt:parse_report_source
   analyze:
-    python: scripts.analysis_profiles.report_consistency:write_consistency_memo
+    python: scripts.llm_compile_source:compile_source

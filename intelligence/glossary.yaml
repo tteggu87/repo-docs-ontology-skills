@@ -56,8 +56,8 @@ terms:
     aliases:
       - sidecar workbench
       - operator workbench
-  - key: query_preview
-    definition: Repo-local search and synthesis draft produced from wiki pages first, with canonical registry hits added as supporting evidence.
+  - key: query_lexical_diagnostics
+    definition: Repo-local lexical routing diagnostics over wiki pages and canonical registries; not a semantic answer draft.
     aliases:
       - ask preview
       - local query preview

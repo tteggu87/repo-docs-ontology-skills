@@ -27,6 +27,21 @@ def read_text(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
+def read_jsonl(path: Path) -> list[dict[str, Any]]:
+    if not path.exists():
+        return []
+    rows: list[dict[str, Any]] = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            rows.append(json.loads(line))
+        except json.JSONDecodeError:
+            rows.append({"_invalid_jsonl": line[:200]})
+    return rows
+
+
 def write_text(path: Path, content: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(content, encoding="utf-8")
@@ -155,6 +170,73 @@ def render_review(graph: dict[str, Any], kind: str) -> str:
     return "\n".join(lines).rstrip() + "\n"
 
 
+def render_source_coverage(graph: dict[str, Any], root: Path) -> str:
+    documents = read_jsonl(root / "warehouse/jsonl/documents.jsonl")
+    source_versions = read_jsonl(root / "warehouse/jsonl/source_versions.jsonl")
+    content_units = read_jsonl(root / "warehouse/jsonl/content_units.jsonl")
+    versions_by_document: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    units_by_document: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    source_pages_by_document: dict[str, list[dict[str, Any]]] = defaultdict(list)
+
+    for row in source_versions:
+        document_id = str(row.get("document_id") or "")
+        if document_id:
+            versions_by_document[document_id].append(row)
+    for row in content_units:
+        document_id = str(row.get("document_id") or "")
+        if document_id:
+            units_by_document[document_id].append(row)
+    for page in graph["pages"]:
+        if page["section"] != "sources":
+            continue
+        content = read_text(root / page["path"])
+        document_id = frontmatter_value(content, "document_id")
+        if document_id:
+            source_pages_by_document[document_id].append(page)
+
+    lines = _frontmatter("Source Coverage") + [
+        "# Source Coverage",
+        "",
+        "This is a mechanical coverage surface for LLM compile/query workflows.",
+        "It reports whether canonical documents have projected source pages, source versions, and citation anchors.",
+        "It does not make semantic claims.",
+        "",
+        "## Summary",
+        "",
+        f"- Documents: {len(documents)}",
+        f"- Source versions: {len(source_versions)}",
+        f"- Content units: {len(content_units)}",
+        f"- Documents with source pages: {sum(1 for row in documents if source_pages_by_document.get(str(row.get('document_id') or '')))}",
+        "",
+        "## Documents",
+        "",
+    ]
+    if not documents:
+        lines.append("- No documents registered yet.")
+    for row in documents:
+        document_id = str(row.get("document_id") or "unknown")
+        raw_path = str(row.get("raw_path") or "unknown")
+        pages = source_pages_by_document.get(document_id, [])
+        versions = versions_by_document.get(document_id, [])
+        units = units_by_document.get(document_id, [])
+        page_links = ", ".join(f"[[{page['stem']}]]" for page in pages) or "missing"
+        latest_version = str(versions[-1].get("version_id") or versions[-1].get("source_version_id") or "present") if versions else "missing"
+        lines.append(f"### `{document_id}`")
+        lines.append("")
+        lines.append(f"- Raw path: `{raw_path}`")
+        lines.append(f"- Source page(s): {page_links}")
+        lines.append(f"- Source version: `{latest_version}`")
+        lines.append(f"- Citation anchors/content units: {len(units)}")
+        if not pages:
+            lines.append("- Review: missing source page projection.")
+        if not versions:
+            lines.append("- Review: missing source version record.")
+        if not units:
+            lines.append("- Review: missing content-unit citation anchors.")
+        lines.append("")
+    return "\n".join(lines).rstrip() + "\n"
+
+
 def write_navigation_pages(root: Path) -> dict[str, Any]:
     graph = build_graph(root)
     outputs = {
@@ -163,6 +245,7 @@ def write_navigation_pages(root: Path) -> dict[str, Any]:
         "wiki/_meta/orphan-review.md": render_review(graph, "orphan"),
         "wiki/_meta/stale-review.md": render_review(graph, "stale"),
         "wiki/_meta/contradiction-review.md": render_review(graph, "contradiction"),
+        "wiki/_meta/source-coverage.md": render_source_coverage(graph, root),
     }
     changed: list[str] = []
     for rel, content in outputs.items():

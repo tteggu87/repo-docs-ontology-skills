@@ -91,6 +91,12 @@ def route_request(
             question = query.get("q", [""])[0]
             limit = int(query.get("limit", ["5"])[0])
             return 200, repo.query_preview(question, limit=limit)
+        if path == "/api/query/llm":
+            from scripts.llm_query import llm_query
+
+            question = query.get("q", [""])[0]
+            emit_selection_prompt = query.get("emit_selection_prompt", ["0"])[0] in {"1", "true", "yes"}
+            return 200, llm_query(repo.root, question, emit_selection_prompt=emit_selection_prompt)
         if path == "/api/warehouse/summary":
             return 200, repo.warehouse_summary()
         if path == "/api/meta/log/recent":
@@ -99,6 +105,8 @@ def route_request(
     except FileNotFoundError as error:
         return 404, {"error": str(error)}
     except ValueError as error:
+        return 400, {"error": str(error)}
+    except RuntimeError as error:
         return 400, {"error": str(error)}
 
     return 404, {"error": f"Unknown route: {path}"}

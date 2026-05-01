@@ -451,12 +451,12 @@ class WorkbenchRepository:
         tokens = tokenize_query(question)
         if not tokens:
             return {
-                "mode": "repo_local_search",
+                "mode": "lexical_diagnostics",
                 "question": question,
                 "coverage": "none",
                 "answer_markdown": (
-                    "# Ask workspace\n\n"
-                    "Enter a more specific question to search the wiki and canonical registries.\n"
+                    "# Lexical diagnostics\n\n"
+                    "Enter a more specific question to inspect matching wiki and canonical registry surfaces.\n"
                 ),
                 "related_pages": [],
                 "related_sources": [],
@@ -572,17 +572,17 @@ class WorkbenchRepository:
         ]
 
         answer_lines = [
-            "# Local query preview",
+            "# Lexical diagnostics",
             "",
             f"- Question: `{question}`",
             f"- Coverage: `{coverage}`",
             "",
         ]
         if top_pages or top_sources or total_registry_hits:
-            answer_lines.extend(["## Draft answer", ""])
+            answer_lines.extend(["## Routing signals", ""])
             if top_pages:
                 lead_titles = ", ".join(f"`{item['title']}`" for item in top_pages[:2])
-                answer_lines.append(f"- The current workspace most strongly points to {lead_titles}.")
+                answer_lines.append(f"- Lexical matching points to {lead_titles}.")
                 lead_summaries = [item["summary"] for item in top_pages[:2] if item.get("summary")]
                 if lead_summaries:
                     answer_lines.append(f"- Summary signal: {' '.join(lead_summaries)}")
@@ -609,16 +609,16 @@ class WorkbenchRepository:
                     )
             if coverage == "thin":
                 answer_lines.append(
-                    "- This is a thin-coverage answer draft. Treat it as a routing hint and inspect the linked pages before relying on it."
+                    "- Thin coverage: treat this only as a routing hint. It is not an answer draft."
                 )
             answer_lines.append("")
         if coverage == "none":
             answer_lines.extend(
                 [
-                    "## Draft answer",
+                    "## Routing signals",
                     "",
-                    "- The workspace does not currently have enough direct evidence for a trustworthy answer draft.",
-                    "- Refine the query with stable names, dates, or explicit source/page titles before saving an analysis.",
+                    "- The workspace does not currently have enough direct lexical evidence to route the question.",
+                    "- Refine the query with stable names, dates, or explicit source/page titles.",
                     "",
                 ]
             )
@@ -649,7 +649,7 @@ class WorkbenchRepository:
             )
 
         return {
-            "mode": "repo_local_search",
+            "mode": "lexical_diagnostics",
             "question": question,
             "tokens": tokens,
             "coverage": coverage,
@@ -752,95 +752,9 @@ class WorkbenchRepository:
         return linked_paths
 
     def save_query_analysis(self, question: str, limit: int = 5) -> dict[str, Any]:
-        preview = self.query_preview(question, limit=limit)
-        today = dt.date.today().isoformat()
-        stem = f"analysis-{today}-{slugify(question)[:64]}"
-        path = self.wiki_dir / "analyses" / f"{stem}.md"
-        safe_title = question.replace('"', "'").strip() or "Untitled analysis"
-        created = today
-        if path.exists():
-            existing_frontmatter, _ = parse_frontmatter(read_text(path))
-            created = safe_iso_date(existing_frontmatter.get("created")) or today
-
-        related_source_links = [f'"[[{item["stem"]}]]"' for item in preview["related_sources"][:5]]
-        related_page_links = [f"[[{item['stem']}]]" for item in preview["related_pages"][:5]]
-        lines = [
-            "---",
-            f'title: "{safe_title}"',
-            "type: analysis",
-            "status: active",
-            f"created: {created}",
-            f"updated: {today}",
-            "tags:",
-            "  - workbench-query",
-            f"coverage: {preview['coverage']}",
-        ]
-        if related_source_links:
-            lines.append("sources:")
-            lines.extend([f"  - {item}" for item in related_source_links])
-        else:
-            lines.append("sources: []")
-        lines.extend(
-            [
-                "---",
-                "",
-                f"# {safe_title}",
-                "",
-                "## Query",
-                "",
-                f"- Asked from the local sidecar workbench on {today}",
-                f"- Coverage: `{preview['coverage']}`",
-                "",
-                "## Preview",
-                "",
-                preview["answer_markdown"].strip(),
-                "",
-            ]
-        )
-        if related_page_links:
-            lines.extend(["## Related pages", ""] + [f"- {item}" for item in related_page_links] + [""])
-        provenance_items = preview["provenance_sections"]
-        if provenance_items:
-            lines.extend(["## Provenance sections", ""])
-            for section in provenance_items:
-                lines.append(f"- {section['label']}: {section['count']}")
-            lines.append("")
-
-        next_text = "\n".join(lines).strip() + "\n"
-        existing_text = read_text(path) if path.exists() else None
-        changed_files: list[str] = []
-        path.parent.mkdir(parents=True, exist_ok=True)
-        if existing_text is None:
-            path.write_text(next_text, encoding="utf-8")
-            changed_files.append(str(path.relative_to(self.root)))
-
-        log_changed = self.append_log_entry(
-            "query",
-            safe_title,
-            [
-                f"Saved analysis page [[{stem}]] from the local Ask workspace.",
-                f"Coverage: `{preview['coverage']}`.",
-            ],
-        )
-        linked_paths = self.link_analysis_from_related_pages(stem, safe_title, preview)
-        index_changed = self.rebuild_index()
-        meta_paths: list[str] = []
-        if log_changed:
-            meta_paths.append(str((self.meta_dir / 'log.md').relative_to(self.root)))
-        if index_changed:
-            meta_paths.append(str((self.meta_dir / 'index.md').relative_to(self.root)))
-        changed_files = changed_files + meta_paths + linked_paths
-        changed_files = list(dict.fromkeys(changed_files))
-        ensure_allowed_write_paths(changed_files)
-        return {
-            "action": "save_analysis",
-            "question": safe_title,
-            "analysis_stem": stem,
-            "analysis_path": str(path.relative_to(self.root)),
-            "changed_files": changed_files,
-            "linked_pages": linked_paths,
-            "preview": preview,
-        }
+        if not question.strip():
+            raise ValueError("question is required")
+        raise ValueError("save-analysis is disabled in strict LLM mode; use the LLM query workflow so semantic answers are model-generated and citation-grounded.")
 
     def draft_source_summary(self, source_stem: str, max_chars: int = 12000) -> dict[str, Any]:
         normalized_stem = source_stem.strip()

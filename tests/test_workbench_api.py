@@ -289,14 +289,15 @@ class WorkbenchApiTests(unittest.TestCase):
 
         status, payload = route_request(repo, "GET", "/api/query/preview?q=sample%20durability")
         self.assertEqual(status, 200)
+        self.assertEqual(payload["mode"], "lexical_diagnostics")
         self.assertEqual(payload["coverage"], "supported")
         self.assertTrue(payload["related_pages"])
         self.assertTrue(payload["related_sources"])
-        self.assertIn("Local query preview", payload["answer_markdown"])
-        self.assertIn("## Draft answer", payload["answer_markdown"])
+        self.assertIn("Lexical diagnostics", payload["answer_markdown"])
+        self.assertIn("## Routing signals", payload["answer_markdown"])
         registry_labels = [section["label"] for section in payload["provenance_sections"]]
         self.assertIn("Wiki pages", registry_labels)
-        self.assertNotIn("thin-coverage answer draft", payload["answer_markdown"])
+        self.assertNotIn("answer draft", payload["answer_markdown"])
 
     def test_query_preview_thin_coverage_is_explicit(self) -> None:
         repo = WorkbenchRepository(self.root)
@@ -304,7 +305,7 @@ class WorkbenchApiTests(unittest.TestCase):
         status, payload = route_request(repo, "GET", "/api/query/preview?q=covers")
         self.assertEqual(status, 200)
         self.assertEqual(payload["coverage"], "thin")
-        self.assertIn("thin-coverage answer draft", payload["answer_markdown"])
+        self.assertIn("not an answer draft", payload["answer_markdown"])
         self.assertIn("thin coverage", payload["warnings"][0].replace("_", " "))
 
     def test_query_preview_none_coverage_refuses_smart_answer(self) -> None:
@@ -313,8 +314,19 @@ class WorkbenchApiTests(unittest.TestCase):
         status, payload = route_request(repo, "GET", "/api/query/preview?q=totallyunknownterm")
         self.assertEqual(status, 200)
         self.assertEqual(payload["coverage"], "none")
-        self.assertIn("does not currently have enough direct evidence", payload["answer_markdown"])
+        self.assertIn("does not currently have enough direct lexical evidence", payload["answer_markdown"])
         self.assertIn("no_direct_matches", payload["warnings"])
+
+    def test_llm_query_route_fails_without_helper_config_unless_prompt_explicit(self) -> None:
+        repo = WorkbenchRepository(self.root)
+
+        status, payload = route_request(repo, "GET", "/api/query/llm?q=sample%20durability")
+        self.assertEqual(status, 400)
+        self.assertIn("Strict LLM mode", payload["error"])
+
+        status, payload = route_request(repo, "GET", "/api/query/llm?q=sample%20durability&emit_selection_prompt=1")
+        self.assertEqual(status, 200)
+        self.assertEqual(payload["status"], "selection_prompt")
 
     def test_save_analysis_writes_only_allowed_files(self) -> None:
         repo = WorkbenchRepository(self.root)
@@ -328,25 +340,8 @@ class WorkbenchApiTests(unittest.TestCase):
             body_text=json.dumps({"question": "sample durability"}),
         )
 
-        self.assertEqual(status, 200)
-        self.assertIn(payload["analysis_path"], payload["changed_files"])
-        self.assertIn("wiki/_meta/log.md", payload["changed_files"])
-        self.assertIn("wiki/_meta/index.md", payload["changed_files"])
-        self.assertIn("wiki/sources/source-sample.md", payload["linked_pages"])
-        self.assertIn("wiki/concepts/concept-sample.md", payload["linked_pages"])
-        analysis_path = self.root / payload["analysis_path"]
-        self.assertTrue(analysis_path.exists())
-        analysis_text = analysis_path.read_text(encoding="utf-8")
-        self.assertIn("coverage:", analysis_text)
-        self.assertIn("## Query", analysis_text)
-        log_text = (self.root / "wiki" / "_meta" / "log.md").read_text(encoding="utf-8")
-        self.assertIn("Saved analysis page", log_text)
-        index_text = (self.root / "wiki" / "_meta" / "index.md").read_text(encoding="utf-8")
-        self.assertIn(payload["analysis_stem"], index_text)
-        source_text = (self.root / "wiki" / "sources" / "source-sample.md").read_text(encoding="utf-8")
-        concept_text = (self.root / "wiki" / "concepts" / "concept-sample.md").read_text(encoding="utf-8")
-        self.assertIn(payload["analysis_stem"], source_text)
-        self.assertIn(payload["analysis_stem"], concept_text)
+        self.assertEqual(status, 400)
+        self.assertIn("strict LLM mode", payload["error"])
 
     def test_save_analysis_is_idempotent_on_repeat(self) -> None:
         repo = WorkbenchRepository(self.root)
@@ -357,22 +352,8 @@ class WorkbenchApiTests(unittest.TestCase):
             "/api/actions/save-analysis",
             body_text=json.dumps({"question": "sample durability"}),
         )
-        self.assertEqual(status, 200)
-        first_log = (self.root / "wiki" / "_meta" / "log.md").read_text(encoding="utf-8")
-        first_index = (self.root / "wiki" / "_meta" / "index.md").read_text(encoding="utf-8")
-        first_analysis = (self.root / first_payload["analysis_path"]).read_text(encoding="utf-8")
-
-        status, second_payload = route_request(
-            repo,
-            "POST",
-            "/api/actions/save-analysis",
-            body_text=json.dumps({"question": "sample durability"}),
-        )
-        self.assertEqual(status, 200)
-        self.assertEqual(second_payload["changed_files"], [])
-        self.assertEqual((self.root / "wiki" / "_meta" / "log.md").read_text(encoding="utf-8"), first_log)
-        self.assertEqual((self.root / "wiki" / "_meta" / "index.md").read_text(encoding="utf-8"), first_index)
-        self.assertEqual((self.root / first_payload["analysis_path"]).read_text(encoding="utf-8"), first_analysis)
+        self.assertEqual(status, 400)
+        self.assertIn("strict LLM mode", first_payload["error"])
 
     def test_review_claim_updates_canonical_registry_and_log(self) -> None:
         repo = WorkbenchRepository(self.root)

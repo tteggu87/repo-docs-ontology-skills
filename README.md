@@ -249,30 +249,24 @@ python3 scripts/pipeline_refresh.py \
   --validate
 ```
 
-`--write-analysis` is intentionally LLM-first. It compiles the source page, raw path, content units, wiki index, and linked pages into an LLM evidence bundle, then calls the helper model from `wikiconfig.json` when available. If no helper model is configured, it returns a prompt bundle instead of pretending a heuristic answer is trustworthy.
+`--write-analysis` is strict LLM-first. It compiles the source page, raw path, content units, wiki index, and linked pages into an LLM evidence bundle, then calls the helper model from `wikiconfig.json`. If no helper model is configured, the command fails instead of producing semantic fallback output.
 
-The old deterministic profile analyzers are available only as low-trust drafts:
+To inspect the prompt bundle explicitly without semantic success:
 
 ```bash
-python3 scripts/pipeline_refresh.py \
-  --profile education-analysis \
-  --source raw/inbox/education/attention.md \
-  --heuristic-draft \
-  --question "Self-attention이 뭐야?"
-```
-
-Heuristic draft outputs are marked:
-
-```yaml
-status: draft
-analysis_method: heuristic_draft
-trust_level: low
+python3 scripts/llm_compile_source.py --source-page <source-page> --emit-bundle
 ```
 
 Direct LLM-first query workflow:
 
 ```bash
 python3 scripts/llm_query.py "Self-attention이 뭐야?"
+```
+
+To inspect only the page-selection prompt explicitly:
+
+```bash
+python3 scripts/llm_query.py "Self-attention이 뭐야?" --emit-selection-prompt
 ```
 
 Refresh wiki graph navigation pages for LLM-first reasoning:

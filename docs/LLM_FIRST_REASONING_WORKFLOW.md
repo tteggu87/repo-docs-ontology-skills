@@ -66,22 +66,24 @@ This produces LLM-readable navigation pages:
 - `wiki/_meta/orphan-review.md`
 - `wiki/_meta/stale-review.md`
 - `wiki/_meta/contradiction-review.md`
+- `wiki/_meta/source-coverage.md`
 
 These are structural navigation aids. They should help the LLM choose and inspect pages, but they must not be treated as canonical truth.
 
-## Heuristic boundary
+## Strict LLM boundary
 
-Heuristic analyzers are optional low-trust drafts only:
+Semantic compile/query workflows fail when no helper LLM is configured. Deterministic code may read files, compute IDs, calculate line ranges, create citation anchors, refresh indexes, and validate structure; it must not create answer drafts or semantic wiki updates.
 
 ```bash
-python3 scripts/pipeline_refresh.py --source ... --heuristic-draft
+python3 scripts/llm_compile_source.py --source-page <source-page>
+python3 scripts/llm_query.py "question"
 ```
 
-They must be marked:
+Prompt bundles are emitted only by explicit inspection flags:
 
-```yaml
-analysis_method: heuristic_draft
-trust_level: low
+```bash
+python3 scripts/llm_compile_source.py --source-page <source-page> --emit-bundle
+python3 scripts/llm_query.py "question" --emit-selection-prompt
 ```
 
-Use `--write-analysis` for the LLM-first compile path.
+LLM compile output is saved as a draft compile proposal for human review. It does not automatically modify active concept/entity/project pages.
