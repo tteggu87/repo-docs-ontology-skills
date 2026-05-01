@@ -1,0 +1,17 @@
+version: 1
+purpose: "Index of deterministic contracts for the LLM-first wiki/ontology workspace."
+rules:
+  yaml_role: "contract_only"
+  yaml_must_not_contain:
+    - semantic_judgment
+    - answer_drafts
+    - source_summaries
+    - reasoning_claims
+read_order:
+  - intelligence/policies/semantic_boundary.yaml
+  - intelligence/manifests/semantic_workflows.yaml
+  - intelligence/manifests/page_policy.yaml
+  - intelligence/manifests/meta_surfaces.yaml
+  - intelligence/manifests/relation_types.yaml
+  - intelligence/manifests/registries.yaml
+

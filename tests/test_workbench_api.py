@@ -5,6 +5,7 @@ import subprocess
 import tempfile
 import unicodedata
 import unittest
+import shutil
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -36,6 +37,12 @@ class WorkbenchApiTests(unittest.TestCase):
             "warehouse/graph_projection",
         ]:
             (self.root / directory).mkdir(parents=True, exist_ok=True)
+
+        repo_root = Path(__file__).resolve().parent.parent
+        shutil.copytree(repo_root / "intelligence" / "packs", self.root / "intelligence" / "packs")
+        shutil.copytree(repo_root / "intelligence" / "manifests", self.root / "intelligence" / "manifests")
+        shutil.copytree(repo_root / "intelligence" / "policies", self.root / "intelligence" / "policies")
+        shutil.copy2(repo_root / "intelligence" / "contract_index.yaml", self.root / "intelligence" / "contract_index.yaml")
 
         (self.root / "raw" / "inbox" / "sample.md").write_text("raw inbox file\n", encoding="utf-8")
         (self.root / "raw" / "processed" / "done.txt").write_text("processed file\n", encoding="utf-8")

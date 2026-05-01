@@ -7,6 +7,7 @@ from unittest.mock import patch
 from scripts.generic_ingest import ingest_source
 from scripts.ingest.adapters.common import file_document_id
 from scripts.ingest.resolver import resolve_family
+from scripts.packs.loader import profile_by_family
 from scripts.citation import make_citation
 from scripts.workbench.repository import WorkbenchRepository
 from scripts.workbench.server import route_request
@@ -20,8 +21,9 @@ ROOT = Path(__file__).resolve().parent.parent
 def build_temp_repo(td: str | Path) -> Path:
     repo = Path(td)
     shutil.copytree(ROOT / "intelligence" / "packs", repo / "intelligence" / "packs")
-    (repo / "intelligence" / "manifests").mkdir(parents=True, exist_ok=True)
-    shutil.copy2(ROOT / "intelligence" / "manifests" / "source_families.yaml", repo / "intelligence" / "manifests" / "source_families.yaml")
+    shutil.copytree(ROOT / "intelligence" / "manifests", repo / "intelligence" / "manifests")
+    shutil.copytree(ROOT / "intelligence" / "policies", repo / "intelligence" / "policies")
+    shutil.copy2(ROOT / "intelligence" / "contract_index.yaml", repo / "intelligence" / "contract_index.yaml")
     (repo / "warehouse" / "jsonl").mkdir(parents=True, exist_ok=True)
     (repo / "wiki" / "_meta").mkdir(parents=True, exist_ok=True)
     (repo / "wiki" / "_meta" / "orientation.md").write_text("---\ntitle: Orientation\ntype: meta\n---\n# Orientation\n", encoding="utf-8")
@@ -34,6 +36,12 @@ class TestGenericIngest(unittest.TestCase):
     def test_resolver_email_not_ambiguous(self):
         fam = resolve_family(ROOT, Path("raw/inbox/email/week18.md"))
         self.assertEqual(fam, "email-md-txt")
+
+    def test_profile_mapping_is_generated_from_packs(self):
+        mapping = profile_by_family(ROOT)
+        self.assertEqual(mapping["email-md-txt"], "email-analysis")
+        self.assertEqual(mapping["education-md-txt"], "education-analysis")
+        self.assertEqual(mapping["report-md-txt"], "report-consistency-analysis")
 
     def test_profile_mismatch_errors(self):
         with tempfile.TemporaryDirectory() as td:
@@ -104,6 +112,7 @@ class TestGenericIngest(unittest.TestCase):
             queried = llm_query(repo, "How should ontology links guide reasoning?", emit_selection_prompt=True)
             self.assertEqual(queried["status"], "selection_prompt")
             self.assertIn("llm_selection_system_prompt", queried)
+            self.assertIn("meta_surfaces", queried["llm_selection_user_prompt"])
 
     def test_llm_compile_saves_proposal_without_touching_active_pages(self):
         with tempfile.TemporaryDirectory() as td:
@@ -169,6 +178,7 @@ class TestGenericIngest(unittest.TestCase):
             self.assertNotIn("preview", reviewed_inventory)
             self.assertNotIn("Reviewed wiki content", str(reviewed_inventory))
             bundle = build_query_bundle(repo, "What is reviewed?", ["analysis-proposal", "concept-reviewed"])
+            self.assertIn("meta_surfaces", bundle)
             selected_stems = {page["stem"] for page in bundle["selected_pages"]}
             self.assertEqual(selected_stems, {"concept-reviewed"})
 

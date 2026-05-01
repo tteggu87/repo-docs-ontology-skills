@@ -2,12 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-
-PROFILE_BY_FAMILY = {
-    "email-md-txt": "email-analysis",
-    "education-md-txt": "education-analysis",
-    "report-md-txt": "report-consistency-analysis",
-}
+from scripts.packs.loader import profile_by_family as _profile_by_family
 
 
 @dataclass
@@ -97,3 +92,7 @@ def resolve_family(root: Path, source: Path) -> str:
     if source.suffix.lower() in {".md", ".txt"}:
         return "generic-md-note"
     raise ValueError("No source family match")
+
+
+def resolve_profile_for_family(root: Path, family: str, default: str = "generic-analysis") -> str:
+    return _profile_by_family(root).get(family, default)

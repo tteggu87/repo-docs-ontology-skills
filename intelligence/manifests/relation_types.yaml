@@ -1,0 +1,17 @@
+version: 1
+purpose: "Vocabulary contract for relation labels; not a store of asserted facts."
+yaml_role: vocabulary_only
+relation_types:
+  supports:
+    inverse: supported_by
+  contradicts:
+    inverse: contradicted_by
+  supersedes:
+    inverse: superseded_by
+  depends_on:
+    inverse: depended_on_by
+  documents:
+    inverse: documented_by
+  implemented_by:
+    inverse: implements
+

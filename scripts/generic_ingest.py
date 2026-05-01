@@ -7,7 +7,7 @@ from datetime import UTC, datetime
 ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path: sys.path.insert(0, str(ROOT))
 
-from scripts.ingest.resolver import resolve_family, PROFILE_BY_FAMILY
+from scripts.ingest.resolver import resolve_family, resolve_profile_for_family
 from scripts.ingest.adapters.common import file_content_hash, source_version_id
 from scripts.ingest.adapters.email_md_txt import parse_email_source
 from scripts.ingest.adapters.education_md_txt import parse_education_source
@@ -69,7 +69,7 @@ def ingest_source(root: Path, source: str, profile_id: str | None = None, allow_
                 raise
     else:
         family = resolve_family(root, src)
-        profile_id = PROFILE_BY_FAMILY.get(family, "generic-analysis")
+        profile_id = resolve_profile_for_family(root, family)
 
     if profile_id=='email-analysis': parsed=parse_email_source(src, profile_id=profile_id, source_family_id=family, raw_path=raw_path)
     elif profile_id=='education-analysis': parsed=parse_education_source(src, profile_id=profile_id, source_family_id=family, raw_path=raw_path)

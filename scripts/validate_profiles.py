@@ -8,9 +8,9 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from scripts.packs.loader import load_profiles
+from scripts.intelligence_contracts import semantic_workflow_targets
 
 ALLOWED_PARSE_PREFIXES = ("scripts.ingest.adapters.",)
-ALLOWED_COMPILE_TARGETS = {"scripts.llm_compile_source:compile_source"}
 
 
 def _load_families() -> set[str]:
@@ -36,6 +36,7 @@ def _check_target(target: str, *, allowed_prefixes: tuple[str, ...] = (), allowe
 
 profiles = load_profiles(ROOT)
 families = _load_families()
+allowed_compile_targets = semantic_workflow_targets(ROOT)
 for p in profiles:
     for f in p.source_families:
         if f not in families:
@@ -44,5 +45,5 @@ for p in profiles:
         if "." not in obs:
             raise SystemExit(f"Invalid observation type: {obs}")
     _check_target(p.parse_target, allowed_prefixes=ALLOWED_PARSE_PREFIXES)
-    _check_target(p.compile_target, allowed_targets=ALLOWED_COMPILE_TARGETS)
+    _check_target(p.compile_target, allowed_targets=allowed_compile_targets)
 print(f"OK profiles={len(profiles)}")

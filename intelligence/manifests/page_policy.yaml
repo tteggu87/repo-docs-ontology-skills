@@ -1,0 +1,12 @@
+version: 1
+purpose: "Runtime filtering policy for pages that may become query evidence."
+queryable:
+  denied_sections:
+    - _meta
+  denied_status:
+    - draft
+    - superseded
+  denied_analysis_methods:
+    - llm_compile_proposal
+  require_human_review_before_query_evidence: true
+

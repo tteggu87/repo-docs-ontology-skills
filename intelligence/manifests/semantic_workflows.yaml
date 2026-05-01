@@ -1,0 +1,46 @@
+version: 1
+purpose: "Strict LLM-first semantic workflow contract."
+workflows:
+  compile_source:
+    kind: semantic_compile
+    cli: scripts/llm_compile_source.py
+    function: scripts.llm_compile_source:compile_source
+    requires_helper_llm: true
+    fallback_allowed: false
+    explicit_prompt_flags:
+      - --emit-bundle
+    reads:
+      - wiki/sources
+      - warehouse/jsonl/content_units.jsonl
+      - wiki/_meta/index.md
+      - wiki/_meta/moc.md
+      - wiki/_meta/link-map.md
+      - wiki/_meta/source-coverage.md
+    writes:
+      - wiki/analyses/*compile-proposal*.md
+    forbidden_writes:
+      - wiki/concepts
+      - wiki/entities
+      - wiki/projects
+    output_status: draft
+    output_analysis_method: llm_compile_proposal
+  query:
+    kind: semantic_query
+    cli: scripts/llm_query.py
+    function: scripts.llm_query:llm_query
+    requires_helper_llm: true
+    fallback_allowed: false
+    explicit_prompt_flags:
+      - --emit-selection-prompt
+    selection_stage:
+      uses_page_bodies: false
+      uses:
+        - page_inventory
+        - meta_surfaces
+    answer_stage:
+      uses_page_bodies: true
+      uses:
+        - selected_pages
+        - wikilink_neighborhood
+        - citation_grounded_sources
+

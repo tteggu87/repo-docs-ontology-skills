@@ -8,6 +8,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from scripts.packs.loader import load_profiles
+from scripts.intelligence_contracts import load_manifest
 
 
 def load(name):
@@ -23,12 +24,20 @@ def require_fields(obj, fields, label):
             raise SystemExit(f"missing {label}.{f}")
 
 
+registry_contract = (load_manifest(ROOT, "registries.yaml").get("registries", {}) or {})
+
+
+def required_for(name, fallback):
+    spec = registry_contract.get(name, {}) or {}
+    return spec.get("required_fields", fallback)
+
+
 profiles = {profile.profile_id: profile for profile in load_profiles(ROOT)}
 unit_kinds_by_profile = {profile.profile_id: set(profile.unit_kinds) for profile in profiles.values()}
 
 docs_rows = load("documents")
 for d in docs_rows:
-    require_fields(d, ["document_id", "raw_path"], "document")
+    require_fields(d, required_for("documents", ["document_id", "raw_path"]), "document")
     if d.get("profile_id") and d["profile_id"] not in profiles:
         raise SystemExit(f"unknown document.profile_id: {d['profile_id']}")
 docs = {x["document_id"] for x in docs_rows if "document_id" in x}
@@ -36,7 +45,7 @@ docs = {x["document_id"] for x in docs_rows if "document_id" in x}
 units = load("content_units")
 unit_ids = set()
 for u in units:
-    require_fields(u, ["unit_id", "document_id", "source_family_id", "profile_id", "unit_kind", "sequence", "text"], "content_unit")
+    require_fields(u, required_for("content_units", ["unit_id", "document_id", "source_family_id", "profile_id", "unit_kind", "sequence", "text"]), "content_unit")
     uid = u["unit_id"]
     if uid in unit_ids:
         raise SystemExit("duplicate unit_id")
@@ -52,7 +61,7 @@ for u in units:
 source_versions = load("source_versions")
 sv_ids = set()
 for sv in source_versions:
-    require_fields(sv, ["document_id", "raw_path", "content_hash", "source_family_id", "ingested_at"], "source_version")
+    require_fields(sv, required_for("source_versions", ["document_id", "raw_path", "content_hash", "source_family_id", "ingested_at"]), "source_version")
     sid = sv.get("source_version_id") or sv.get("export_version_id")
     if not sid:
         raise SystemExit("missing source_version.source_version_id/export_version_id")
@@ -82,7 +91,7 @@ for sv in source_versions:
 obs = load("observations")
 obs_ids = set()
 for o in obs:
-    require_fields(o, ["observation_id", "profile_id", "observation_type"], "observation")
+    require_fields(o, required_for("observations", ["observation_id", "profile_id", "observation_type"]), "observation")
     oid = o["observation_id"]
     if oid in obs_ids:
         raise SystemExit("duplicate observation_id")

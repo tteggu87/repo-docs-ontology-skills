@@ -17,6 +17,7 @@ from scripts.workbench.llm_config import (
     load_continue_helper_config,
     run_helper_chat_completion,
 )
+from scripts.intelligence_contracts import load_manifest
 
 
 def _read(path: Path, max_chars: int = 16000) -> str:
@@ -44,14 +45,40 @@ def _frontmatter(text: str) -> dict[str, str]:
     return data
 
 
+def _page_policy(root: Path) -> dict[str, Any]:
+    data = load_manifest(root, "page_policy.yaml")
+    queryable = data.get("queryable", {}) or {}
+    if not isinstance(queryable, dict):
+        raise ValueError("page_policy.queryable must be a mapping.")
+    return queryable
+
+
+def _meta_surface_contents(root: Path, stage: str) -> dict[str, str]:
+    data = load_manifest(root, "meta_surfaces.yaml")
+    surfaces = data.get("surfaces", {}) or {}
+    out: dict[str, str] = {}
+    for name, spec in surfaces.items():
+        if not isinstance(spec, dict):
+            continue
+        if stage not in (spec.get("used_by", []) or []):
+            continue
+        rel_path = str(spec.get("path", ""))
+        if not rel_path:
+            continue
+        max_chars = int(spec.get("max_chars", 16000) or 16000)
+        out[str(name)] = _read(root / rel_path, max_chars)
+    return out
+
+
 def _is_queryable_page(root: Path, path: Path, text: str) -> bool:
+    policy = _page_policy(root)
     rel_parts = path.relative_to(root / "wiki").parts
-    if rel_parts and rel_parts[0] == "_meta":
+    if rel_parts and rel_parts[0] in set(policy.get("denied_sections", []) or []):
         return False
     fm = _frontmatter(text)
-    if fm.get("status") == "draft":
+    if fm.get("status") in set(policy.get("denied_status", []) or []):
         return False
-    if fm.get("analysis_method") == "llm_compile_proposal":
+    if fm.get("analysis_method") in set(policy.get("denied_analysis_methods", []) or []):
         return False
     return True
 
@@ -123,6 +150,7 @@ def _parse_selected_stems(text: str) -> list[str]:
 
 def build_query_bundle(root: Path, question: str, selected_stems: list[str] | None = None, max_pages: int = 8) -> dict[str, Any]:
     inventory = _page_inventory(root)
+    answer_meta = _meta_surface_contents(root, "query_answer")
     pages: list[dict[str, str]] = []
     stems = selected_stems or []
     neighborhood: set[str] = set(stems)
@@ -146,12 +174,7 @@ def build_query_bundle(root: Path, question: str, selected_stems: list[str] | No
 
     return {
         "question": question,
-        "wiki_index": _read(root / "wiki/_meta/index.md"),
-        "wiki_moc": _read(root / "wiki/_meta/moc.md"),
-        "wiki_link_map": _read(root / "wiki/_meta/link-map.md"),
-        "orphan_review": _read(root / "wiki/_meta/orphan-review.md", 8000),
-        "contradiction_review": _read(root / "wiki/_meta/contradiction-review.md", 8000),
-        "source_coverage": _read(root / "wiki/_meta/source-coverage.md", 8000),
+        "meta_surfaces": answer_meta,
         "selected_pages": pages,
         "page_inventory_count": len(inventory),
     }
@@ -159,13 +182,11 @@ def build_query_bundle(root: Path, question: str, selected_stems: list[str] | No
 
 def llm_query(root: Path, question: str, *, emit_selection_prompt: bool = False) -> dict[str, Any]:
     inventory = _page_inventory(root)
+    selection_meta = _meta_surface_contents(root, "query_selection")
     selection_prompt = json.dumps(
         {
             "question": question,
-            "wiki_index": _read(root / "wiki/_meta/index.md"),
-            "wiki_moc": _read(root / "wiki/_meta/moc.md"),
-            "wiki_link_map": _read(root / "wiki/_meta/link-map.md"),
-            "source_coverage": _read(root / "wiki/_meta/source-coverage.md", 8000),
+            "meta_surfaces": selection_meta,
             "page_inventory": inventory,
         },
         ensure_ascii=False,

@@ -264,7 +264,7 @@ class WorkbenchRepository:
         }
 
     def ingest_inbox(self) -> dict[str, Any]:
-        from scripts.ingest.resolver import PROFILE_BY_FAMILY, resolve_family
+        from scripts.ingest.resolver import resolve_family, resolve_profile_for_family
 
         items: list[dict[str, Any]] = []
         inbox = self.raw_dir / "inbox"
@@ -282,7 +282,7 @@ class WorkbenchRepository:
                 {
                     "path": rel,
                     "detected_source_family_id": family,
-                    "detected_profile_id": PROFILE_BY_FAMILY.get(family or "", "generic-analysis"),
+                    "detected_profile_id": resolve_profile_for_family(self.root, family or ""),
                     "warnings": warnings,
                 }
             )
@@ -293,7 +293,7 @@ class WorkbenchRepository:
         from scripts.ingest.adapters.email_md_txt import parse_email_source
         from scripts.ingest.adapters.markdown import parse_markdown
         from scripts.ingest.adapters.report_md_txt import parse_report_source
-        from scripts.ingest.resolver import PROFILE_BY_FAMILY, resolve_family
+        from scripts.ingest.resolver import resolve_family, resolve_profile_for_family
 
         source = (self.root / raw_path).resolve()
         resolved_root = self.root.resolve()
@@ -312,7 +312,7 @@ class WorkbenchRepository:
         except ValueError as error:
             family = "generic-md-note"
             warnings.append(str(error))
-        profile = PROFILE_BY_FAMILY.get(family, "generic-analysis")
+        profile = resolve_profile_for_family(self.root, family)
         if profile == "email-analysis":
             parsed = parse_email_source(source, raw_path=rel)
         elif profile == "education-analysis":

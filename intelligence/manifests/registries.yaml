@@ -1,0 +1,45 @@
+version: 1
+purpose: "Canonical JSONL registry shape contract."
+registries:
+  documents:
+    path: warehouse/jsonl/documents.jsonl
+    key: document_id
+    required_fields:
+      - document_id
+      - raw_path
+  content_units:
+    path: warehouse/jsonl/content_units.jsonl
+    key: unit_id
+    required_fields:
+      - unit_id
+      - document_id
+      - source_family_id
+      - profile_id
+      - unit_kind
+      - sequence
+      - text
+  source_versions:
+    path: warehouse/jsonl/source_versions.jsonl
+    key: source_version_id
+    alternate_key: export_version_id
+    required_fields:
+      - document_id
+      - raw_path
+      - content_hash
+      - source_family_id
+      - ingested_at
+  observations:
+    path: warehouse/jsonl/observations.jsonl
+    key: observation_id
+    required_fields:
+      - observation_id
+      - profile_id
+      - observation_type
+  analysis_runs:
+    path: warehouse/jsonl/analysis_runs.jsonl
+    key: analysis_run_id
+    required_fields: []
+  analysis_findings:
+    path: warehouse/jsonl/analysis_findings.jsonl
+    key: analysis_finding_id
+    required_fields: []
