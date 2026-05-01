@@ -104,6 +104,7 @@ for o in obs:
 analysis_runs = load("analysis_runs")
 analysis_run_ids = {row.get("analysis_run_id") for row in analysis_runs if row.get("analysis_run_id")}
 for run in analysis_runs:
+    require_fields(run, required_for("analysis_runs", []), "analysis_run")
     if run.get("profile_id") and run["profile_id"] not in profiles:
         raise SystemExit(f"unknown analysis_run.profile_id: {run['profile_id']}")
     if run.get("output_path") and not (ROOT / run["output_path"]).exists():
@@ -111,9 +112,37 @@ for run in analysis_runs:
 
 analysis_findings = load("analysis_findings")
 for finding in analysis_findings:
+    require_fields(finding, required_for("analysis_findings", []), "analysis_finding")
     if finding.get("analysis_run_id") and analysis_run_ids and finding["analysis_run_id"] not in analysis_run_ids:
         raise SystemExit(f"unresolved analysis_findings.analysis_run_id: {finding['analysis_run_id']}")
     if finding.get("unit_id") and finding["unit_id"] not in unit_ids:
         raise SystemExit(f"unresolved analysis_findings.unit_id: {finding['unit_id']}")
+
+registry_rows = {
+    "documents": docs_rows,
+    "content_units": units,
+    "source_versions": source_versions,
+    "observations": obs,
+    "analysis_runs": analysis_runs,
+    "analysis_findings": analysis_findings,
+    "profiles": [{"profile_id": key} for key in profiles],
+}
+
+registry_keys = {"profiles": set(profiles)}
+for registry_name, rows in registry_rows.items():
+    spec = registry_contract.get(registry_name, {}) or {}
+    key = spec.get("key")
+    if key:
+        registry_keys[registry_name] = {row.get(key) for row in rows if row.get(key)}
+
+for registry_name, rows in registry_rows.items():
+    spec = registry_contract.get(registry_name, {}) or {}
+    for field, ref in (spec.get("references", {}) or {}).items():
+        target_registry = ref.get("registry")
+        target_keys = registry_keys.get(target_registry, set())
+        for row in rows:
+            value = row.get(field)
+            if value and target_keys and value not in target_keys:
+                raise SystemExit(f"unresolved {registry_name}.{field}: {value}")
 
 print("OK registries")

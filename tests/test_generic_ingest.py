@@ -107,6 +107,8 @@ class TestGenericIngest(unittest.TestCase):
             compiled = compile_source(repo, source_page, emit_bundle=True)
             self.assertEqual(compiled["status"], "prompt_bundle")
             self.assertIn("llm_system_prompt", compiled)
+            self.assertIn("meta_surfaces", compiled["bundle"])
+            self.assertIn("wiki_moc", compiled["bundle"]["meta_surfaces"])
             with self.assertRaises(RuntimeError):
                 llm_query(repo, "How should ontology links guide reasoning?")
             queried = llm_query(repo, "How should ontology links guide reasoning?", emit_selection_prompt=True)

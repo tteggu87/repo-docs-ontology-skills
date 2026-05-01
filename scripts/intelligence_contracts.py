@@ -36,3 +36,24 @@ def semantic_workflow_targets(root: Path) -> set[str]:
     workflows = data.get("workflows", {}) or {}
     return {str(row.get("function", "")) for row in workflows.values() if row.get("function")}
 
+
+def load_contract_index(root: Path) -> dict[str, Any]:
+    return load_yaml_file(root / "intelligence" / "contract_index.yaml")
+
+
+def meta_surface_contents(root: Path, stage: str, default_max_chars: int = 16000) -> dict[str, str]:
+    data = load_manifest(root, "meta_surfaces.yaml")
+    surfaces = data.get("surfaces", {}) or {}
+    out: dict[str, str] = {}
+    for name, spec in surfaces.items():
+        if not isinstance(spec, dict):
+            continue
+        if stage not in (spec.get("used_by", []) or []):
+            continue
+        rel_path = str(spec.get("path", ""))
+        if not rel_path:
+            continue
+        max_chars = int(spec.get("max_chars", default_max_chars) or default_max_chars)
+        path = root / rel_path
+        out[str(name)] = path.read_text(encoding="utf-8")[:max_chars] if path.exists() else ""
+    return out

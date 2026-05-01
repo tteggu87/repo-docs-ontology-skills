@@ -14,6 +14,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from scripts.analysis_profiles.common import load_jsonl
+from scripts.intelligence_contracts import meta_surface_contents
 from scripts.workbench.llm_config import (
     helper_model_public_summary,
     load_continue_helper_config,
@@ -87,7 +88,7 @@ def build_compile_bundle(root: Path, source_page: str, max_page_chars: int = 120
             }
         )
 
-    index_text = _read(root / "wiki/_meta/index.md", max_page_chars)
+    compile_meta_surfaces = meta_surface_contents(root, "compile", default_max_chars=max_page_chars)
     raw_text = _read(root / raw_path, max_page_chars) if raw_path else ""
     evidence_units = [
         {
@@ -106,18 +107,14 @@ def build_compile_bundle(root: Path, source_page: str, max_page_chars: int = 120
         "source_page_markdown": source_text,
         "raw_excerpt": raw_text,
         "content_units": evidence_units,
-        "wiki_index": index_text,
-        "wiki_moc": _read(root / "wiki/_meta/moc.md", max_page_chars),
-        "wiki_link_map": _read(root / "wiki/_meta/link-map.md", max_page_chars),
-        "contradiction_review": _read(root / "wiki/_meta/contradiction-review.md", max_page_chars // 2),
-        "source_coverage": _read(root / "wiki/_meta/source-coverage.md", max_page_chars // 2),
+        "meta_surfaces": compile_meta_surfaces,
         "related_existing_pages": related_pages,
     }
 
 
 SYSTEM_PROMPT = """You are an LLM Wiki compiler.
 You do not write a final answer from heuristics.
-Read the source page, raw excerpt, content units, wiki index, and linked pages as a structured knowledge substrate.
+Read the source page, raw excerpt, content units, meta surfaces, and linked pages as a structured knowledge substrate.
 Return a JSON object with:
 - pages_to_update: existing concept/entity/project/source/analysis pages to update, with rationale
 - new_page_candidates: new wiki pages worth creating, with page type and rationale

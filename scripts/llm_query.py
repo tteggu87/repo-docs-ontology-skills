@@ -17,7 +17,7 @@ from scripts.workbench.llm_config import (
     load_continue_helper_config,
     run_helper_chat_completion,
 )
-from scripts.intelligence_contracts import load_manifest
+from scripts.intelligence_contracts import load_manifest, meta_surface_contents
 
 
 def _read(path: Path, max_chars: int = 16000) -> str:
@@ -54,20 +54,7 @@ def _page_policy(root: Path) -> dict[str, Any]:
 
 
 def _meta_surface_contents(root: Path, stage: str) -> dict[str, str]:
-    data = load_manifest(root, "meta_surfaces.yaml")
-    surfaces = data.get("surfaces", {}) or {}
-    out: dict[str, str] = {}
-    for name, spec in surfaces.items():
-        if not isinstance(spec, dict):
-            continue
-        if stage not in (spec.get("used_by", []) or []):
-            continue
-        rel_path = str(spec.get("path", ""))
-        if not rel_path:
-            continue
-        max_chars = int(spec.get("max_chars", 16000) or 16000)
-        out[str(name)] = _read(root / rel_path, max_chars)
-    return out
+    return meta_surface_contents(root, stage)
 
 
 def _is_queryable_page(root: Path, path: Path, text: str) -> bool:

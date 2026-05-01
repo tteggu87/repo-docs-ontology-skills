@@ -38,8 +38,24 @@ registries:
   analysis_runs:
     path: warehouse/jsonl/analysis_runs.jsonl
     key: analysis_run_id
-    required_fields: []
+    required_fields:
+      - analysis_run_id
+      - profile_id
+      - status
+      - output_path
+    references:
+      profile_id:
+        registry: profiles
+        key: profile_id
   analysis_findings:
     path: warehouse/jsonl/analysis_findings.jsonl
     key: analysis_finding_id
-    required_fields: []
+    required_fields:
+      - analysis_finding_id
+      - analysis_run_id
+      - finding_key
+      - status
+    references:
+      analysis_run_id:
+        registry: analysis_runs
+        key: analysis_run_id

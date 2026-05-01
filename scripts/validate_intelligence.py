@@ -10,7 +10,7 @@ ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from scripts.intelligence_contracts import load_manifest, load_policy
+from scripts.intelligence_contracts import load_contract_index, load_manifest, load_policy
 from scripts.packs.loader import load_profiles
 
 
@@ -34,6 +34,15 @@ def _help_text(script: str) -> str:
     )
     _require(proc.returncode == 0, f"workflow CLI help failed: {script}")
     return proc.stdout
+
+
+def _validate_contract_index() -> None:
+    index = load_contract_index(ROOT)
+    _require(index.get("rules", {}).get("yaml_role") == "contract_only", "contract_index must declare YAML as contract_only")
+    read_order = index.get("read_order", []) or []
+    _require(bool(read_order), "contract_index read_order must not be empty")
+    for rel_path in read_order:
+        _require((ROOT / str(rel_path)).exists(), f"contract_index read_order missing file: {rel_path}")
 
 
 def _validate_semantic_boundary() -> None:
@@ -95,6 +104,15 @@ def _validate_relation_types() -> None:
     relation_types = data.get("relation_types", {}) or {}
     _require(set(relation_types) == seen, "relation type parser mismatch")
     _require(bool(relation_types), "relation_types must not be empty")
+    for name, spec in relation_types.items():
+        _require(isinstance(spec, dict), f"relation type must be a mapping: {name}")
+        _require(bool(spec.get("inverse")), f"relation type missing inverse: {name}")
+        _require(bool(spec.get("from")), f"relation type missing from: {name}")
+        _require(bool(spec.get("to")), f"relation type missing to: {name}")
+        _require("evidence_required" in spec, f"relation type missing evidence_required: {name}")
+        _require("approval_required" in spec, f"relation type missing approval_required: {name}")
+        _require(isinstance(spec.get("evidence_required"), bool), f"relation evidence_required must be bool: {name}")
+        _require(isinstance(spec.get("approval_required"), bool), f"relation approval_required must be bool: {name}")
 
 
 def _validate_profile_compile_targets(allowed_targets: set[str]) -> None:
@@ -115,6 +133,7 @@ def _validate_meta_surfaces() -> None:
 
 
 def main() -> int:
+    _validate_contract_index()
     _validate_semantic_boundary()
     allowed_targets = _validate_workflows()
     _validate_page_policy()
@@ -127,4 +146,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
