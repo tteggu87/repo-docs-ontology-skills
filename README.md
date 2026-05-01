@@ -275,6 +275,22 @@ Direct LLM-first query workflow:
 python3 scripts/llm_query.py "Self-attention이 뭐야?"
 ```
 
+Refresh wiki graph navigation pages for LLM-first reasoning:
+
+```bash
+python3 scripts/wiki_graph_navigation.py --write
+```
+
+This writes:
+
+- `wiki/_meta/moc.md`
+- `wiki/_meta/link-map.md`
+- `wiki/_meta/orphan-review.md`
+- `wiki/_meta/stale-review.md`
+- `wiki/_meta/contradiction-review.md`
+
+These pages are navigation aids for the LLM. They do not replace raw sources, canonical JSONL, or human-authored wiki pages.
+
 Outputs:
 
 - Source page: `wiki/sources/source-<date>-<slug>.md`

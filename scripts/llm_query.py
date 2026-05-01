@@ -105,6 +105,10 @@ def build_query_bundle(root: Path, question: str, selected_stems: list[str] | No
     return {
         "question": question,
         "wiki_index": _read(root / "wiki/_meta/index.md"),
+        "wiki_moc": _read(root / "wiki/_meta/moc.md"),
+        "wiki_link_map": _read(root / "wiki/_meta/link-map.md"),
+        "orphan_review": _read(root / "wiki/_meta/orphan-review.md", 8000),
+        "contradiction_review": _read(root / "wiki/_meta/contradiction-review.md", 8000),
         "selected_pages": pages,
         "page_inventory_count": len(inventory),
     }

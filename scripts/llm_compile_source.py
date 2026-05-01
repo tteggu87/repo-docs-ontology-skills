@@ -106,6 +106,9 @@ def build_compile_bundle(root: Path, source_page: str, max_page_chars: int = 120
         "raw_excerpt": raw_text,
         "content_units": evidence_units,
         "wiki_index": index_text,
+        "wiki_moc": _read(root / "wiki/_meta/moc.md", max_page_chars),
+        "wiki_link_map": _read(root / "wiki/_meta/link-map.md", max_page_chars),
+        "contradiction_review": _read(root / "wiki/_meta/contradiction-review.md", max_page_chars // 2),
         "related_existing_pages": related_pages,
     }
 

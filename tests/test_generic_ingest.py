@@ -12,6 +12,7 @@ from scripts.workbench.repository import WorkbenchRepository
 from scripts.workbench.server import route_request
 from scripts.llm_compile_source import compile_source
 from scripts.llm_query import llm_query
+from scripts.wiki_graph_navigation import write_navigation_pages
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -104,6 +105,26 @@ class TestGenericIngest(unittest.TestCase):
             queried = llm_query(repo, "How should ontology links guide reasoning?")
             self.assertEqual(queried["status"], "needs_llm")
             self.assertIn("llm_selection_system_prompt", queried)
+
+    def test_wiki_graph_navigation_writes_meta_pages(self):
+        with tempfile.TemporaryDirectory() as td:
+            repo = build_temp_repo(td)
+            (repo / "wiki/concepts").mkdir(parents=True, exist_ok=True)
+            (repo / "wiki/sources").mkdir(parents=True, exist_ok=True)
+            (repo / "wiki/concepts/concept-a.md").write_text(
+                "---\ntitle: Concept A\ntype: concept\nupdated: 2026-04-10\n---\n# Concept A\n\nLinks to [[source-a]].",
+                encoding="utf-8",
+            )
+            (repo / "wiki/sources/source-a.md").write_text(
+                "---\ntitle: Source A\ntype: source\nupdated: 2026-04-10\n---\n# Source A\n\nUncertain evidence.",
+                encoding="utf-8",
+            )
+            result = write_navigation_pages(repo)
+            self.assertEqual(result["status"], "ok")
+            self.assertTrue((repo / "wiki/_meta/moc.md").exists())
+            self.assertTrue((repo / "wiki/_meta/link-map.md").exists())
+            self.assertIn("[[source-a]]", (repo / "wiki/_meta/link-map.md").read_text(encoding="utf-8"))
+            self.assertIn("[[source-a]]", (repo / "wiki/_meta/contradiction-review.md").read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":

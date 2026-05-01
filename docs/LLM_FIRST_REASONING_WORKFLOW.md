@@ -51,6 +51,24 @@ The workflow is intentionally two-stage:
 
 The mechanical index only helps navigation. It is not the semantic judge.
 
+## Wiki graph navigation
+
+Entrypoint:
+
+```bash
+python3 scripts/wiki_graph_navigation.py --write
+```
+
+This produces LLM-readable navigation pages:
+
+- `wiki/_meta/moc.md`
+- `wiki/_meta/link-map.md`
+- `wiki/_meta/orphan-review.md`
+- `wiki/_meta/stale-review.md`
+- `wiki/_meta/contradiction-review.md`
+
+These are structural navigation aids. They should help the LLM choose and inspect pages, but they must not be treated as canonical truth.
+
 ## Heuristic boundary
 
 Heuristic analyzers are optional low-trust drafts only:

@@ -35,6 +35,10 @@ capabilities:
     action: answer_query_with_llm_wiki
     implementation: scripts/llm_query.py:llm_query
     entrypoint: python3 scripts/llm_query.py <question>
+  - key: wiki.graph.navigation
+    action: refresh_wiki_graph_navigation
+    implementation: scripts/wiki_graph_navigation.py:write_navigation_pages
+    entrypoint: python3 scripts/wiki_graph_navigation.py --write
   - key: workbench.claim.review
     action: review_claim_state
     implementation: scripts/workbench/repository.py:review_claim
