@@ -173,7 +173,7 @@ export type ProvenanceSection = {
 };
 
 export type QueryPreviewPayload = {
-  mode: "repo_local_search";
+  mode: "lexical_diagnostics";
   question: string;
   tokens: string[];
   coverage: "none" | "thin" | "supported";
@@ -182,16 +182,6 @@ export type QueryPreviewPayload = {
   related_sources: RelatedPage[];
   provenance_sections: ProvenanceSection[];
   warnings: string[];
-};
-
-export type SaveAnalysisPayload = {
-  action: "save_analysis";
-  question: string;
-  analysis_stem: string;
-  analysis_path: string;
-  changed_files: string[];
-  linked_pages: string[];
-  preview: QueryPreviewPayload;
 };
 
 export type ReviewClaimPayload = {
@@ -295,19 +285,6 @@ export async function fetchQueryPreview(
   return fetchJson<QueryPreviewPayload>(`/api/query/preview?${params.toString()}`, signal);
 }
 
-export async function saveAnalysis(question: string, limit = 5): Promise<SaveAnalysisPayload> {
-  const response = await fetch("/api/actions/save-analysis", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ question, limit }),
-  });
-  if (!response.ok) {
-    throw new Error(`/api/actions/save-analysis failed with ${response.status}`);
-  }
-  return response.json() as Promise<SaveAnalysisPayload>;
-}
 
 export async function reviewClaim(
   claimId: string,

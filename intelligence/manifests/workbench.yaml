@@ -222,22 +222,6 @@ workbench:
         - show the exact command
         - show structured command output in the UI
 
-    - key: save_analysis
-      method: POST
-      path: /api/actions/save-analysis
-      wraps:
-        - backend-gated analysis draft generation from repo-local query preview
-      writes:
-        - wiki/analyses/
-        - wiki/_meta/log.md
-        - wiki/_meta/index.md
-        - related wiki pages with sufficient confidence for link-back
-      output_contract:
-        - show changed files
-        - show saved analysis path
-        - show linked wiki pages when link-back occurs
-        - keep `raw/` and `warehouse/jsonl/` untouched
-
     - key: review_claim
       method: POST
       path: /api/actions/review-claim

@@ -13,11 +13,9 @@ import {
   fetchWorkbenchSummary,
   reviewClaim,
   runWorkbenchAction,
-  saveAnalysis,
   type DraftSourceSummaryPayload,
   type QueryPreviewPayload,
   type ReviewClaimPayload,
-  type SaveAnalysisPayload,
   type SourceDetailPayload,
   type WarehouseSummaryPayload,
   type WorkbenchActionKey,
@@ -117,7 +115,7 @@ function coverageLabel(value: string): string {
 function warningLabel(value: string): string {
   const labels: Record<string, string> = {
     empty_query: "질문이 비어 있습니다.",
-    thin_coverage: "근거가 얕아서 결과를 검토용 초안으로 다뤄야 합니다.",
+    thin_coverage: "근거가 얕아서 라우팅 진단으로만 다뤄야 합니다.",
     no_direct_matches: "직접적으로 맞는 근거를 찾지 못했습니다.",
   };
   return labels[value] ?? value.replaceAll("_", " ");
@@ -140,9 +138,9 @@ const sections: SectionConfig[] = [
   {
     id: "ask",
     label: "질문",
-    eyebrow: "근거 기반 질문",
-    title: "위키에 질문하기",
-    description: "로컬 위키를 먼저 검색하고, 근거를 확인한 뒤, 남길 가치가 있는 답변만 분석 페이지로 저장합니다.",
+    eyebrow: "Lexical diagnostics",
+    title: "위키 진단하기",
+    description: "로컬 위키와 canonical registry에서 질문을 라우팅할 단서를 찾습니다. 의미 답변과 저장은 strict LLM workflow에서만 수행합니다.",
     icon: Search,
     rail: "primary",
   },
@@ -234,55 +232,6 @@ function RelatedPageList(props: {
   );
 }
 
-function SaveResultPanel(props: {
-  saveResult: SaveAnalysisPayload;
-  onOpenAnalysis: (stem: string) => void;
-}) {
-  return (
-    <section className="save-result-panel">
-      <div className="save-result-header">
-        <div>
-          <p className="eyebrow">저장 완료</p>
-          <h4>{props.saveResult.analysis_path}</h4>
-        </div>
-        <button type="button" className="ghost-button" onClick={() => props.onOpenAnalysis(props.saveResult.analysis_stem)}>
-          저장한 분석 열기
-        </button>
-      </div>
-      <div className="save-result-grid">
-        <div className="save-result-card">
-          <span>변경 파일</span>
-          <strong>{props.saveResult.changed_files.length}</strong>
-        </div>
-        <div className="save-result-card">
-          <span>연결된 페이지</span>
-          <strong>{props.saveResult.linked_pages.length}</strong>
-        </div>
-      </div>
-      <div className="save-result-lists">
-        <div>
-          <h5>Changed files</h5>
-          <ul className="compact-list compact-list-plain detail-list">
-            {props.saveResult.changed_files.map((item) => (
-              <li key={item}>{item}</li>
-            ))}
-          </ul>
-        </div>
-        <div>
-          <h5>Linked pages</h5>
-          <ul className="compact-list compact-list-plain detail-list">
-            {props.saveResult.linked_pages.length ? (
-              props.saveResult.linked_pages.map((item) => <li key={item}>{item}</li>)
-            ) : (
-              <li>이번 저장에서는 추가 링크백이 없었습니다.</li>
-            )}
-          </ul>
-        </div>
-      </div>
-    </section>
-  );
-}
-
 export default function App() {
   const [activeSection, setActiveSection] = useState<SectionId>(() =>
     typeof window === "undefined" ? "ask" : sectionFromHash(window.location.hash),
@@ -305,9 +254,6 @@ export default function App() {
   const [queryResult, setQueryResult] = useState<QueryPreviewPayload | null>(null);
   const [queryError, setQueryError] = useState<string | null>(null);
   const [queryBusy, setQueryBusy] = useState(false);
-  const [saveResult, setSaveResult] = useState<SaveAnalysisPayload | null>(null);
-  const [saveError, setSaveError] = useState<string | null>(null);
-  const [saveBusy, setSaveBusy] = useState(false);
   const [draftSummary, setDraftSummary] = useState<DraftSourceSummaryPayload | null>(null);
   const [draftSummaryError, setDraftSummaryError] = useState<string | null>(null);
   const [draftSummaryBusy, setDraftSummaryBusy] = useState(false);
@@ -442,8 +388,6 @@ export default function App() {
     const nextQuestion = queryInput.trim();
     setQueryBusy(true);
     setQueryError(null);
-    setSaveResult(null);
-    setSaveError(null);
     try {
       const payload = await fetchQueryPreview(nextQuestion);
       setQueryResult(payload);
@@ -459,8 +403,6 @@ export default function App() {
     setQueryInput(question);
     setQueryBusy(true);
     setQueryError(null);
-    setSaveResult(null);
-    setSaveError(null);
     try {
       const payload = await fetchQueryPreview(question);
       setQueryResult(payload);
@@ -469,20 +411,6 @@ export default function App() {
       setQueryError(error instanceof Error ? error.message : "질문 미리보기 중 알 수 없는 오류가 발생했습니다.");
     } finally {
       setQueryBusy(false);
-    }
-  }
-
-  async function handleSaveAnalysis() {
-    const nextQuestion = queryResult?.question.trim() || queryInput.trim();
-    setSaveBusy(true);
-    setSaveError(null);
-    try {
-      const payload = await saveAnalysis(nextQuestion);
-      setSaveResult(payload);
-    } catch (error) {
-      setSaveError(error instanceof Error ? error.message : "저장 중 알 수 없는 오류가 발생했습니다.");
-    } finally {
-      setSaveBusy(false);
     }
   }
 
@@ -548,7 +476,7 @@ export default function App() {
   const workspaceSectionCount = pageSections.length;
   const selectedPageHtml = renderMarkdown(selectedPage?.body ?? "# 페이지를 선택하세요");
   const queryResultHtml = renderMarkdown(
-    queryResult?.answer_markdown ?? "# 질문\n\n질문을 입력하면 근거가 있는 초안을 여기에서 확인할 수 있습니다.",
+    queryResult?.answer_markdown ?? "# 질문 진단\n\n질문을 입력하면 위키/registry 라우팅 단서를 확인할 수 있습니다.",
   );
   const askHasSideContent = Boolean(queryResult?.related_pages.length || queryResult?.related_sources.length);
   const layoutClass =
@@ -725,8 +653,8 @@ export default function App() {
               <div className="reader-panel simple-panel ask-main-panel">
                 <div className="panel-header panel-header-compact">
                   <div>
-                    <p className="eyebrow">근거 기반 질문</p>
-                    <h3>한 번 묻고, 근거를 확인한 뒤, 남길 가치가 있는 답만 저장하세요</h3>
+                    <p className="eyebrow">Lexical diagnostics</p>
+                    <h3>먼저 현재 위키가 어디를 가리키는지 확인하세요</h3>
                   </div>
                   <span className="reader-status">{coverageLabel(queryResult?.coverage ?? "ready")}</span>
                 </div>
@@ -749,37 +677,29 @@ export default function App() {
                       onChange={(event) => setQueryInput(event.target.value)}
                       rows={4}
                     />
-                    <p className="helper-copy">이름, 주제, 소스 종류, 시점을 구체적으로 적을수록 근거 있는 미리보기가 잘 나옵니다.</p>
+                    <p className="helper-copy">이름, 주제, 소스 종류, 시점을 구체적으로 적을수록 라우팅 진단이 좋아집니다. 의미 답변은 LLM query workflow에서만 생성합니다.</p>
                     <div className="future-surface-actions">
                       <button type="submit" className="doctor-button" disabled={queryBusy}>
-                        {queryBusy ? "검색 중..." : "질문하기"}
-                      </button>
-                      <button
-                        type="button"
-                        className="doctor-button"
-                        disabled={!queryResult || saveBusy}
-                        onClick={() => void handleSaveAnalysis()}
-                      >
-                        {saveBusy ? "저장 중..." : "저장"}
+                        {queryBusy ? "진단 중..." : "진단하기"}
                       </button>
                     </div>
                   </form>
 
                   <div className="ask-summary-card flow-card">
                     <p className="eyebrow">작업 흐름</p>
-                    <h4>빠른 루프</h4>
+                    <h4>Strict LLM 루프</h4>
                     <ul className="compact-list compact-list-plain workflow-list">
                       <li>
                         <strong>질문</strong>
-                        <span>자유 대화처럼 시작하지 말고, 먼저 현재 위키에 있는 내용을 기준으로 묻습니다.</span>
+                        <span>먼저 현재 위키와 registry에서 질문이 어디로 라우팅되는지 봅니다.</span>
                       </li>
                       <li>
                         <strong>검토</strong>
-                        <span>근거 범위, 관련 페이지, 소스 목록을 보고 초안을 신뢰할지 판단합니다.</span>
+                        <span>관련 페이지, 소스, coverage를 확인합니다. 이 화면은 답변 초안이 아닙니다.</span>
                       </li>
                       <li>
-                        <strong>저장</strong>
-                        <span>장기적으로 남길 가치가 있는 답변만 분석 페이지로 저장합니다.</span>
+                        <strong>LLM query</strong>
+                        <span>의미 답변은 helper LLM이 wiki/ontology를 읽는 별도 strict workflow에서만 생성합니다.</span>
                       </li>
                     </ul>
                   </div>
@@ -794,8 +714,8 @@ export default function App() {
                         {queryResult.coverage === "supported"
                           ? "위키 페이지와 소스 또는 canonical registry가 함께 맞물립니다."
                           : queryResult.coverage === "thin"
-                            ? "일부 근거는 있지만, 저장 전 검토가 필요합니다."
-                            : "질문을 더 구체화해야 신뢰할 만한 초안이 나옵니다."}
+                            ? "일부 라우팅 단서는 있지만, 답변으로 취급하면 안 됩니다."
+                            : "질문을 더 구체화해야 라우팅 단서가 나옵니다."}
                       </p>
                     </article>
                     <article className="evidence-card">
@@ -804,9 +724,9 @@ export default function App() {
                       <p>위키, 소스, canonical registry에서 끌어온 근거 묶음 수입니다.</p>
                     </article>
                     <article className="evidence-card">
-                      <span>저장 준비</span>
-                      <strong>{queryResult.coverage === "none" ? "재질문 필요" : "검토 후 저장 가능"}</strong>
-                      <p>채팅처럼 넘기지 말고, 근거를 확인한 뒤 남길 가치가 있는 답만 저장하세요.</p>
+                      <span>Semantic answer</span>
+                      <strong>{queryResult.coverage === "none" ? "재질문 필요" : "LLM query 필요"}</strong>
+                      <p>이 결과는 진단입니다. 답변 저장은 human-reviewed LLM workflow에서 처리합니다.</p>
                     </article>
                   </section>
                 ) : null}
@@ -838,11 +758,6 @@ export default function App() {
                 ) : null}
 
                 {queryError ? <p className="error-copy">{queryError}</p> : null}
-                {saveError ? <p className="error-copy">{saveError}</p> : null}
-                {saveResult ? (
-                  <SaveResultPanel saveResult={saveResult} onOpenAnalysis={openWikiPage} />
-                ) : null}
-
                 {queryResult ? (
                   <article className="markdown-surface wiki-surface" dangerouslySetInnerHTML={{ __html: queryResultHtml }} />
                 ) : (
