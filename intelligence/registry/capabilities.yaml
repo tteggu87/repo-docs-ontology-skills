@@ -27,6 +27,14 @@ capabilities:
     action: save_query_analysis_draft
     implementation: scripts/workbench/repository.py:save_query_analysis
     entrypoint: POST /api/actions/save-analysis
+  - key: llm.source.compile
+    action: compile_source_with_llm
+    implementation: scripts/llm_compile_source.py:compile_source
+    entrypoint: python3 scripts/llm_compile_source.py --source-page <source-page>
+  - key: llm.query.answer
+    action: answer_query_with_llm_wiki
+    implementation: scripts/llm_query.py:llm_query
+    entrypoint: python3 scripts/llm_query.py <question>
   - key: workbench.claim.review
     action: review_claim_state
     implementation: scripts/workbench/repository.py:review_claim

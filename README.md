@@ -201,7 +201,7 @@ For the detailed implementation breakdown, see `docs/ANALYSIS_PROFILE_IMPLEMENTA
 
 ## Personal Profile Workflow
 
-Use profile ingest when you want DocTology to update canonical JSONL registries, create an Obsidian source page, and optionally write an analysis draft.
+Use profile ingest when you want DocTology to update canonical JSONL registries, create an Obsidian source page, and optionally run an LLM-first compile workflow.
 Use `llm_wiki.py register-source` only when you want a lightweight wiki source stub without profile parsing.
 
 ### Input folders
@@ -246,8 +246,33 @@ python3 scripts/pipeline_refresh.py \
   --profile education-analysis \
   --source raw/inbox/education/attention.md \
   --write-analysis \
-  --question "Self-attention이 뭐야?" \
   --validate
+```
+
+`--write-analysis` is intentionally LLM-first. It compiles the source page, raw path, content units, wiki index, and linked pages into an LLM evidence bundle, then calls the helper model from `wikiconfig.json` when available. If no helper model is configured, it returns a prompt bundle instead of pretending a heuristic answer is trustworthy.
+
+The old deterministic profile analyzers are available only as low-trust drafts:
+
+```bash
+python3 scripts/pipeline_refresh.py \
+  --profile education-analysis \
+  --source raw/inbox/education/attention.md \
+  --heuristic-draft \
+  --question "Self-attention이 뭐야?"
+```
+
+Heuristic draft outputs are marked:
+
+```yaml
+status: draft
+analysis_method: heuristic_draft
+trust_level: low
+```
+
+Direct LLM-first query workflow:
+
+```bash
+python3 scripts/llm_query.py "Self-attention이 뭐야?"
 ```
 
 Outputs:
@@ -256,6 +281,12 @@ Outputs:
 - Analysis page: `wiki/analyses/*.md`
 - Concept pages for education headings: `wiki/concepts/*.md`
 - Canonical registries: `warehouse/jsonl/documents.jsonl`, `content_units.jsonl`, `source_versions.jsonl`, `analysis_runs.jsonl`, and for report consistency `analysis_findings.jsonl`
+
+Design boundary:
+
+- `content_units` are citation anchors, not the primary reasoning surface.
+- `wiki/` and ontology-style links are the primary reasoning surface.
+- deterministic matching may prepare evidence bundles, but semantic judgment should come from the LLM under a citation and uncertainty contract.
 
 ## Workflows
 

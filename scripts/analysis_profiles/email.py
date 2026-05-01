@@ -53,7 +53,7 @@ def write_weekly_digest(root: Path, title: str = "Email Weekly Digest") -> dict:
         + "\n\n## Warnings\n\n"
         + "\n".join(f"- {warning}" for warning in warnings or ["None"])
     )
-    path = write_analysis_page(root, stem, title, body, "email.weekly_digest", citations)
+    path = write_analysis_page(root, stem, title, body, "email.weekly_digest", citations, analysis_method="heuristic_draft", trust_level="low")
     record_analysis_run(
         root,
         {

@@ -2,6 +2,8 @@
 
 This is the draft contract for built-in profile analyzers.
 
+Important boundary: profile analyzers must not become the semantic answer layer. Deterministic analyzers are low-trust draft/fallback tools. The preferred answer path is LLM-first synthesis over wiki/ontology/source evidence with explicit citations.
+
 ## Common fields
 
 - `observation_id`: stable id derived from profile, observation type, unit id, and normalized text

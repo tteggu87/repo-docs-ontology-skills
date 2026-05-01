@@ -10,6 +10,8 @@ from scripts.citation import make_citation
 from scripts.analysis_profiles.education import write_education_summary
 from scripts.workbench.repository import WorkbenchRepository
 from scripts.workbench.server import route_request
+from scripts.llm_compile_source import compile_source
+from scripts.llm_query import llm_query
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -87,6 +89,21 @@ class TestGenericIngest(unittest.TestCase):
             status, preview = route_request(workbench, "GET", "/api/ingest/preview?path=raw/inbox/education/preview.md")
             self.assertEqual(status, 200)
             self.assertEqual(preview["expected_unit_count"], 1)
+
+    def test_llm_first_workflows_return_prompt_bundle_without_config(self):
+        with tempfile.TemporaryDirectory() as td:
+            repo = build_temp_repo(td)
+            src = repo / "raw/inbox/education/llm.md"
+            src.parent.mkdir(parents=True, exist_ok=True)
+            src.write_text("# LLM Reasoning\n\nOntology links should guide reasoning.", encoding="utf-8")
+            summary = ingest_source(repo, src.as_posix(), profile_id="education-analysis")
+            source_page = [path for path in summary["affected_wiki_paths"] if path.startswith("wiki/sources/")][0]
+            compiled = compile_source(repo, source_page)
+            self.assertEqual(compiled["status"], "needs_llm")
+            self.assertIn("llm_system_prompt", compiled)
+            queried = llm_query(repo, "How should ontology links guide reasoning?")
+            self.assertEqual(queried["status"], "needs_llm")
+            self.assertIn("llm_selection_system_prompt", queried)
 
 
 if __name__ == "__main__":

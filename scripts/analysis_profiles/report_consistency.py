@@ -67,7 +67,7 @@ def write_consistency_memo(root: Path, title: str = "Report Consistency Draft") 
         "\n## Warnings\n\n"
         + "\n".join(f"- {warning}" for warning in warnings or ["None"])
     )
-    path = write_analysis_page(root, stem, title, body, "report.consistency_memo", citations)
+    path = write_analysis_page(root, stem, title, body, "report.consistency_memo", citations, analysis_method="heuristic_draft", trust_level="low")
     record_analysis_findings(root, findings)
     record_analysis_run(
         root,

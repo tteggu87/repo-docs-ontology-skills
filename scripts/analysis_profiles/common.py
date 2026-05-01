@@ -55,7 +55,17 @@ def score_units(units: list[dict], query: str) -> list[tuple[int, dict]]:
     return sorted(scored, key=lambda item: (-item[0], item[1].get("sequence", 0)))
 
 
-def write_analysis_page(root: Path, stem: str, title: str, body: str, analysis_type: str, sources: list[str]) -> Path:
+def write_analysis_page(
+    root: Path,
+    stem: str,
+    title: str,
+    body: str,
+    analysis_type: str,
+    sources: list[str],
+    *,
+    analysis_method: str = "llm_synthesis",
+    trust_level: str = "normal",
+) -> Path:
     path = root / "wiki" / "analyses" / f"{stem}.md"
     safe_title = title.replace("\\", "\\\\").replace('"', '\\"')
     safe_sources = [source.replace("\\", "\\\\").replace('"', '\\"') for source in sources]
@@ -68,6 +78,8 @@ def write_analysis_page(root: Path, stem: str, title: str, body: str, analysis_t
         f"created: {today()}\n"
         f"updated: {today()}\n"
         f"analysis_type: {analysis_type}\n"
+        f"analysis_method: {analysis_method}\n"
+        f"trust_level: {trust_level}\n"
         f"{source_block}\n"
         "---\n\n"
         f"# {title}\n\n"
@@ -75,7 +87,7 @@ def write_analysis_page(root: Path, stem: str, title: str, body: str, analysis_t
     )
     write_text(path, content)
     rebuild_index(root)
-    append_log(root, "analysis", title, [f"Saved [[{path.stem}]]", f"analysis_type={analysis_type}"])
+    append_log(root, "analysis", title, [f"Saved [[{path.stem}]]", f"analysis_type={analysis_type}", f"analysis_method={analysis_method}"])
     return path
 
 

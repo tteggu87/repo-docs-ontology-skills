@@ -86,7 +86,7 @@ def write_education_summary(root: Path, question: str = "핵심 개념 요약", 
         + "\n\n## 주의할 점\n\n"
         + "\n".join(warning_lines)
     )
-    path = write_analysis_page(root, stem, title, body, "education.cited_qa", citations)
+    path = write_analysis_page(root, stem, title, body, "education.cited_qa", citations, analysis_method="heuristic_draft", trust_level="low")
     concept_paths = write_concept_pages(root, selected)
     record_analysis_run(
         root,
