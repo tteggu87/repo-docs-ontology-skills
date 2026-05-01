@@ -1,8 +1,8 @@
 # Profile Observation Contract
 
-This is the draft contract for built-in profile analyzers.
+This is the draft contract for built-in profile observations.
 
-Important boundary: profile analyzers must not become the semantic answer layer. Deterministic analyzers are low-trust draft/fallback tools. The preferred answer path is LLM-first synthesis over wiki/ontology/source evidence with explicit citations.
+Important boundary: profile observation code must not become the semantic answer layer. Deterministic code may extract source-backed observations and citation anchors, but semantic compile/query must stay LLM-first over wiki/ontology/source evidence with explicit citations.
 
 ## Common fields
 

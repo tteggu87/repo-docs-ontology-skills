@@ -165,6 +165,9 @@ class TestGenericIngest(unittest.TestCase):
             inventory_stems = {page["stem"] for page in _page_inventory(repo)}
             self.assertIn("concept-reviewed", inventory_stems)
             self.assertNotIn("analysis-proposal", inventory_stems)
+            reviewed_inventory = [page for page in _page_inventory(repo) if page["stem"] == "concept-reviewed"][0]
+            self.assertNotIn("preview", reviewed_inventory)
+            self.assertNotIn("Reviewed wiki content", str(reviewed_inventory))
             bundle = build_query_bundle(repo, "What is reviewed?", ["analysis-proposal", "concept-reviewed"])
             selected_stems = {page["stem"] for page in bundle["selected_pages"]}
             self.assertEqual(selected_stems, {"concept-reviewed"})

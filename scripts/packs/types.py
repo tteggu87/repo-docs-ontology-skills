@@ -12,4 +12,4 @@ class ProfileManifest:
     observation_types: list[str]
     analysis_outputs: list[str]
     parse_target: str
-    analyze_target: str
+    compile_target: str

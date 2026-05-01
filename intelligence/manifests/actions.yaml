@@ -86,13 +86,13 @@ actions:
     notes:
       - Prefer wiki as the human-facing answer surface and use ontology registries for provenance, contradictions, and coverage checks.
   - key: preview_query_local
-    description: Produce a repo-local query preview from wiki pages plus canonical registry hits without mutating canonical truth.
+    description: Produce repo-local lexical diagnostics from wiki pages plus canonical registry hits without mutating canonical truth or generating a semantic answer.
     inputs:
       - user question
       - wiki/
       - warehouse/jsonl/
     outputs:
-      - preview answer markdown
+      - diagnostic markdown
       - related wiki pages
       - related source pages
       - provenance sections

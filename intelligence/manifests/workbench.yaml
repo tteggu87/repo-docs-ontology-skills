@@ -258,12 +258,12 @@ workbench:
     - wiki writes, if later allowed, must go through explicit backend-gated actions
     - graph projection is derived and read-only in the workbench
     - ask flows must use backend mediation or explicit repo-local search contracts
-    - ask preview may save bounded analysis drafts only through explicit backend-gated actions
+    - ask preview is lexical diagnostics only and must not save analysis drafts
     - helper-model config may be loaded only from repo-root `wikiconfig.json`
     - helper-model actions must remain draft-only and must not write canonical truth
 
   v1_defaults:
     - ask workspace is the current home surface
     - page reader remains wiki-first
-    - ask is a repo-local query preview with explicit provenance and weak-coverage states
+    - ask is a repo-local lexical diagnostics surface with explicit provenance and weak-coverage states
     - operator review, source, warehouse, doctor, and graph contracts may exist in the backend without being mounted in the default frontend

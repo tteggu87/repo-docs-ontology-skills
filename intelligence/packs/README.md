@@ -16,4 +16,4 @@ Required fields:
 - `observation_types`
 - `analysis_outputs`
 - `capabilities.parse.python`
-- `capabilities.analyze.python`
+- `capabilities.compile.python`

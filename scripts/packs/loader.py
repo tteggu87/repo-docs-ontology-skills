@@ -21,16 +21,16 @@ def load_profiles(root: Path) -> list[ProfileManifest]:
             if key not in data:
                 raise ValueError(f"Missing {key} in {path}")
         parse_target = data["capabilities"].get("parse",{}).get("python","")
-        analyze_target = data["capabilities"].get("analyze",{}).get("python","")
+        compile_target = data["capabilities"].get("compile",{}).get("python","")
         _validate_target(parse_target)
-        _validate_target(analyze_target)
+        _validate_target(compile_target)
         if data["profile_id"] in seen_profile:
             raise ValueError("Duplicate profile_id")
         if data["pack_id"] in seen_pack:
             raise ValueError("Duplicate pack_id")
         seen_profile.add(data["profile_id"])
         seen_pack.add(data["pack_id"])
-        manifests.append(ProfileManifest(data["profile_id"], data["pack_id"], data["version"], data["status"], data["source_families"], data["unit_kinds"], data["observation_types"], data["analysis_outputs"], parse_target, analyze_target))
+        manifests.append(ProfileManifest(data["profile_id"], data["pack_id"], data["version"], data["status"], data["source_families"], data["unit_kinds"], data["observation_types"], data["analysis_outputs"], parse_target, compile_target))
     return manifests
 
 

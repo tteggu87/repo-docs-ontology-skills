@@ -317,7 +317,7 @@ This does three things:
 
 This is source registration only (not ontology-backed semantic ingest).
 It does not auto-summarize the source or perform full ontology extraction.
-For profile analysis pipelines, use the dedicated ingest/analysis pipeline flow.
+For profile source processing, use the dedicated ingest/LLM compile pipeline flow.
 
 ### B. Run Incremental Ingest For A Repeated Export
 
@@ -406,7 +406,7 @@ Current workbench scope:
 - source coverage and claim review queues from canonical registries
 - warehouse summary
 - guarded `status` / `reindex` / `lint` actions
-- repo-local Ask preview with provenance sections, related page suggestions, bounded analysis draft saves, and confident related-page link-back
+- repo-local Ask diagnostics with provenance sections and related page suggestions, explicitly not a semantic answer/save path
 - related-page navigation from Ask, Pages, and Sources panels
 - backend-gated claim approve/reject actions from operator review surfaces
 - optional backend-gated helper-model draft actions loaded from repo-root `wikiconfig.json`

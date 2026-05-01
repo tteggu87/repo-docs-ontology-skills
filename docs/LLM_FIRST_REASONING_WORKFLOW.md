@@ -34,7 +34,7 @@ Then it asks an LLM to produce:
 - citation links
 - compile notes
 
-If `wikiconfig.json` is not configured, the command returns the full LLM prompt/evidence bundle instead of making a heuristic answer.
+If `wikiconfig.json` is not configured, the command fails. Use `--emit-bundle` only when you explicitly want to inspect the prompt/evidence bundle.
 
 ## Query workflow
 
@@ -46,8 +46,8 @@ python3 scripts/llm_query.py "question"
 
 The workflow is intentionally two-stage:
 
-1. LLM chooses which wiki pages to read from the page inventory.
-2. The system expands the wikilink neighborhood and asks the LLM to answer from the selected wiki/ontology/source evidence.
+1. LLM chooses which wiki pages to read from the wiki map, link map, source coverage surface, and page metadata.
+2. The system reads selected page bodies, expands the wikilink neighborhood, and asks the LLM to answer from the selected wiki/ontology/source evidence.
 
 The mechanical index only helps navigation. It is not the semantic judge.
 

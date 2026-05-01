@@ -63,11 +63,22 @@ def _page_inventory(root: Path) -> list[dict[str, str]]:
         text = _read(path, 2200)
         if not _is_queryable_page(root, path, text):
             continue
+        fm = _frontmatter(text)
         title = path.stem
-        match = re.search(r"^title:\s*\"?(.+?)\"?\s*$", text, re.MULTILINE)
-        if match:
-            title = match.group(1)
-        pages.append({"stem": path.stem, "path": rel, "title": title, "preview": text[:1200]})
+        if fm.get("title"):
+            title = fm["title"]
+        section = path.relative_to(root / "wiki").parts[0]
+        pages.append(
+            {
+                "stem": path.stem,
+                "path": rel,
+                "section": section,
+                "title": title,
+                "type": fm.get("type") or section.rstrip("s"),
+                "status": fm.get("status") or "unknown",
+                "outgoing_links": ", ".join(_wikilinks(text)[:20]),
+            }
+        )
     return pages
 
 
@@ -85,7 +96,9 @@ Given a user question and a wiki page inventory, select the pages that should be
 Do not answer yet.
 Return strict JSON:
 {"selected_page_stems": ["..."], "selection_rationale": "...", "missing_information": ["..."]}.
-Prefer concept/entity/source/analysis pages that carry explanatory structure, not just lexical overlap."""
+Prefer concept/entity/source/analysis pages that carry explanatory structure, not just lexical overlap.
+Use the MOC, link map, source coverage, and page metadata as a map.
+Do not rely on page body excerpts during selection; page bodies are only read in the answer step."""
 
 
 ANSWER_SYSTEM_PROMPT = """You are an LLM-first Obsidian/Ontology reasoning agent.
@@ -146,7 +159,18 @@ def build_query_bundle(root: Path, question: str, selected_stems: list[str] | No
 
 def llm_query(root: Path, question: str, *, emit_selection_prompt: bool = False) -> dict[str, Any]:
     inventory = _page_inventory(root)
-    selection_prompt = json.dumps({"question": question, "page_inventory": inventory}, ensure_ascii=False, indent=2)
+    selection_prompt = json.dumps(
+        {
+            "question": question,
+            "wiki_index": _read(root / "wiki/_meta/index.md"),
+            "wiki_moc": _read(root / "wiki/_meta/moc.md"),
+            "wiki_link_map": _read(root / "wiki/_meta/link-map.md"),
+            "source_coverage": _read(root / "wiki/_meta/source-coverage.md", 8000),
+            "page_inventory": inventory,
+        },
+        ensure_ascii=False,
+        indent=2,
+    )
     config = load_continue_helper_config(root)
     if emit_selection_prompt:
         return {

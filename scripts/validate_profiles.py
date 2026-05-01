@@ -10,7 +10,7 @@ if str(ROOT) not in sys.path:
 from scripts.packs.loader import load_profiles
 
 ALLOWED_PARSE_PREFIXES = ("scripts.ingest.adapters.",)
-ALLOWED_ANALYZE_TARGETS = {"scripts.llm_compile_source:compile_source"}
+ALLOWED_COMPILE_TARGETS = {"scripts.llm_compile_source:compile_source"}
 
 
 def _load_families() -> set[str]:
@@ -44,5 +44,5 @@ for p in profiles:
         if "." not in obs:
             raise SystemExit(f"Invalid observation type: {obs}")
     _check_target(p.parse_target, allowed_prefixes=ALLOWED_PARSE_PREFIXES)
-    _check_target(p.analyze_target, allowed_targets=ALLOWED_ANALYZE_TARGETS)
+    _check_target(p.compile_target, allowed_targets=ALLOWED_COMPILE_TARGETS)
 print(f"OK profiles={len(profiles)}")

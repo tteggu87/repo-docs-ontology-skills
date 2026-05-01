@@ -12,7 +12,7 @@ updated: 2026-04-14
 - **Primary human reading surface:** `wiki/` inside the Obsidian vault
 - **Canonical machine truth:** `warehouse/jsonl/`
 - **Optional local sidecar workbench:** `apps/workbench/` via `scripts/workbench_api.py`
-- **Current shipped frontend focus:** `Ask` query preview plus `Wiki` reader
+- **Current shipped frontend focus:** `Ask` lexical diagnostics plus `Wiki` reader
 
 The workbench is additive. It does not replace the vault and it must not mutate canonical truth directly.
 
@@ -31,15 +31,10 @@ Current bounded browser-triggered actions remain intentionally narrow:
   - `python3 scripts/llm_wiki.py status`
   - `python3 scripts/llm_wiki.py reindex`
   - `python3 scripts/llm_wiki.py lint`
-- allowed backend-gated save flow:
-  - persist a query preview into `wiki/analyses/`
-  - append the matching `wiki/_meta/log.md` entry
-  - refresh `wiki/_meta/index.md`
 - allowed backend-gated helper flow:
   - read repo-root `wikiconfig.json` for bounded helper-model actions
   - return draft-only output without mutating canonical truth
 - allowed write targets from workbench-triggered actions:
-  - `wiki/analyses/`
   - `wiki/_meta/log.md`
   - `wiki/_meta/index.md`
 - explicitly disallowed from query/save surfaces:
@@ -50,16 +45,16 @@ Current bounded browser-triggered actions remain intentionally narrow:
 
 ## Query workspace v1
 
-The local Ask workspace now operates as a **repo-local query preview plus bounded save loop**:
+The local Ask workspace now operates as a **repo-local lexical diagnostics surface**:
 
 - it searches existing wiki pages first
 - it surfaces related source pages and canonical registry hits
 - it must show thin/empty coverage states honestly
-- it may save a deterministic analysis draft through the backend into `wiki/analyses/`
-- it may add bounded link-back entries on confident related wiki pages
+- it must not present lexical matching as a semantic answer draft
+- it must not save analysis pages from deterministic preview output
 - it supports related-page navigation from Ask and the current Wiki reader
 
-This keeps the product useful without pretending browser-side generation is already safe or canonical.
+Semantic answers and durable answer saves belong to the strict LLM query workflow plus human review.
 
 ## Operator review surfaces
 

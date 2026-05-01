@@ -9,5 +9,5 @@ analysis_outputs: [email.weekly_digest, email.topic_review, email.watchlist]
 capabilities:
   parse:
     python: scripts.ingest.adapters.email_md_txt:parse_email_source
-  analyze:
+  compile:
     python: scripts.llm_compile_source:compile_source

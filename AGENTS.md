@@ -40,6 +40,32 @@ Each operation must produce:
 - post-check result
 - unresolved follow-ups
 
+## Strict LLM-First Semantic Rule
+
+Semantic judgment has exactly one default path: helper LLM compile/query over the wiki/ontology/source evidence.
+
+Deterministic code may:
+
+- read files
+- generate stable IDs
+- calculate line ranges
+- create citation anchors
+- project source pages
+- refresh index/log/navigation pages
+- validate structure
+
+Deterministic code must not:
+
+- generate semantic answer drafts
+- choose meaning-bearing page updates as truth
+- turn lexical search into an answer
+- silently fall back to regex/page heuristics when LLM output is missing or malformed
+- treat unreviewed compile proposals as query evidence
+
+If no helper LLM is configured, semantic compile/query must fail. Prompt bundle output is allowed only through explicit inspection flags.
+
+Compile output is a human-review proposal. It must not automatically modify active concept, entity, project, timeline, or analysis pages.
+
 ## Capability And Fallback Matrix
 
 - If shell is available: run documented commands for status, lint, maintain, and tests.
@@ -203,9 +229,9 @@ When the user asks to ingest a source:
    - contradictions or uncertainties
    - open questions
    - links to affected wiki pages
-5. Update every affected concept, entity, person, project, or timeline page.
-6. Create missing pages when a concept or entity clearly deserves its own page.
-7. Rebuild or refresh `wiki/_meta/index.md` if page inventory changed.
+5. Run LLM compile to produce a human-review proposal for affected concept, entity, person, project, or timeline pages.
+6. Do not automatically apply semantic proposal content to active pages. Apply only after human review/approval.
+7. Rebuild or refresh `wiki/_meta/index.md` and graph navigation pages if page inventory changed.
 8. Append an entry to `wiki/_meta/log.md`.
 
 If ontology-backed ingest is not yet available, the agent may continue with wiki-only ingest, but should preserve the same source boundaries and note that canonical ontology extraction is pending.
@@ -214,14 +240,15 @@ If ontology-backed ingest is not yet available, the agent may continue with wiki
 
 When the user asks a question:
 
-1. Read `wiki/_meta/index.md` first.
-2. Identify likely relevant pages.
-3. Read the smallest set of pages that can answer well.
-4. Use `warehouse/jsonl/...` for provenance checks, contradiction checks, claim validation, or exact source coverage when the wiki alone is too thin or uncertain.
-5. Synthesize an answer grounded in the wiki, with ontology-backed verification when needed.
-6. If the answer is durable, save it into `wiki/analyses/`.
-7. Cross-link that analysis page from relevant pages if appropriate.
-8. Append a `query` log entry for substantial work.
+1. Read `wiki/_meta/index.md`, `wiki/_meta/moc.md`, `wiki/_meta/link-map.md`, and source coverage/review surfaces first.
+2. Select likely relevant pages from the wiki map and page metadata, not from body chunk stuffing.
+3. Read the smallest set of selected page bodies that can answer well.
+4. Use wikilink neighborhood expansion to add nearby pages when needed.
+5. Use `warehouse/jsonl/...` for provenance checks, contradiction checks, claim validation, or exact source coverage when the wiki alone is too thin or uncertain.
+6. Synthesize an answer grounded in the wiki, with ontology-backed verification when needed.
+7. If the answer is durable, save or propose saving it into `wiki/analyses/`.
+8. Cross-link that analysis page from relevant pages if appropriate and human-review rules allow it.
+9. Append a `query` log entry for substantial work.
 
 ## Ontology-Aware Ingest And Query Defaults
 

@@ -9,5 +9,5 @@ analysis_outputs: [report.consistency_memo]
 capabilities:
   parse:
     python: scripts.ingest.adapters.report_md_txt:parse_report_source
-  analyze:
+  compile:
     python: scripts.llm_compile_source:compile_source
