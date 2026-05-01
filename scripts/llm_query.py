@@ -29,11 +29,40 @@ def _wikilinks(text: str) -> list[str]:
     return sorted(set(re.findall(r"\[\[([^\]|#]+)", text)))
 
 
+def _frontmatter(text: str) -> dict[str, str]:
+    if not text.startswith("---\n"):
+        return {}
+    end = text.find("\n---", 4)
+    if end == -1:
+        return {}
+    data: dict[str, str] = {}
+    for raw in text[4:end].splitlines():
+        if ":" not in raw:
+            continue
+        key, value = raw.split(":", 1)
+        data[key.strip()] = value.strip().strip('"')
+    return data
+
+
+def _is_queryable_page(root: Path, path: Path, text: str) -> bool:
+    rel_parts = path.relative_to(root / "wiki").parts
+    if rel_parts and rel_parts[0] == "_meta":
+        return False
+    fm = _frontmatter(text)
+    if fm.get("status") == "draft":
+        return False
+    if fm.get("analysis_method") == "llm_compile_proposal":
+        return False
+    return True
+
+
 def _page_inventory(root: Path) -> list[dict[str, str]]:
     pages: list[dict[str, str]] = []
     for path in sorted((root / "wiki").rglob("*.md")):
         rel = path.relative_to(root).as_posix()
         text = _read(path, 2200)
+        if not _is_queryable_page(root, path, text):
+            continue
         title = path.stem
         match = re.search(r"^title:\s*\"?(.+?)\"?\s*$", text, re.MULTILINE)
         if match:
@@ -44,6 +73,9 @@ def _page_inventory(root: Path) -> list[dict[str, str]]:
 
 def _resolve_page(root: Path, stem: str) -> Path | None:
     for path in (root / "wiki").rglob(f"{stem}.md"):
+        text = _read(path, 2200)
+        if not _is_queryable_page(root, path, text):
+            continue
         return path
     return None
 

@@ -11,7 +11,7 @@ from scripts.citation import make_citation
 from scripts.workbench.repository import WorkbenchRepository
 from scripts.workbench.server import route_request
 from scripts.llm_compile_source import compile_source
-from scripts.llm_query import _parse_selected_stems, llm_query
+from scripts.llm_query import _page_inventory, _parse_selected_stems, build_query_bundle, llm_query
 from scripts.wiki_graph_navigation import write_navigation_pages
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -136,6 +136,38 @@ class TestGenericIngest(unittest.TestCase):
     def test_llm_page_selection_has_no_regex_fallback(self):
         with self.assertRaises(Exception):
             _parse_selected_stems("concept-a source-b")
+
+    def test_llm_query_excludes_draft_compile_proposals_from_reasoning_surface(self):
+        with tempfile.TemporaryDirectory() as td:
+            repo = build_temp_repo(td)
+            (repo / "wiki/analyses").mkdir(parents=True, exist_ok=True)
+            (repo / "wiki/concepts").mkdir(parents=True, exist_ok=True)
+            (repo / "wiki/analyses/analysis-proposal.md").write_text(
+                "---\n"
+                "title: Compile Proposal\n"
+                "type: analysis\n"
+                "status: draft\n"
+                "analysis_method: llm_compile_proposal\n"
+                "---\n"
+                "# Compile Proposal\n\nUnreviewed LLM output should not answer questions.",
+                encoding="utf-8",
+            )
+            (repo / "wiki/concepts/concept-reviewed.md").write_text(
+                "---\n"
+                "title: Reviewed Concept\n"
+                "type: concept\n"
+                "status: active\n"
+                "---\n"
+                "# Reviewed Concept\n\nReviewed wiki content.",
+                encoding="utf-8",
+            )
+
+            inventory_stems = {page["stem"] for page in _page_inventory(repo)}
+            self.assertIn("concept-reviewed", inventory_stems)
+            self.assertNotIn("analysis-proposal", inventory_stems)
+            bundle = build_query_bundle(repo, "What is reviewed?", ["analysis-proposal", "concept-reviewed"])
+            selected_stems = {page["stem"] for page in bundle["selected_pages"]}
+            self.assertEqual(selected_stems, {"concept-reviewed"})
 
     def test_wiki_graph_navigation_writes_meta_pages(self):
         with tempfile.TemporaryDirectory() as td:
