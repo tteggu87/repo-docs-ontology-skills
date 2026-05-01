@@ -41,6 +41,15 @@ def load_contract_index(root: Path) -> dict[str, Any]:
     return load_yaml_file(root / "intelligence" / "contract_index.yaml")
 
 
+def load_proposal_policy(root: Path, proposal_kind: str = "compile_proposal") -> dict[str, Any]:
+    data = load_policy(root, "proposal_lifecycle.yaml")
+    lifecycle = data.get("proposal_lifecycle", {}) or {}
+    policy = lifecycle.get(proposal_kind, {}) or {}
+    if not isinstance(policy, dict) or not policy:
+        raise ValueError(f"Missing proposal lifecycle policy: {proposal_kind}")
+    return policy
+
+
 def meta_surface_contents(root: Path, stage: str, default_max_chars: int = 16000) -> dict[str, str]:
     data = load_manifest(root, "meta_surfaces.yaml")
     surfaces = data.get("surfaces", {}) or {}

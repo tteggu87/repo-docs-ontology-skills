@@ -119,6 +119,11 @@ datasets:
     role: deterministic-vs-LLM semantic boundary and no-fallback policy
     truth_class: contract
     owner: operator
+  - key: proposal_lifecycle_policy
+    path: intelligence/policies/proposal_lifecycle.yaml
+    role: compile proposal status, trust, queryability, and human-review transition policy
+    truth_class: contract
+    owner: operator
   - key: semantic_workflows_manifest
     path: intelligence/manifests/semantic_workflows.yaml
     role: strict LLM-first compile/query workflow contract

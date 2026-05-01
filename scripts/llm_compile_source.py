@@ -14,7 +14,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from scripts.analysis_profiles.common import load_jsonl
-from scripts.intelligence_contracts import meta_surface_contents
+from scripts.intelligence_contracts import load_proposal_policy, meta_surface_contents
 from scripts.workbench.llm_config import (
     helper_model_public_summary,
     load_continue_helper_config,
@@ -134,7 +134,8 @@ def _slug(value: str) -> str:
     return slug[:96] or "source"
 
 
-def _proposal_markdown(bundle: dict[str, Any], llm_output: str) -> str:
+def _proposal_markdown(root: Path, bundle: dict[str, Any], llm_output: str) -> str:
+    policy = load_proposal_policy(root, "compile_proposal")
     today = dt.date.today().isoformat()
     source_stem = Path(str(bundle["source_page"])).stem
     return "\n".join(
@@ -142,9 +143,9 @@ def _proposal_markdown(bundle: dict[str, Any], llm_output: str) -> str:
             "---",
             f'title: "Compile Proposal - {source_stem}"',
             "type: analysis",
-            "status: draft",
-            "analysis_method: llm_compile_proposal",
-            "trust_level: human_review_required",
+            f"status: {policy['initial_status']}",
+            f"analysis_method: {policy['analysis_method']}",
+            f"trust_level: {policy['trust_level']}",
             f"created: {today}",
             f"updated: {today}",
             "tags:",
@@ -198,7 +199,7 @@ def _save_compile_proposal(root: Path, bundle: dict[str, Any], llm_output: str) 
     stem = f"analysis-{today}-compile-proposal-{_slug(source_stem)}"
     path = root / "wiki" / "analyses" / f"{stem}.md"
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(_proposal_markdown(bundle, llm_output), encoding="utf-8")
+    path.write_text(_proposal_markdown(root, bundle, llm_output), encoding="utf-8")
     return _safe_rel(root, path)
 
 

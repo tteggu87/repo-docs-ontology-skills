@@ -11,6 +11,7 @@ from scripts.packs.loader import profile_by_family
 from scripts.citation import make_citation
 from scripts.workbench.repository import WorkbenchRepository
 from scripts.workbench.server import route_request
+from scripts.intelligence_contracts import load_proposal_policy
 from scripts.llm_compile_source import compile_source
 from scripts.llm_query import _page_inventory, _parse_selected_stems, build_query_bundle, llm_query
 from scripts.wiki_graph_navigation import write_navigation_pages
@@ -140,8 +141,12 @@ class TestGenericIngest(unittest.TestCase):
             proposal_path = repo / result["proposal_path"]
             self.assertTrue(proposal_path.exists())
             proposal_text = proposal_path.read_text(encoding="utf-8")
+            proposal_policy = load_proposal_policy(repo)
             self.assertIn("# Compile Proposal", proposal_text)
             self.assertIn("## Human Review Checklist", proposal_text)
+            self.assertIn(f"status: {proposal_policy['initial_status']}", proposal_text)
+            self.assertIn(f"analysis_method: {proposal_policy['analysis_method']}", proposal_text)
+            self.assertIn(f"trust_level: {proposal_policy['trust_level']}", proposal_text)
             self.assertFalse((repo / "wiki/concepts/compile.md").exists())
 
     def test_llm_page_selection_has_no_regex_fallback(self):

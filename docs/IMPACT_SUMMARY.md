@@ -18,6 +18,7 @@ Updated:
 - `docs/LAYERS.md`
 - `docs/ROADMAP.md`
 - `docs/IMPACT_SUMMARY.md`
+- `docs/LLM_FIRST_ONTOLOGY_BOOTSTRAP_PROFILE.md`
 
 Checked and left unchanged:
 
@@ -29,6 +30,7 @@ Checked and left unchanged:
 Created:
 
 - `scripts/validate_repo_docs_intelligence.py`
+- `scripts/validate_workbench_manifest.py`
 
 ## Intelligence layer changes
 
@@ -38,11 +40,13 @@ Updated:
 - `intelligence/manifests/actions.yaml`
 - `intelligence/manifests/datasets.yaml`
 - `intelligence/registry/capabilities.yaml`
+- `intelligence/policies/proposal_lifecycle.yaml`
 
 Recently created and now documented as current contract surface:
 
 - `intelligence/contract_index.yaml`
 - `intelligence/policies/semantic_boundary.yaml`
+- `intelligence/policies/proposal_lifecycle.yaml`
 - `intelligence/manifests/semantic_workflows.yaml`
 - `intelligence/manifests/page_policy.yaml`
 - `intelligence/manifests/meta_surfaces.yaml`
@@ -78,8 +82,7 @@ Checked and left unchanged:
 
 ## Remaining drift
 
-- There is still no dedicated `scripts/validate_workbench_manifest.py`
-- `frontmatter.yaml` and `proposal_lifecycle.yaml` remain deferred
+- `frontmatter.yaml` remains deferred
 - `llm-wiki-bootstrap --profile llm-first-ontology` remains deferred until the DocTology contract set is stable
 - The intelligence layer remains intentionally minimal and does not document every workbench route as a first-class entity
 
@@ -88,10 +91,11 @@ Checked and left unchanged:
 - Current validator suite:
   - `python3 scripts/validate_repo_docs_intelligence.py`
   - `python3 scripts/validate_intelligence.py`
+  - `python3 scripts/validate_workbench_manifest.py`
   - `python3 scripts/validate_profiles.py`
   - `python3 scripts/validate_registries.py`
   - `python3 -m pytest -q`
-- A dedicated workbench route/manifests validator is still a follow-up
+- The dedicated Workbench manifest validator is now present; a broader browser UI text regression remains a follow-up
 
 ## Cautions
 

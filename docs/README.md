@@ -10,6 +10,7 @@ Start here when you need current truth from the codebase rather than historical 
 - [`SKILLS_INTEGRATION.md`](./SKILLS_INTEGRATION.md): how repo rules, skills, and local tooling fit together
 - [`ROADMAP.md`](./ROADMAP.md): near-term alignment work and known gaps
 - [`IMPACT_SUMMARY.md`](./IMPACT_SUMMARY.md): current refresh summary, checked files, and remaining drift
+- [`LLM_FIRST_ONTOLOGY_BOOTSTRAP_PROFILE.md`](./LLM_FIRST_ONTOLOGY_BOOTSTRAP_PROFILE.md): design for future `llm-wiki-bootstrap --profile llm-first-ontology`
 
 Current repository posture:
 
@@ -21,7 +22,7 @@ Current repository posture:
 - optional local sidecar workbench: `apps/workbench/` via `scripts/workbench_api.py`
 - declarative contracts live under `intelligence/`, but execution still lives in Python
 - contract entrypoint: `intelligence/contract_index.yaml`
-- contract validators: `scripts/validate_intelligence.py`, `scripts/validate_profiles.py`, `scripts/validate_registries.py`
+- contract validators: `scripts/validate_intelligence.py`, `scripts/validate_workbench_manifest.py`, `scripts/validate_profiles.py`, `scripts/validate_registries.py`
 
 Legacy note:
 

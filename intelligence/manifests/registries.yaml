@@ -18,6 +18,13 @@ registries:
       - unit_kind
       - sequence
       - text
+    references:
+      document_id:
+        registry: documents
+        key: document_id
+      profile_id:
+        registry: profiles
+        key: profile_id
   source_versions:
     path: warehouse/jsonl/source_versions.jsonl
     key: source_version_id
@@ -28,6 +35,13 @@ registries:
       - content_hash
       - source_family_id
       - ingested_at
+    references:
+      document_id:
+        registry: documents
+        key: document_id
+      profile_id:
+        registry: profiles
+        key: profile_id
   observations:
     path: warehouse/jsonl/observations.jsonl
     key: observation_id
@@ -35,6 +49,13 @@ registries:
       - observation_id
       - profile_id
       - observation_type
+    references:
+      profile_id:
+        registry: profiles
+        key: profile_id
+      unit_id:
+        registry: content_units
+        key: unit_id
   analysis_runs:
     path: warehouse/jsonl/analysis_runs.jsonl
     key: analysis_run_id

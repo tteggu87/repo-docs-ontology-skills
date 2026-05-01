@@ -142,7 +142,7 @@ for registry_name, rows in registry_rows.items():
         target_keys = registry_keys.get(target_registry, set())
         for row in rows:
             value = row.get(field)
-            if value and target_keys and value not in target_keys:
+            if value and value not in target_keys:
                 raise SystemExit(f"unresolved {registry_name}.{field}: {value}")
 
 print("OK registries")

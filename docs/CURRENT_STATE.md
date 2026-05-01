@@ -45,6 +45,7 @@ The current YAML contract entrypoint is `intelligence/contract_index.yaml`.
 Important contracts:
 
 - `intelligence/policies/semantic_boundary.yaml`
+- `intelligence/policies/proposal_lifecycle.yaml`
 - `intelligence/manifests/semantic_workflows.yaml`
 - `intelligence/manifests/page_policy.yaml`
 - `intelligence/manifests/meta_surfaces.yaml`
@@ -89,11 +90,12 @@ Semantic answers and durable answer saves belong to the strict LLM query workflo
 ## Current validators
 
 - `python3 scripts/validate_intelligence.py`
+- `python3 scripts/validate_workbench_manifest.py`
 - `python3 scripts/validate_profiles.py`
 - `python3 scripts/validate_registries.py`
 - `python3 -m pytest -q`
 
-The validator suite guards the no-fallback semantic boundary, profile compile targets, pack manifests, queryable page policy, relation type policy shape, registry shapes, and registry references.
+The validator suite guards the no-fallback semantic boundary, proposal lifecycle, Workbench route/policy boundaries, profile compile targets, pack manifests, queryable page policy, relation type policy shape, registry shapes, and registry references.
 
 ## Operator review surfaces
 
