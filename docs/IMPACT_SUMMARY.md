@@ -86,9 +86,9 @@ Checked and left unchanged:
 ## Remaining drift
 
 - `frontmatter.yaml` remains deferred
-- `llm-wiki-bootstrap --profile llm-first-ontology` remains deferred until the DocTology contract set is stable
+- `llm-wiki-bootstrap --profile llm-first-ontology` is now promoted as the default strict bootstrap scaffold after the DocTology contract set, proposal lifecycle, registries, validators, and strict route tests stabilized
 - The intelligence layer remains intentionally minimal and does not document every workbench route as a first-class entity
-- Installed bootstrap skill promotion remains deferred until proposal workflow has more real-use validation
+- Installed bootstrap skill promotion is complete; future changes should still stabilize in DocTology before being copied into the reusable bootstrap profile
 
 ## Validator status
 

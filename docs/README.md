@@ -10,7 +10,7 @@ Start here when you need current truth from the codebase rather than historical 
 - [`SKILLS_INTEGRATION.md`](./SKILLS_INTEGRATION.md): how repo rules, skills, and local tooling fit together
 - [`ROADMAP.md`](./ROADMAP.md): near-term alignment work and known gaps
 - [`IMPACT_SUMMARY.md`](./IMPACT_SUMMARY.md): current refresh summary, checked files, and remaining drift
-- [`LLM_FIRST_ONTOLOGY_BOOTSTRAP_PROFILE.md`](./LLM_FIRST_ONTOLOGY_BOOTSTRAP_PROFILE.md): design for future `llm-wiki-bootstrap --profile llm-first-ontology`
+- [`LLM_FIRST_ONTOLOGY_BOOTSTRAP_PROFILE.md`](./LLM_FIRST_ONTOLOGY_BOOTSTRAP_PROFILE.md): promoted default `llm-wiki-bootstrap --profile llm-first-ontology` contract
 
 Current repository posture:
 

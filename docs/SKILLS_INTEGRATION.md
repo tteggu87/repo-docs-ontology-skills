@@ -16,6 +16,8 @@ That means:
 
 - `repo-docs-intelligence-bootstrap`
   - use for repository-level docs and intelligence alignment
+- `llm-wiki-bootstrap`
+  - use for new repositories that should start with the promoted strict `llm-first-ontology` contract scaffold
 - `llm-wiki-ontology-ingest`
   - use when processing new sources into canonical registries plus wiki pages
 - `ontology-pipeline-operator`
@@ -34,3 +36,4 @@ That means:
 - they should not promote graph projection to canonical truth
 - they should not treat the browser workbench as the primary ownership surface
 - they should not create a second manifest/runtime system parallel to the existing Python paths
+- bootstrap changes should be promoted only after the equivalent DocTology contract/runtime path is implemented and validated here

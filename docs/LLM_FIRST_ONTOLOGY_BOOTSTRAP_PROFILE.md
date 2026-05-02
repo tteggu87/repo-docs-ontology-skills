@@ -4,9 +4,11 @@ Updated: 2026-05-02
 
 ## Purpose
 
-`llm-wiki-bootstrap --profile llm-first-ontology` should create a new Obsidian-first LLM Wiki workspace that starts with the same strict semantic boundaries that DocTology now uses.
+`llm-wiki-bootstrap --profile llm-first-ontology` creates a new Obsidian-first LLM Wiki workspace that starts with the same strict semantic boundaries that DocTology now uses.
 
 This profile is for new repositories. It must not be run over the current DocTology repository as a re-init mechanism.
+
+As of 2026-05-02, this profile is the promoted default in the installed `llm-wiki-bootstrap` skill. The legacy `wiki-plus-ontology` profile remains available only for compatibility and emits a deprecation warning.
 
 ## Generated directory tree
 
@@ -77,6 +79,7 @@ The minimum generated scripts should be thin execution surfaces:
 - `scripts/validate_profiles.py`
 - `scripts/validate_registries.py`
 - `scripts/validate_repo_docs_intelligence.py`
+- `scripts/proposal_review.py`
 
 Python owns execution, validation, IDs, line ranges, citation anchors, source projection, indexes, logs, and navigation pages.
 
@@ -157,7 +160,8 @@ The bootstrap profile must not generate:
 - browser routes that directly mutate `raw/` or broad `warehouse/jsonl/`
 - YAML files that contain asserted source facts or reasoning summaries
 
-## Promotion path
+## Promotion status
 
-DocTology remains the stabilization source. The bootstrap profile should be implemented only after the current contract set, validators, and runtime alignment remain stable through normal use.
+DocTology remains the stabilization source. The current profile has been promoted because the proposal lifecycle, registries, validators, and strict route tests have been implemented in DocTology and verified.
 
+Future changes should still be stabilized in DocTology first, then copied into the bootstrap profile after validation.
