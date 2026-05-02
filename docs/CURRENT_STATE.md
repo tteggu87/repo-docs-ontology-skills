@@ -33,8 +33,9 @@ Semantic judgment has exactly one default path:
 2. `scripts/wiki_graph_navigation.py` refreshes map surfaces such as MOC, link map, contradiction review, orphan review, and source coverage
 3. `scripts/llm_compile_source.py` reads the source page, content units, related pages, and `meta_surfaces.yaml`-declared compile surfaces
 4. compile output is saved only as a draft human-review proposal under `wiki/analyses/`
-5. reviewed wiki/ontology pages become the primary reasoning surface
-6. `scripts/llm_query.py` uses page metadata and query selection meta surfaces first, then reads selected page bodies for the answer step
+5. `scripts/proposal_review.py` can accept/reject proposals and apply only human-supplied reviewed content to explicit wiki targets
+6. reviewed wiki/ontology pages become the primary reasoning surface
+7. `scripts/llm_query.py` uses page metadata and query selection meta surfaces first, then reads selected page bodies for the answer step
 
 If no helper LLM is configured, compile/query fails. Deterministic lexical preview remains diagnostics only and must not become a semantic answer path.
 
@@ -94,6 +95,11 @@ Semantic answers and durable answer saves belong to the strict LLM query workflo
 - `python3 scripts/validate_profiles.py`
 - `python3 scripts/validate_registries.py`
 - `python3 -m pytest -q`
+
+Pipeline shorthand:
+
+- `python3 scripts/pipeline_refresh.py --source <path> --profile <profile> --validate`
+- `python3 scripts/pipeline_refresh.py --source <path> --profile <profile> --validate-full`
 
 The validator suite guards the no-fallback semantic boundary, proposal lifecycle, Workbench route/policy boundaries, profile compile targets, pack manifests, queryable page policy, relation type policy shape, registry shapes, and registry references.
 

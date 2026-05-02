@@ -19,6 +19,7 @@ Current repository posture:
 - canonical repeated-export ingest path: `scripts/incremental_ingest.py`
 - strict LLM source compile workflow: `scripts/llm_compile_source.py`
 - strict LLM query workflow: `scripts/llm_query.py`
+- human-reviewed proposal lifecycle workflow: `scripts/proposal_review.py`
 - optional local sidecar workbench: `apps/workbench/` via `scripts/workbench_api.py`
 - declarative contracts live under `intelligence/`, but execution still lives in Python
 - contract entrypoint: `intelligence/contract_index.yaml`
@@ -34,3 +35,4 @@ Strict LLM-first note:
 - semantic compile/query must use the configured helper LLM or fail
 - explicit prompt/bundle emission flags are inspection surfaces, not semantic success
 - unreviewed compile proposals are draft pages and must not become query evidence
+- active wiki updates from compile output require explicit human-reviewed content

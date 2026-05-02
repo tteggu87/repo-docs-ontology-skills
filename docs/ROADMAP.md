@@ -9,6 +9,7 @@ Updated: 2026-05-02
 - continue using the workbench as a bounded operator surface rather than a browser-owned authoring system
 - keep strict LLM-first semantic workflows validator-backed and no-fallback
 - keep `meta_surfaces.yaml` as the shared query/compile navigation contract
+- use `proposal_review.py` for human-reviewed proposal application instead of automatic semantic page edits
 
 ## Next useful additions
 

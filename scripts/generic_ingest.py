@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 import sys, argparse, json
+import importlib
 from pathlib import Path
 from datetime import UTC, datetime
 
@@ -9,9 +10,6 @@ if str(ROOT) not in sys.path: sys.path.insert(0, str(ROOT))
 
 from scripts.ingest.resolver import resolve_family, resolve_profile_for_family
 from scripts.ingest.adapters.common import file_content_hash, source_version_id
-from scripts.ingest.adapters.email_md_txt import parse_email_source
-from scripts.ingest.adapters.education_md_txt import parse_education_source
-from scripts.ingest.adapters.report_md_txt import parse_report_source
 from scripts.ingest.adapters.markdown import parse_markdown
 from scripts.packs.loader import get_profile
 from scripts.wiki_projection import refresh_wiki_after_ingest
@@ -46,6 +44,21 @@ def _safety(root: Path, src: Path) -> str:
     return rp
 
 
+def _load_parse_callable(target: str):
+    module_name, function_name = target.split(":", 1)
+    module = importlib.import_module(module_name)
+    return getattr(module, function_name)
+
+
+def _parse_with_profile(root: Path, src: Path, profile_id: str, family: str, raw_path: str):
+    try:
+        profile = get_profile(root, profile_id)
+        parser = _load_parse_callable(profile.parse_target)
+        return parser(src, profile_id=profile_id, source_family_id=family, raw_path=raw_path)
+    except KeyError:
+        return parse_markdown(src, profile_id, family, raw_path=raw_path)
+
+
 def ingest_source(root: Path, source: str, profile_id: str | None = None, allow_profile_family_mismatch: bool = False) -> dict:
     src = (root / source).resolve() if not Path(source).is_absolute() else Path(source).resolve()
     raw_path = _safety(root, src)
@@ -71,10 +84,7 @@ def ingest_source(root: Path, source: str, profile_id: str | None = None, allow_
         family = resolve_family(root, src)
         profile_id = resolve_profile_for_family(root, family)
 
-    if profile_id=='email-analysis': parsed=parse_email_source(src, profile_id=profile_id, source_family_id=family, raw_path=raw_path)
-    elif profile_id=='education-analysis': parsed=parse_education_source(src, profile_id=profile_id, source_family_id=family, raw_path=raw_path)
-    elif profile_id=='report-consistency-analysis': parsed=parse_report_source(src, profile_id=profile_id, source_family_id=family, raw_path=raw_path)
-    else: parsed=parse_markdown(src, profile_id, family, raw_path=raw_path)
+    parsed = _parse_with_profile(root, src, profile_id, family, raw_path)
 
     warnings.extend(parsed.document.get("warnings", []))
     content_hash=file_content_hash(src)

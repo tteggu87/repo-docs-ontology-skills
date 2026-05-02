@@ -27,6 +27,10 @@ Updated: 2026-05-02
   - answer stage reads selected page bodies and wikilink neighborhood
 - `scripts/validate_intelligence.py`
   - validates contract entrypoint, strict semantic workflows, page policy, relation policy shape, and meta surfaces
+- `scripts/proposal_review.py`
+  - lists compile proposals
+  - moves proposals through accepted/rejected/applied lifecycle states
+  - applies only explicit human-reviewed markdown content to explicit wiki targets
 - `scripts/workbench_api.py`
   - live compatibility wrapper
   - imports the actual workbench implementation from `scripts/workbench/`
@@ -77,6 +81,14 @@ Updated: 2026-05-02
 5. If helper LLM is missing, the workflow exits with an error
 6. If helper LLM is available, output is saved as a draft compile proposal under `wiki/analyses/`
 7. Active concept/entity/project pages are not modified automatically
+
+### Proposal review/apply
+
+1. Human reviews a draft compile proposal
+2. `scripts/proposal_review.py set-status <proposal> --status accepted|rejected` updates proposal status according to `proposal_lifecycle.yaml`
+3. `scripts/proposal_review.py apply <proposal> --target <wiki-page> --content-file <reviewed-md>` applies only human-supplied reviewed markdown
+4. The proposal moves to `applied`
+5. No LLM output is automatically transformed into active wiki truth
 
 ### Strict query
 

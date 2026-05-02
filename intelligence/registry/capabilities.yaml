@@ -39,6 +39,14 @@ capabilities:
     action: refresh_wiki_graph_navigation
     implementation: scripts/wiki_graph_navigation.py:write_navigation_pages
     entrypoint: python3 scripts/wiki_graph_navigation.py --write
+  - key: llm.proposal.review
+    action: review_apply_compile_proposal
+    implementation: scripts/proposal_review.py:list_proposals
+    entrypoint: python3 scripts/proposal_review.py list
+  - key: llm.proposal.apply
+    action: review_apply_compile_proposal
+    implementation: scripts/proposal_review.py:apply_reviewed_content
+    entrypoint: python3 scripts/proposal_review.py apply <proposal> --target <wiki-page> --content-file <reviewed-md>
   - key: workbench.claim.review
     action: review_claim_state
     implementation: scripts/workbench/repository.py:review_claim

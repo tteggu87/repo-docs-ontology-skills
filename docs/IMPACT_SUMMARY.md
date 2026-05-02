@@ -31,6 +31,7 @@ Created:
 
 - `scripts/validate_repo_docs_intelligence.py`
 - `scripts/validate_workbench_manifest.py`
+- `scripts/proposal_review.py`
 
 ## Intelligence layer changes
 
@@ -64,8 +65,9 @@ Checked and left unchanged:
   - `scripts/llm_wiki.py`
   - `scripts/generic_ingest.py`
   - `scripts/incremental_ingest.py`
-  - `scripts/llm_compile_source.py`
-  - `scripts/llm_query.py`
+- `scripts/llm_compile_source.py`
+- `scripts/llm_query.py`
+- `scripts/proposal_review.py`
   - `scripts/wiki_graph_navigation.py`
   - `scripts/workbench/server.py` plus `scripts/workbench/repository.py` as the workbench core
 - Intentional legacy/transitional support:
@@ -79,12 +81,14 @@ Checked and left unchanged:
 - Missing docs coverage for strict no-fallback LLM compile/query workflows
 - Missing dataset/action/glossary coverage for the YAML contract layer
 - Capability action drift for lexical diagnostics
+- Missing safe proposal review/apply loop for human-reviewed active wiki updates
 
 ## Remaining drift
 
 - `frontmatter.yaml` remains deferred
 - `llm-wiki-bootstrap --profile llm-first-ontology` remains deferred until the DocTology contract set is stable
 - The intelligence layer remains intentionally minimal and does not document every workbench route as a first-class entity
+- Installed bootstrap skill promotion remains deferred until proposal workflow has more real-use validation
 
 ## Validator status
 

@@ -159,6 +159,23 @@ actions:
       - wiki/_meta/
     notes:
       - These surfaces help LLMs navigate structure; they are not semantic answer drafts.
+  - key: review_apply_compile_proposal
+    description: Review, accept/reject, and apply human-approved LLM compile proposals without automatic semantic inference.
+    inputs:
+      - wiki/analyses/*compile-proposal*.md
+      - reviewed markdown content file when applying
+    outputs:
+      - updated proposal frontmatter status
+      - explicit target wiki page when applying reviewed content
+    reads:
+      - intelligence/policies/proposal_lifecycle.yaml
+      - wiki/analyses/
+    writes:
+      - wiki/analyses/*compile-proposal*.md
+      - explicit wiki target path supplied by the human
+    notes:
+      - Apply requires accepted proposal status and a human-supplied content file.
+      - This is not an automatic LLM-to-active-page semantic apply path.
   - key: review_claim_state
     description: Update canonical claim review state through the backend while keeping browser-side mutation restricted.
     inputs:

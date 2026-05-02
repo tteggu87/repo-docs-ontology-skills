@@ -14,6 +14,7 @@ from scripts.workbench.server import route_request
 from scripts.intelligence_contracts import load_proposal_policy
 from scripts.llm_compile_source import compile_source
 from scripts.llm_query import _page_inventory, _parse_selected_stems, build_query_bundle, llm_query
+from scripts.proposal_review import apply_reviewed_content, list_proposals, set_proposal_status
 from scripts.wiki_graph_navigation import write_navigation_pages
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -148,6 +149,40 @@ class TestGenericIngest(unittest.TestCase):
             self.assertIn(f"analysis_method: {proposal_policy['analysis_method']}", proposal_text)
             self.assertIn(f"trust_level: {proposal_policy['trust_level']}", proposal_text)
             self.assertFalse((repo / "wiki/concepts/compile.md").exists())
+
+    def test_proposal_review_applies_only_accepted_human_content(self):
+        with tempfile.TemporaryDirectory() as td:
+            repo = build_temp_repo(td)
+            (repo / "wiki/analyses").mkdir(parents=True, exist_ok=True)
+            proposal = repo / "wiki/analyses/analysis-compile-proposal-source.md"
+            proposal.write_text(
+                "---\n"
+                "title: Compile Proposal\n"
+                "type: analysis\n"
+                "status: draft\n"
+                "analysis_method: llm_compile_proposal\n"
+                "trust_level: human_review_required\n"
+                "---\n\n"
+                "# Compile Proposal\n\nLLM output pending review.\n",
+                encoding="utf-8",
+            )
+            reviewed = repo / "wiki/analyses/reviewed-concept.md"
+            reviewed.write_text(
+                "---\ntitle: Reviewed Concept\ntype: concept\nstatus: active\n---\n\n# Reviewed Concept\n\nHuman-approved content.\n",
+                encoding="utf-8",
+            )
+
+            listed = list_proposals(repo)
+            self.assertEqual(len(listed["proposals"]), 1)
+            with self.assertRaises(ValueError):
+                apply_reviewed_content(repo, proposal.relative_to(repo).as_posix(), "wiki/concepts/reviewed-concept.md", reviewed.relative_to(repo).as_posix())
+
+            accepted = set_proposal_status(repo, proposal.relative_to(repo).as_posix(), "accepted")
+            self.assertEqual(accepted["new_status"], "accepted")
+            applied = apply_reviewed_content(repo, proposal.relative_to(repo).as_posix(), "wiki/concepts/reviewed-concept.md", reviewed.relative_to(repo).as_posix())
+            self.assertEqual(applied["target_path"], "wiki/concepts/reviewed-concept.md")
+            self.assertIn("Human-approved content", (repo / "wiki/concepts/reviewed-concept.md").read_text(encoding="utf-8"))
+            self.assertIn("status: applied", proposal.read_text(encoding="utf-8"))
 
     def test_llm_page_selection_has_no_regex_fallback(self):
         with self.assertRaises(Exception):
