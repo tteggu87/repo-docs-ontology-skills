@@ -118,6 +118,14 @@ for finding in analysis_findings:
     if finding.get("unit_id") and finding["unit_id"] not in unit_ids:
         raise SystemExit(f"unresolved analysis_findings.unit_id: {finding['unit_id']}")
 
+compile_proposals = load("compile_proposals")
+for proposal in compile_proposals:
+    require_fields(proposal, required_for("compile_proposals", []), "compile_proposal")
+
+review_events = load("review_events")
+for event in review_events:
+    require_fields(event, required_for("review_events", []), "review_event")
+
 registry_rows = {
     "documents": docs_rows,
     "content_units": units,
@@ -125,6 +133,8 @@ registry_rows = {
     "observations": obs,
     "analysis_runs": analysis_runs,
     "analysis_findings": analysis_findings,
+    "compile_proposals": compile_proposals,
+    "review_events": review_events,
     "profiles": [{"profile_id": key} for key in profiles],
 }
 

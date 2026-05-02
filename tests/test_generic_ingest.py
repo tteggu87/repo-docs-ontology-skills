@@ -183,6 +183,11 @@ class TestGenericIngest(unittest.TestCase):
             self.assertEqual(applied["target_path"], "wiki/concepts/reviewed-concept.md")
             self.assertIn("Human-approved content", (repo / "wiki/concepts/reviewed-concept.md").read_text(encoding="utf-8"))
             self.assertIn("status: applied", proposal.read_text(encoding="utf-8"))
+            proposal_registry = (repo / "warehouse/jsonl/compile_proposals.jsonl").read_text(encoding="utf-8")
+            review_events = (repo / "warehouse/jsonl/review_events.jsonl").read_text(encoding="utf-8")
+            self.assertIn('"status": "applied"', proposal_registry)
+            self.assertIn('"action": "accepted"', review_events)
+            self.assertIn('"action": "applied"', review_events)
 
     def test_llm_page_selection_has_no_regex_fallback(self):
         with self.assertRaises(Exception):

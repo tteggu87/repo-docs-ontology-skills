@@ -80,3 +80,26 @@ registries:
       analysis_run_id:
         registry: analysis_runs
         key: analysis_run_id
+  compile_proposals:
+    path: warehouse/jsonl/compile_proposals.jsonl
+    key: proposal_id
+    required_fields:
+      - proposal_id
+      - proposal_path
+      - status
+      - analysis_method
+      - trust_level
+      - created_at
+  review_events:
+    path: warehouse/jsonl/review_events.jsonl
+    key: review_event_id
+    required_fields:
+      - review_event_id
+      - target_type
+      - target_id
+      - action
+      - reviewed_at
+    references:
+      target_id:
+        registry: compile_proposals
+        key: proposal_id

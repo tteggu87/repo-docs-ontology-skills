@@ -149,3 +149,13 @@ datasets:
     role: JSONL registry shape and reference contract
     truth_class: contract
     owner: operator
+  - key: warehouse_compile_proposals
+    path: warehouse/jsonl/compile_proposals.jsonl
+    role: canonical proposal lifecycle registry for LLM compile proposals
+    truth_class: canonical
+    owner: ontology
+  - key: warehouse_review_events
+    path: warehouse/jsonl/review_events.jsonl
+    role: append-only review event registry for proposal accept/reject/apply actions
+    truth_class: canonical
+    owner: ontology

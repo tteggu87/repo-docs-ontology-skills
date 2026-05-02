@@ -103,6 +103,11 @@ Pipeline shorthand:
 
 The validator suite guards the no-fallback semantic boundary, proposal lifecycle, Workbench route/policy boundaries, profile compile targets, pack manifests, queryable page policy, relation type policy shape, registry shapes, and registry references.
 
+Proposal review operations also maintain:
+
+- `warehouse/jsonl/compile_proposals.jsonl`
+- `warehouse/jsonl/review_events.jsonl`
+
 ## Operator review surfaces
 
 The backend adapter still supports operator-facing triage data for:

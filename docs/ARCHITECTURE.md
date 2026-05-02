@@ -31,6 +31,7 @@ Updated: 2026-05-02
   - lists compile proposals
   - moves proposals through accepted/rejected/applied lifecycle states
   - applies only explicit human-reviewed markdown content to explicit wiki targets
+  - records proposal and review event registries under `warehouse/jsonl/`
 - `scripts/workbench_api.py`
   - live compatibility wrapper
   - imports the actual workbench implementation from `scripts/workbench/`
@@ -88,7 +89,8 @@ Updated: 2026-05-02
 2. `scripts/proposal_review.py set-status <proposal> --status accepted|rejected` updates proposal status according to `proposal_lifecycle.yaml`
 3. `scripts/proposal_review.py apply <proposal> --target <wiki-page> --content-file <reviewed-md>` applies only human-supplied reviewed markdown
 4. The proposal moves to `applied`
-5. No LLM output is automatically transformed into active wiki truth
+5. `warehouse/jsonl/compile_proposals.jsonl` and `warehouse/jsonl/review_events.jsonl` record lifecycle state and review actions
+6. No LLM output is automatically transformed into active wiki truth
 
 ### Strict query
 

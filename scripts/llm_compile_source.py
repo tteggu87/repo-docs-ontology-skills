@@ -15,6 +15,7 @@ if str(ROOT) not in sys.path:
 
 from scripts.analysis_profiles.common import load_jsonl
 from scripts.intelligence_contracts import load_proposal_policy, meta_surface_contents
+from scripts.proposal_review import record_compile_proposal
 from scripts.workbench.llm_config import (
     helper_model_public_summary,
     load_continue_helper_config,
@@ -200,6 +201,7 @@ def _save_compile_proposal(root: Path, bundle: dict[str, Any], llm_output: str) 
     path = root / "wiki" / "analyses" / f"{stem}.md"
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(_proposal_markdown(root, bundle, llm_output), encoding="utf-8")
+    record_compile_proposal(root, path, {"source_page": str(bundle.get("source_page") or "")})
     return _safe_rel(root, path)
 
 

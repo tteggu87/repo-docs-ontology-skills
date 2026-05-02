@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
+import hashlib
 import json
 import sys
 from pathlib import Path
@@ -68,6 +69,72 @@ def _proposal_files(root: Path) -> list[Path]:
     return out
 
 
+def _jsonl_path(root: Path, name: str) -> Path:
+    return root / "warehouse" / "jsonl" / f"{name}.jsonl"
+
+
+def _load_jsonl(path: Path) -> list[dict[str, Any]]:
+    if not path.exists():
+        return []
+    return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+
+
+def _write_jsonl(path: Path, rows: list[dict[str, Any]]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("\n".join(json.dumps(row, ensure_ascii=False) for row in rows) + ("\n" if rows else ""), encoding="utf-8")
+
+
+def _proposal_id(rel_path: str) -> str:
+    return "proposal-" + hashlib.sha256(rel_path.encode("utf-8")).hexdigest()[:16]
+
+
+def _review_event_id(proposal_id: str, action: str, reviewed_at: str) -> str:
+    seed = f"{proposal_id}:{action}:{reviewed_at}"
+    return "review-" + hashlib.sha256(seed.encode("utf-8")).hexdigest()[:16]
+
+
+def record_compile_proposal(root: Path, proposal_path: Path, extra: dict[str, Any] | None = None) -> dict[str, Any]:
+    text = proposal_path.read_text(encoding="utf-8")
+    fm, _ = _split_frontmatter(text)
+    rel_path = _rel(root, proposal_path)
+    now = dt.datetime.now(dt.UTC).isoformat().replace("+00:00", "Z")
+    row = {
+        "proposal_id": _proposal_id(rel_path),
+        "proposal_path": rel_path,
+        "title": fm.get("title") or proposal_path.stem,
+        "status": fm.get("status") or "unknown",
+        "analysis_method": fm.get("analysis_method") or "unknown",
+        "trust_level": fm.get("trust_level") or "unknown",
+        "created_at": str(fm.get("created") or now),
+        "updated_at": str(fm.get("updated") or now),
+    }
+    if extra:
+        row.update(extra)
+    path = _jsonl_path(root, "compile_proposals")
+    rows = {existing.get("proposal_id"): existing for existing in _load_jsonl(path)}
+    rows[row["proposal_id"]] = row
+    _write_jsonl(path, [rows[key] for key in sorted(rows) if key])
+    return row
+
+
+def record_review_event(root: Path, proposal_id: str, action: str, extra: dict[str, Any] | None = None) -> dict[str, Any]:
+    reviewed_at = dt.datetime.now(dt.UTC).isoformat().replace("+00:00", "Z")
+    row = {
+        "review_event_id": _review_event_id(proposal_id, action, reviewed_at),
+        "target_type": "compile_proposal",
+        "target_id": proposal_id,
+        "action": action,
+        "reviewed_at": reviewed_at,
+    }
+    if extra:
+        row.update(extra)
+    path = _jsonl_path(root, "review_events")
+    rows = _load_jsonl(path)
+    rows.append(row)
+    _write_jsonl(path, rows)
+    return row
+
+
 def list_proposals(root: Path) -> dict[str, Any]:
     proposals = []
     for path in _proposal_files(root):
@@ -96,7 +163,9 @@ def set_proposal_status(root: Path, proposal_path: str, status: str) -> dict[str
     fm["status"] = status
     fm["updated"] = dt.date.today().isoformat()
     path.write_text(_render_frontmatter(fm, body), encoding="utf-8")
-    return {"status": "ok", "proposal_path": _rel(root, path), "new_status": status}
+    proposal_row = record_compile_proposal(root, path)
+    event = record_review_event(root, proposal_row["proposal_id"], status)
+    return {"status": "ok", "proposal_path": _rel(root, path), "proposal_id": proposal_row["proposal_id"], "new_status": status, "review_event_id": event["review_event_id"]}
 
 
 def apply_reviewed_content(root: Path, proposal_path: str, target_path: str, content_file: str) -> dict[str, Any]:
@@ -114,6 +183,7 @@ def apply_reviewed_content(root: Path, proposal_path: str, target_path: str, con
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(content.read_text(encoding="utf-8"), encoding="utf-8")
     result = set_proposal_status(root, proposal_path, "applied")
+    record_compile_proposal(root, proposal, {"applied_target_path": target_rel, "applied_content_file": _rel(root, content)})
     result.update({"target_path": target_rel, "content_file": _rel(root, content)})
     return result
 
