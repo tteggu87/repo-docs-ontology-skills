@@ -2,6 +2,7 @@
 __pycache__/
 *.pyc
 .DS_Store
+.codex/
 .codex/skills/**/.codex/
 .gstack/
 .omx/
@@ -9,7 +10,6 @@ continue.json
 wikiconfig.json
 
 # Local operator/runtime artifacts
-.codex/context/whiplash-state.json
 RESEARCH/
 vector/
 warehouse/ontology.duckdb
