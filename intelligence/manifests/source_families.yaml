@@ -10,6 +10,18 @@ source_families:
     notes:
       - Compatibility fixture family for regression tests.
 
+  - key: kakao-agent-korea-chat-normalized
+    source_kind: kakao_chat_export
+    status: built_in
+    match:
+      path_contains:
+        - kakao-agent-korea-full-chat-normalized
+      extensions:
+        - .txt
+    default_parser: kakao_chat_normalized_txt
+    notes:
+      - Normalized KakaoTalk text export in `[YYYY-MM-DD HH:MM:SS] speaker: message` format.
+
   - key: email-md-txt
     source_kind: email_document
     status: built_in

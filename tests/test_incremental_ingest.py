@@ -112,6 +112,28 @@ class IncrementalIngestTests(unittest.TestCase):
         self.assertEqual(sorted(message["occurrence_index"] for message in messages), [1, 2])
         self.assertIn("wiki/sources/source-kakao-agent-korea-chat-incremental-status.md", second["affected_wiki_paths"])
 
+    def test_normalized_kakao_txt_export_is_supported(self) -> None:
+        source = self.root / "raw" / "inbox" / "kakao-agent-korea-full-chat-normalized.txt"
+        source.write_text(
+            "[2026-03-30 00:01:22] 소담 AI 스튜디오/@sodam_ai: 오늘도 역시 정보가 넘치는군요!!\n"
+            "[2026-03-30 00:01:37] 소담 AI 스튜디오/@sodam_ai: https://github.com/sodam-ai/ai-news-radar\n"
+            "추가 설명 줄입니다.\n"
+            "[2026-03-30 00:11:31] 플라잉따릉이: systemd / launchd에 설치해달라고 하세요\n",
+            encoding="utf-8",
+        )
+
+        summary = ingest_incremental(str(source), str(self.root))
+        messages = read_jsonl(self.root / "warehouse" / "jsonl" / "messages.jsonl")
+
+        self.assertEqual(summary["source_family_id"], "family-kakao-agent-korea-chat-normalized")
+        self.assertEqual(summary["message_count"], 3)
+        self.assertEqual(summary["new_message_count"], 3)
+        self.assertEqual(len(messages), 3)
+        self.assertEqual(messages[1]["url_count"], 1)
+        self.assertIn("추가 설명 줄입니다.", messages[1]["text"])
+        self.assertEqual(messages[1]["source_line_start"], 2)
+        self.assertEqual(messages[1]["source_line_end"], 3)
+
     def test_unknown_family_fails_clearly(self) -> None:
         source = self.root / "raw" / "inbox" / "unknown.csv"
         with self.assertRaises(SystemExit) as ctx:

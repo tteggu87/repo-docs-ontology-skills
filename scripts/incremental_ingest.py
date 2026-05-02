@@ -99,6 +99,65 @@ def parse_kakao_chat_csv(raw_path: Path) -> list[dict[str, Any]]:
     return assign_occurrence_indexes(rows)
 
 
+NORMALIZED_KAKAO_RE = re.compile(r"^\[(?P<timestamp>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\]\s+(?P<speaker>.*?):\s*(?P<text>.*)$")
+
+
+def parse_kakao_chat_normalized_txt(raw_path: Path) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    current: dict[str, Any] | None = None
+    for line_number, raw_line in enumerate(raw_path.read_text(encoding="utf-8-sig").splitlines(), start=1):
+        line = raw_line.rstrip("\n")
+        match = NORMALIZED_KAKAO_RE.match(line)
+        if match:
+            timestamp = match.group("timestamp")
+            speaker_name = match.group("speaker").strip() or None
+            text = match.group("text")
+            current = {
+                "sequence": len(rows) + 1,
+                "timestamp": timestamp,
+                "inferred_date": timestamp.split(" ")[0],
+                "event_type": "message",
+                "speaker_name": speaker_name,
+                "speaker_entity_id": stable_speaker_entity_id(speaker_name),
+                "text": text,
+                "urls": URL_RE.findall(text),
+                "url_count": len(URL_RE.findall(text)),
+                "source_line_start": line_number,
+                "source_line_end": line_number,
+            }
+            rows.append(current)
+            continue
+
+        if current is None:
+            text = line.strip()
+            if not text:
+                continue
+            urls = URL_RE.findall(text)
+            rows.append(
+                {
+                    "sequence": len(rows) + 1,
+                    "timestamp": None,
+                    "inferred_date": None,
+                    "event_type": "system_notice",
+                    "speaker_name": None,
+                    "speaker_entity_id": None,
+                    "text": text,
+                    "urls": urls,
+                    "url_count": len(urls),
+                    "source_line_start": line_number,
+                    "source_line_end": line_number,
+                }
+            )
+            continue
+
+        current["text"] = f"{current['text']}\n{line}" if current.get("text") else line
+        current["source_line_end"] = line_number
+        urls = URL_RE.findall(str(current.get("text") or ""))
+        current["urls"] = urls
+        current["url_count"] = len(urls)
+    return assign_occurrence_indexes(rows)
+
+
 def parse_markdown_note(raw_path: Path) -> list[dict[str, Any]]:
     text = raw_path.read_text(encoding="utf-8")
     urls = URL_RE.findall(text)
@@ -122,6 +181,8 @@ def parse_markdown_note(raw_path: Path) -> list[dict[str, Any]]:
 def parse_rows_for_family(raw_path: Path, parser_name: str) -> list[dict[str, Any]]:
     if parser_name == "kakao_chat_csv":
         return parse_kakao_chat_csv(raw_path)
+    if parser_name == "kakao_chat_normalized_txt":
+        return parse_kakao_chat_normalized_txt(raw_path)
     if parser_name == "markdown_note":
         return parse_markdown_note(raw_path)
     raise SystemExit(f"Unsupported parser: {parser_name}")
