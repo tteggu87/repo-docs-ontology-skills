@@ -42,7 +42,9 @@ tests/
 docs/
 AGENTS.md
 README.md
+.gitignore
 wikiconfig.example.json
+wikiconfig.json
 ```
 
 ## Generated YAML contracts
@@ -94,6 +96,12 @@ The generated workspace must default to:
 - no regex/lexical fallback for semantic selection or answers
 - deterministic preview surfaces labeled as diagnostics only
 - unreviewed compile proposals excluded from query evidence
+- `wikiconfig.example.json` committed as the format reference
+- `wikiconfig.json` generated as a local disabled placeholder and ignored by `.gitignore`
+
+`llmWiki.enabled=false` means local scripts will not call a helper-model API. It does not silently fall back to a regex heuristic or magically call the surrounding chat model. If a chat agent should perform the semantic work, the operator must explicitly emit the prompt/bundle and have the agent save a proposal or reviewed page intentionally.
+
+`llmWiki.enabled=true` means strict compile/query uses `models[0]` from `wikiconfig.json` as the backend helper LLM.
 
 ## Generated proposal lifecycle
 

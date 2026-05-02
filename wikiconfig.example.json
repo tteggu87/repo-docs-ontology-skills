@@ -3,16 +3,16 @@
     "purpose": "Example helper-model config for llm-wiki-obsidian.",
     "runtime_filename": "wikiconfig.json",
     "behavior_summary": [
-      "llmWiki.enabled = false -> disable backend helper-model API usage and stay in repo-local mode.",
-      "llmWiki.enabled = true -> allow bounded backend helper-model actions such as draft-source-summary.",
-      "This file does not switch the main Hermes/chat conversation to a different model."
+      "llmWiki.enabled = false -> disable backend helper-model API calls. Semantic CLI commands fail unless an explicit prompt/bundle emission flag is used.",
+      "llmWiki.enabled = true -> use models[0] as the backend helper LLM for strict compile/query workflows.",
+      "This file does not switch the surrounding Codex/ChatGPT conversation to a different model. Agent-mediated chat-LLM processing must be explicit: emit the bundle/prompt, let the chat agent process it, then save a proposal or reviewed page intentionally."
     ]
   },
   "llmWiki": {
     "enabled": false,
     "_enabled_meaning": {
-      "false": "No helper-model API calls. Ask/query preview and analysis save remain repo-local and deterministic.",
-      "true": "Enable backend-only helper-model API routes for bounded draft generation."
+      "false": "No helper-model API calls from local scripts. Use --emit-bundle or --emit-selection-prompt when a chat agent should inspect the prompt explicitly.",
+      "true": "Enable backend-only helper-model API calls through models[0]."
     }
   },
   "models": [
@@ -30,13 +30,13 @@
     "model": "text-embedding-3-small",
     "apiKey": "YOUR_API_KEY",
     "apiBase": "https://api.openai.com/v1",
-    "_note": "Parsed by the loader, but not actively used by the current draft-source-summary route."
+    "_note": "Parsed by the loader but not required by the strict compile/query path."
   },
   "rerankerProvider": {
     "provider": "openai",
     "model": "your-reranker-model",
     "apiKey": "YOUR_API_KEY",
     "apiBase": "https://example.invalid/v1",
-    "_note": "Parsed by the loader, but not actively used by the current draft-source-summary route."
+    "_note": "Parsed by the loader but not required by the strict compile/query path."
   }
 }

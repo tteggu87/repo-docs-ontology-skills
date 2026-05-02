@@ -416,8 +416,11 @@ The workbench is additive. Obsidian and `wiki/` remain the default reading/editi
 If helper-model config is introduced:
 
 - keep the live file at repo root as `wikiconfig.json`
+- keep `wikiconfig.json` out of git; use `wikiconfig.example.json` as the committed format reference
 - keep it server-side only
-- use `llmWiki.enabled: false` to disable helper-model API usage and stay in local-only mode
+- use `llmWiki.enabled: false` to disable helper-model API usage; strict semantic CLI commands then fail unless an explicit prompt/bundle emission flag is used
+- use `llmWiki.enabled: true` to make strict compile/query use `models[0]` as the backend helper LLM
+- if you want the surrounding chat agent to act as the LLM, emit the prompt/bundle explicitly and have the agent save the resulting proposal or reviewed page intentionally; local scripts cannot silently call the chat conversation model
 - keep the current compatibility layer limited to OpenAI-compatible chat endpoints
 - do not let the browser read or own provider secrets
 - keep helper-model outputs draft-only

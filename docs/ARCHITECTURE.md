@@ -116,15 +116,17 @@ Updated: 2026-05-02
 
 1. The backend may read `wikiconfig.json` from repo root only
 2. No parent-directory or workspace-wide config crawl is allowed
-3. `llmWiki.enabled` may disable helper-model API usage while keeping the repo in local-only mode
-4. Only a whitelisted subset is normalized:
+3. `llmWiki.enabled=false` disables helper-model API usage; strict semantic CLI commands then fail unless an explicit prompt/bundle emission flag is used
+4. `llmWiki.enabled=true` makes strict compile/query use `models[0]` as the backend helper LLM
+5. Only a whitelisted subset is normalized:
    - `models`
    - `embeddingsProvider`
    - `rerankerProvider`
-5. The current helper-model compatibility path is limited to OpenAI-compatible chat providers
-6. Browser routes must not expose provider secrets or raw provider internals
-7. Helper-model routes must return draft output only and must not write to `raw/` or `warehouse/jsonl/`
-8. Helper-model source reads must stay under `raw/inbox/`, `raw/processed/`, or `raw/notes/`
+6. The current helper-model compatibility path is limited to OpenAI-compatible chat providers
+7. Browser routes must not expose provider secrets or raw provider internals
+8. Helper-model routes must return draft output only and must not write to `raw/` or `warehouse/jsonl/`
+9. Helper-model source reads must stay under `raw/inbox/`, `raw/processed/`, or `raw/notes/`
+10. The surrounding Codex/ChatGPT conversation model is not reachable from local scripts; chat-agent processing must be explicit through emitted prompt/bundle artifacts
 
 ## Current intentional legacy split
 
