@@ -19,6 +19,7 @@ Current repository posture:
 - canonical repeated-export ingest path: `scripts/incremental_ingest.py`
 - strict LLM source compile workflow: `scripts/llm_compile_source.py`
 - strict LLM query workflow: `scripts/llm_query.py`
+- durable query-answer persistence helper: `scripts/query_analysis.py`
 - human-reviewed proposal lifecycle workflow: `scripts/proposal_review.py`
 - optional local sidecar workbench: `apps/workbench/` via `scripts/workbench_api.py`
 - declarative contracts live under `intelligence/`, but execution still lives in Python
@@ -36,3 +37,4 @@ Strict LLM-first note:
 - explicit prompt/bundle emission flags are inspection surfaces, not semantic success
 - unreviewed compile proposals are draft pages and must not become query evidence
 - active wiki updates from compile output require explicit human-reviewed content
+- durable query answers should be saved automatically under `wiki/analyses/`; active concept/entity/person/project/timeline rewrites remain proposal/review-required

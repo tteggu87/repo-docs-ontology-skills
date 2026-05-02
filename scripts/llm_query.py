@@ -18,6 +18,7 @@ from scripts.workbench.llm_config import (
     run_helper_chat_completion,
 )
 from scripts.intelligence_contracts import load_manifest, meta_surface_contents
+from scripts.query_analysis import save_query_analysis
 
 
 def _read(path: Path, max_chars: int = 16000) -> str:
@@ -167,7 +168,7 @@ def build_query_bundle(root: Path, question: str, selected_stems: list[str] | No
     }
 
 
-def llm_query(root: Path, question: str, *, emit_selection_prompt: bool = False) -> dict[str, Any]:
+def llm_query(root: Path, question: str, *, emit_selection_prompt: bool = False, save_analysis: bool = False) -> dict[str, Any]:
     inventory = _page_inventory(root)
     selection_meta = _meta_surface_contents(root, "query_selection")
     selection_prompt = json.dumps(
@@ -205,7 +206,7 @@ def llm_query(root: Path, question: str, *, emit_selection_prompt: bool = False)
     bundle = build_query_bundle(root, question, selected_stems)
     answer_prompt = json.dumps(bundle, ensure_ascii=False, indent=2)
     answer = run_helper_chat_completion(config, system_prompt=ANSWER_SYSTEM_PROMPT, user_prompt=answer_prompt, temperature=0.2)
-    return {
+    result = {
         "status": "ok",
         "mode": "llm_query",
         "helper_model": helper_model_public_summary(config),
@@ -213,15 +214,29 @@ def llm_query(root: Path, question: str, *, emit_selection_prompt: bool = False)
         "selected_page_stems": selected_stems,
         "answer_markdown": answer,
     }
+    if save_analysis:
+        sources = [page["path"] for page in bundle.get("selected_pages", []) if page.get("path")]
+        result["analysis_path"] = save_query_analysis(
+            root,
+            question=question,
+            answer_markdown=answer,
+            title=f"Query answer - {question[:80]}",
+            sources=sources,
+            evidence_mix={"helper_llm": 100},
+            analysis_method="helper_llm_query",
+            trust_level="evidence_grounded",
+        )
+    return result
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="LLM-first wiki/ontology query workflow for DocTology.")
     parser.add_argument("question")
     parser.add_argument("--emit-selection-prompt", action="store_true", help="Explicitly print the first LLM page-selection prompt instead of calling the helper model.")
+    parser.add_argument("--save-analysis", action="store_true", help="When helper LLM produces an answer, save it under wiki/analyses and update index/log.")
     args = parser.parse_args()
     try:
-        print(json.dumps(llm_query(ROOT, args.question, emit_selection_prompt=args.emit_selection_prompt), ensure_ascii=False, indent=2))
+        print(json.dumps(llm_query(ROOT, args.question, emit_selection_prompt=args.emit_selection_prompt, save_analysis=args.save_analysis), ensure_ascii=False, indent=2))
         return 0
     except (RuntimeError, ValueError, json.JSONDecodeError) as error:
         print(json.dumps({"status": "error", "message": str(error)}, ensure_ascii=False), file=sys.stderr)

@@ -117,10 +117,15 @@ A response is durable if it does any of the following:
 
 For durable answers:
 
-1. Save to `wiki/analyses/` when writes are available.
-2. If writes are unavailable, output a commit-ready markdown page.
-3. Link the analysis from relevant source/concept/project pages when confidence is high.
-4. Append a query log entry.
+1. Save to `wiki/analyses/` automatically when writes are available; do not wait for the user to ask.
+2. Use `scripts/query_analysis.py` or an equivalent bounded write to include the question, answer, evidence/citation basis, uncertainty, and proposed wiki updates.
+3. If writes are unavailable, output a commit-ready markdown page.
+4. Link the analysis from relevant source/concept/project pages only when confidence is high and the target page is safe to update.
+5. Append a query log entry.
+
+Automatic durable-answer saving may update `wiki/analyses/`, `wiki/_meta/index.md`, and `wiki/_meta/log.md`.
+It must not automatically rewrite active concept, entity, person, project, or timeline pages.
+Meaning-bearing active page changes belong in `Proposed Wiki Updates` or a compile proposal until reviewed.
 
 ## Hookless Environment Rule
 
