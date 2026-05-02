@@ -32,7 +32,7 @@ Legacy note:
 Strict LLM-first note:
 
 - deterministic code may create citation anchors, source pages, indexes, and validation reports
-- semantic compile/query must use the configured helper LLM or fail
+- semantic compile/query must use an LLM; if no helper LLM is configured, local scripts emit agent handoff bundles/prompts for the surrounding chat agent instead of claiming semantic success
 - explicit prompt/bundle emission flags are inspection surfaces, not semantic success
 - unreviewed compile proposals are draft pages and must not become query evidence
 - active wiki updates from compile output require explicit human-reviewed content

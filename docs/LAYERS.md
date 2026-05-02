@@ -44,7 +44,7 @@ They must not contain answer drafts, source summaries, or inferred semantic clai
 
 - Python owns execution
 - manifests and registry files describe contracts around that execution
-- helper LLM owns semantic compile/query judgment
+- surrounding chat agent or configured helper LLM owns semantic compile/query judgment
 - deterministic code owns ID generation, line ranges, citation anchors, source projection, meta navigation, and validation
 - the repo currently uses a thin-wrapper / thick-core pattern for the workbench:
   - wrapper: `scripts/workbench_api.py`

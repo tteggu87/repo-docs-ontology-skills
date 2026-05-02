@@ -79,7 +79,7 @@ Updated: 2026-05-02
 2. Wiki graph navigation surfaces are refreshed under `wiki/_meta/`
 3. `scripts/llm_compile_source.py --source-page <page>` builds an LLM bundle
 4. Compile-stage meta surfaces are selected from `intelligence/manifests/meta_surfaces.yaml`
-5. If helper LLM is missing, the workflow exits with an error
+5. If helper LLM is missing or disabled, the workflow emits an agent handoff bundle for the surrounding chat LLM and does not claim semantic success
 6. If helper LLM is available, output is saved as a draft compile proposal under `wiki/analyses/`
 7. Active concept/entity/project pages are not modified automatically
 
@@ -116,7 +116,7 @@ Updated: 2026-05-02
 
 1. The backend may read `wikiconfig.json` from repo root only
 2. No parent-directory or workspace-wide config crawl is allowed
-3. `llmWiki.enabled=false` disables helper-model API usage; strict semantic CLI commands then fail unless an explicit prompt/bundle emission flag is used
+3. `llmWiki.enabled=false` disables helper-model API usage; strict semantic CLI commands then emit agent handoff prompt/bundle output rather than claiming semantic success
 4. `llmWiki.enabled=true` makes strict compile/query use `models[0]` as the backend helper LLM
 5. Only a whitelisted subset is normalized:
    - `models`
@@ -126,7 +126,7 @@ Updated: 2026-05-02
 7. Browser routes must not expose provider secrets or raw provider internals
 8. Helper-model routes must return draft output only and must not write to `raw/` or `warehouse/jsonl/`
 9. Helper-model source reads must stay under `raw/inbox/`, `raw/processed/`, or `raw/notes/`
-10. The surrounding Codex/ChatGPT conversation model is not reachable from local scripts; chat-agent processing must be explicit through emitted prompt/bundle artifacts
+10. The surrounding Codex/ChatGPT conversation model is not reachable from local scripts directly; chat-agent processing happens when the agent reads emitted handoff bundles/prompts and intentionally saves proposals or reviewed pages
 
 ## Current intentional legacy split
 

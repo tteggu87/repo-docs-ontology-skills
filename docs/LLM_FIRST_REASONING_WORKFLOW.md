@@ -34,7 +34,7 @@ Then it asks an LLM to produce:
 - citation links
 - compile notes
 
-If `wikiconfig.json` is not configured, the command fails. Use `--emit-bundle` only when you explicitly want to inspect the prompt/evidence bundle.
+If `wikiconfig.json` is not configured or `llmWiki.enabled=false`, the command emits an agent handoff bundle for the surrounding chat LLM and does not claim semantic success. Use `--emit-bundle` when you explicitly want to inspect the prompt/evidence bundle without invoking a helper model.
 
 ## Query workflow
 
@@ -72,7 +72,7 @@ These are structural navigation aids. They should help the LLM choose and inspec
 
 ## Strict LLM boundary
 
-Semantic compile/query workflows fail when no helper LLM is configured. Deterministic code may read files, compute IDs, calculate line ranges, create citation anchors, refresh indexes, and validate structure; it must not create answer drafts or semantic wiki updates.
+Semantic compile/query workflows require an LLM but not necessarily a configured helper LLM. When no helper is configured, local scripts emit agent handoff bundles/prompts for the surrounding chat LLM. Deterministic code may read files, compute IDs, calculate line ranges, create citation anchors, refresh indexes, and validate structure; it must not create answer drafts or semantic wiki updates.
 
 ```bash
 python3 scripts/llm_compile_source.py --source-page <source-page>

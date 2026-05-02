@@ -220,7 +220,18 @@ def compile_source(root: Path, source_page: str, *, emit_bundle: bool = False, s
             "message": "Explicit prompt bundle emission only; this is not semantic success.",
         }
     if not config or not config.get("enabled", True):
-        raise RuntimeError("No enabled wikiconfig.json helper model found. Strict LLM mode refuses semantic compile without an LLM.")
+        return {
+            "status": "agent_handoff",
+            "mode": "llm_compile_source",
+            "source_page": bundle["source_page"],
+            "llm_system_prompt": SYSTEM_PROMPT,
+            "llm_user_prompt": user_prompt,
+            "bundle": bundle,
+            "message": (
+                "No enabled wikiconfig.json helper model found. Hand this bundle to the current chat agent/LLM. "
+                "This is not semantic success and must produce a human-review compile proposal rather than direct active wiki edits."
+            ),
+        }
     output = run_helper_chat_completion(config, system_prompt=SYSTEM_PROMPT, user_prompt=user_prompt, temperature=0.1)
     result = {
         "status": "ok",

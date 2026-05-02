@@ -5,7 +5,10 @@ workflows:
     kind: semantic_compile
     cli: scripts/llm_compile_source.py
     function: scripts.llm_compile_source:compile_source
-    requires_helper_llm: true
+    requires_semantic_llm: true
+    helper_llm_required: false
+    agent_llm_handoff_allowed: true
+    missing_helper_behavior: agent_handoff_bundle
     fallback_allowed: false
     explicit_prompt_flags:
       - --emit-bundle
@@ -28,7 +31,10 @@ workflows:
     kind: semantic_query
     cli: scripts/llm_query.py
     function: scripts.llm_query:llm_query
-    requires_helper_llm: true
+    requires_semantic_llm: true
+    helper_llm_required: false
+    agent_llm_handoff_allowed: true
+    missing_helper_behavior: agent_handoff_bundle
     fallback_allowed: false
     explicit_prompt_flags:
       - --emit-selection-prompt
@@ -43,4 +49,3 @@ workflows:
         - selected_pages
         - wikilink_neighborhood
         - citation_grounded_sources
-

@@ -96,7 +96,7 @@ class TestGenericIngest(unittest.TestCase):
             self.assertEqual(status, 200)
             self.assertEqual(preview["expected_unit_count"], 1)
 
-    def test_strict_llm_workflows_fail_without_config_unless_prompt_is_explicit(self):
+    def test_strict_llm_workflows_handoff_to_agent_without_helper_config(self):
         with tempfile.TemporaryDirectory() as td:
             repo = build_temp_repo(td)
             src = repo / "raw/inbox/education/llm.md"
@@ -104,15 +104,18 @@ class TestGenericIngest(unittest.TestCase):
             src.write_text("# LLM Reasoning\n\nOntology links should guide reasoning.", encoding="utf-8")
             summary = ingest_source(repo, src.as_posix(), profile_id="education-analysis")
             source_page = [path for path in summary["affected_wiki_paths"] if path.startswith("wiki/sources/")][0]
-            with self.assertRaises(RuntimeError):
-                compile_source(repo, source_page)
+            handoff = compile_source(repo, source_page)
+            self.assertEqual(handoff["status"], "agent_handoff")
+            self.assertIn("llm_system_prompt", handoff)
+            self.assertIn("meta_surfaces", handoff["bundle"])
             compiled = compile_source(repo, source_page, emit_bundle=True)
             self.assertEqual(compiled["status"], "prompt_bundle")
             self.assertIn("llm_system_prompt", compiled)
             self.assertIn("meta_surfaces", compiled["bundle"])
             self.assertIn("wiki_moc", compiled["bundle"]["meta_surfaces"])
-            with self.assertRaises(RuntimeError):
-                llm_query(repo, "How should ontology links guide reasoning?")
+            query_handoff = llm_query(repo, "How should ontology links guide reasoning?")
+            self.assertEqual(query_handoff["status"], "agent_handoff")
+            self.assertIn("llm_selection_system_prompt", query_handoff)
             queried = llm_query(repo, "How should ontology links guide reasoning?", emit_selection_prompt=True)
             self.assertEqual(queried["status"], "selection_prompt")
             self.assertIn("llm_selection_system_prompt", queried)

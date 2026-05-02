@@ -37,7 +37,7 @@ Semantic judgment has exactly one default path:
 6. reviewed wiki/ontology pages become the primary reasoning surface
 7. `scripts/llm_query.py` uses page metadata and query selection meta surfaces first, then reads selected page bodies for the answer step
 
-If no helper LLM is configured, compile/query fails. Deterministic lexical preview remains diagnostics only and must not become a semantic answer path.
+If no helper LLM is configured, compile/query emits agent handoff prompt/bundle output for the surrounding chat LLM and does not claim semantic success. Deterministic lexical preview remains diagnostics only and must not become a semantic answer path.
 
 ## Contract layer
 

@@ -89,9 +89,10 @@ Python owns execution, validation, IDs, line ranges, citation anchors, source pr
 
 The generated workspace must default to:
 
-- helper LLM required for semantic compile/query
-- compile without helper LLM exits non-zero
-- query without helper LLM exits non-zero
+- semantic LLM required for semantic compile/query
+- helper LLM optional for semantic compile/query
+- compile without helper LLM emits an agent handoff bundle and does not claim semantic success
+- query without helper LLM emits an agent handoff prompt and does not claim semantic success
 - prompt bundle emission only through explicit flags
 - no regex/lexical fallback for semantic selection or answers
 - deterministic preview surfaces labeled as diagnostics only
@@ -99,7 +100,7 @@ The generated workspace must default to:
 - `wikiconfig.example.json` committed as the format reference
 - `wikiconfig.json` generated as a local disabled placeholder and ignored by `.gitignore`
 
-`llmWiki.enabled=false` means local scripts will not call a helper-model API. It does not silently fall back to a regex heuristic or magically call the surrounding chat model. If a chat agent should perform the semantic work, the operator must explicitly emit the prompt/bundle and have the agent save a proposal or reviewed page intentionally.
+`llmWiki.enabled=false` means local scripts will not call a helper-model API. It does not silently fall back to a regex heuristic. Instead, local scripts emit an agent handoff prompt/bundle for the surrounding chat agent, which can perform the semantic work according to `AGENTS.md` and save a proposal or reviewed page intentionally.
 
 `llmWiki.enabled=true` means strict compile/query uses `models[0]` from `wikiconfig.json` as the backend helper LLM.
 
@@ -141,7 +142,7 @@ Strict LLM smoke:
 
 ```bash
 python3 scripts/llm_query.py "smoke test"
-# expected: non-zero without helper LLM
+# expected: agent_handoff without helper LLM; not semantic success
 
 python3 scripts/llm_query.py "smoke test" --emit-selection-prompt
 # expected: zero, selection prompt only
@@ -151,7 +152,7 @@ Compile smoke should be run after a source page exists:
 
 ```bash
 python3 scripts/llm_compile_source.py --source-page wiki/sources/<source>.md
-# expected: non-zero without helper LLM
+# expected: agent_handoff without helper LLM; not semantic success
 
 python3 scripts/llm_compile_source.py --source-page wiki/sources/<source>.md --emit-bundle
 # expected: zero, prompt bundle only

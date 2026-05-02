@@ -189,7 +189,16 @@ def llm_query(root: Path, question: str, *, emit_selection_prompt: bool = False)
             "message": "Explicit selection prompt emission only; this is not semantic success.",
         }
     if not config or not config.get("enabled", True):
-        raise RuntimeError("No enabled wikiconfig.json helper model found. Strict LLM mode refuses semantic query without an LLM.")
+        return {
+            "status": "agent_handoff",
+            "mode": "llm_query",
+            "llm_selection_system_prompt": SELECT_SYSTEM_PROMPT,
+            "llm_selection_user_prompt": selection_prompt,
+            "message": (
+                "No enabled wikiconfig.json helper model found. Hand this selection prompt to the current chat agent/LLM. "
+                "This is not semantic success; the agent must select pages, read the answer bundle, and cite wiki/source evidence explicitly."
+            ),
+        }
 
     selection_output = run_helper_chat_completion(config, system_prompt=SELECT_SYSTEM_PROMPT, user_prompt=selection_prompt, temperature=0.1)
     selected_stems = _parse_selected_stems(selection_output)

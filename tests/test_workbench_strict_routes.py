@@ -59,10 +59,11 @@ class WorkbenchStrictRouteTests(unittest.TestCase):
         self.assertEqual(status, 400)
         self.assertIn("strict LLM mode", payload["error"])
 
-    def test_llm_query_requires_helper_unless_prompt_emission(self) -> None:
+    def test_llm_query_hands_off_to_agent_without_helper(self) -> None:
         status, payload = route_request(WorkbenchRepository(self.root), "GET", "/api/query/llm?q=sample")
-        self.assertEqual(status, 400)
-        self.assertIn("Strict LLM mode", payload["error"])
+        self.assertEqual(status, 200)
+        self.assertEqual(payload["status"], "agent_handoff")
+        self.assertIn("chat agent", payload["message"])
 
         status, payload = route_request(WorkbenchRepository(self.root), "GET", "/api/query/llm?q=sample&emit_selection_prompt=1")
         self.assertEqual(status, 200)

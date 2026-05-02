@@ -2,7 +2,9 @@ version: 1
 purpose: "Boundary between deterministic infrastructure and LLM semantic judgment."
 yaml_role: contract_only
 semantic_fallback_allowed: false
-helper_llm_required_for_semantic_workflows: true
+semantic_llm_required_for_semantic_workflows: true
+helper_llm_required_for_semantic_workflows: false
+agent_llm_handoff_allowed: true
 deterministic_code_allowed:
   - read_files
   - compute_ids
@@ -25,4 +27,6 @@ compile_proposals:
   query_evidence_allowed_before_review: false
 prompt_bundle_emission:
   explicit_flag_required: true
-
+agent_handoff_bundle_emission:
+  default_when_helper_missing: true
+  not_semantic_success: true

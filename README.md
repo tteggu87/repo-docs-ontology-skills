@@ -249,7 +249,7 @@ python3 scripts/pipeline_refresh.py \
   --validate
 ```
 
-`--write-analysis` is strict LLM-first. It compiles the source page, raw path, content units, wiki index, and linked pages into an LLM evidence bundle, then calls the helper model from `wikiconfig.json`. If no helper model is configured, the command fails instead of producing semantic fallback output.
+`--write-analysis` is strict LLM-first. It compiles the source page, raw path, content units, wiki index, and linked pages into an LLM evidence bundle, then calls the helper model from `wikiconfig.json` when enabled. If no helper model is configured, it returns an agent handoff bundle for the surrounding chat LLM instead of producing heuristic fallback output.
 
 To inspect the prompt bundle explicitly without semantic success:
 
@@ -418,9 +418,9 @@ If helper-model config is introduced:
 - keep the live file at repo root as `wikiconfig.json`
 - keep `wikiconfig.json` out of git; use `wikiconfig.example.json` as the committed format reference
 - keep it server-side only
-- use `llmWiki.enabled: false` to disable helper-model API usage; strict semantic CLI commands then fail unless an explicit prompt/bundle emission flag is used
+- use `llmWiki.enabled: false` to disable helper-model API usage; strict semantic CLI commands then emit agent handoff prompt/bundle output rather than claiming semantic success
 - use `llmWiki.enabled: true` to make strict compile/query use `models[0]` as the backend helper LLM
-- if you want the surrounding chat agent to act as the LLM, emit the prompt/bundle explicitly and have the agent save the resulting proposal or reviewed page intentionally; local scripts cannot silently call the chat conversation model
+- if you want the surrounding chat agent to act as the LLM, let it use the emitted handoff bundle/prompt and have it save the resulting proposal or reviewed page intentionally; local scripts cannot silently call the chat conversation model by themselves
 - keep the current compatibility layer limited to OpenAI-compatible chat endpoints
 - do not let the browser read or own provider secrets
 - keep helper-model outputs draft-only

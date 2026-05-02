@@ -324,12 +324,13 @@ class WorkbenchApiTests(unittest.TestCase):
         self.assertIn("does not currently have enough direct lexical evidence", payload["answer_markdown"])
         self.assertIn("no_direct_matches", payload["warnings"])
 
-    def test_llm_query_route_fails_without_helper_config_unless_prompt_explicit(self) -> None:
+    def test_llm_query_route_hands_off_without_helper_config(self) -> None:
         repo = WorkbenchRepository(self.root)
 
         status, payload = route_request(repo, "GET", "/api/query/llm?q=sample%20durability")
-        self.assertEqual(status, 400)
-        self.assertIn("Strict LLM mode", payload["error"])
+        self.assertEqual(status, 200)
+        self.assertEqual(payload["status"], "agent_handoff")
+        self.assertIn("chat agent", payload["message"])
 
         status, payload = route_request(repo, "GET", "/api/query/llm?q=sample%20durability&emit_selection_prompt=1")
         self.assertEqual(status, 200)

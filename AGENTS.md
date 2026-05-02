@@ -42,7 +42,9 @@ Each operation must produce:
 
 ## Strict LLM-First Semantic Rule
 
-Semantic judgment has exactly one default path: helper LLM compile/query over the wiki/ontology/source evidence.
+Semantic judgment has exactly one default path: LLM-first compile/query over the wiki/ontology/source evidence.
+
+The preferred autonomous path is the surrounding chat agent reading the repo contracts, wiki, ontology, and citation anchors directly. A configured helper LLM in `wikiconfig.json` is an optional backend accelerator for bounded compile/query work, not the only semantic path.
 
 Deterministic code may:
 
@@ -62,7 +64,7 @@ Deterministic code must not:
 - silently fall back to regex/page heuristics when LLM output is missing or malformed
 - treat unreviewed compile proposals as query evidence
 
-If no helper LLM is configured, semantic compile/query must fail. Prompt bundle output is allowed only through explicit inspection flags.
+If no helper LLM is configured, local scripts must emit an agent handoff bundle/prompt rather than claim semantic success. The surrounding chat agent may then perform the LLM-first semantic work and save a proposal or reviewed page intentionally.
 
 Compile output is a human-review proposal. It must not automatically modify active concept, entity, project, timeline, or analysis pages.
 

@@ -56,7 +56,12 @@ def _validate_contract_index() -> None:
 def _validate_semantic_boundary() -> None:
     boundary = load_policy(ROOT, "semantic_boundary.yaml")
     _require(boundary.get("semantic_fallback_allowed") is False, "semantic fallback must not be allowed")
-    _require(boundary.get("helper_llm_required_for_semantic_workflows") is True, "helper LLM must be required")
+    _require(boundary.get("semantic_llm_required_for_semantic_workflows") is True, "semantic LLM must be required")
+    _require(boundary.get("helper_llm_required_for_semantic_workflows") is False, "helper LLM must be optional")
+    _require(boundary.get("agent_llm_handoff_allowed") is True, "agent LLM handoff must be allowed")
+    handoff = boundary.get("agent_handoff_bundle_emission", {}) or {}
+    _require(handoff.get("default_when_helper_missing") is True, "missing helper must default to agent handoff bundle")
+    _require(handoff.get("not_semantic_success") is True, "agent handoff bundle must not be semantic success")
     forbidden = set(boundary.get("deterministic_code_forbidden", []) or [])
     _require("infer_semantic_truth" in forbidden, "deterministic code must not infer semantic truth")
     _require("draft_answers" in forbidden, "deterministic code must not draft answers")
@@ -71,7 +76,10 @@ def _validate_workflows() -> set[str]:
     _require(bool(workflows), "semantic_workflows must declare workflows")
     allowed_targets: set[str] = set()
     for name, workflow in workflows.items():
-        _require(workflow.get("requires_helper_llm") is True, f"{name} must require helper LLM")
+        _require(workflow.get("requires_semantic_llm") is True, f"{name} must require a semantic LLM")
+        _require(workflow.get("helper_llm_required") is False, f"{name} helper LLM must be optional")
+        _require(workflow.get("agent_llm_handoff_allowed") is True, f"{name} must allow agent LLM handoff")
+        _require(workflow.get("missing_helper_behavior") == "agent_handoff_bundle", f"{name} missing helper behavior mismatch")
         _require(workflow.get("fallback_allowed") is False, f"{name} must not allow semantic fallback")
         function = str(workflow.get("function", ""))
         _require(bool(function), f"{name} missing function target")

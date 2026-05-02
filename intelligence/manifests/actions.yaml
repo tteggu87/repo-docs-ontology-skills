@@ -112,13 +112,13 @@ actions:
       - user question
     outputs:
       - citation-grounded answer markdown when a helper LLM is configured
-      - explicit error when no helper LLM is configured
+      - agent handoff selection prompt when no helper LLM is configured
     reads:
       - wiki/
       - warehouse/jsonl/
     writes: []
     notes:
-      - This is backend-gated and fails when no helper LLM is configured.
+      - This is backend-gated when a helper LLM is configured; otherwise it hands off to the surrounding chat agent without semantic success.
       - Durable analysis saving must be a separate human-reviewed action.
   - key: compile_source_with_llm
     description: Compile one wiki source page into a human-review proposal through the strict LLM source compile workflow.
@@ -128,7 +128,7 @@ actions:
       - intelligence/manifests/meta_surfaces.yaml
     outputs:
       - wiki/analyses/*compile-proposal*.md
-      - explicit error when no helper LLM is configured
+      - agent handoff prompt/evidence bundle when no helper LLM is configured
       - explicit prompt bundle when --emit-bundle is used
     reads:
       - wiki/sources/

@@ -3,7 +3,7 @@
     "purpose": "Example helper-model config for llm-wiki-obsidian.",
     "runtime_filename": "wikiconfig.json",
     "behavior_summary": [
-      "llmWiki.enabled = false -> disable backend helper-model API calls. Semantic CLI commands fail unless an explicit prompt/bundle emission flag is used.",
+      "llmWiki.enabled = false -> disable backend helper-model API calls. Semantic CLI commands emit agent handoff prompts/bundles for the surrounding chat LLM instead of claiming semantic success.",
       "llmWiki.enabled = true -> use models[0] as the backend helper LLM for strict compile/query workflows.",
       "This file does not switch the surrounding Codex/ChatGPT conversation to a different model. Agent-mediated chat-LLM processing must be explicit: emit the bundle/prompt, let the chat agent process it, then save a proposal or reviewed page intentionally."
     ]
@@ -11,7 +11,7 @@
   "llmWiki": {
     "enabled": false,
     "_enabled_meaning": {
-      "false": "No helper-model API calls from local scripts. Use --emit-bundle or --emit-selection-prompt when a chat agent should inspect the prompt explicitly.",
+      "false": "No helper-model API calls from local scripts. Scripts emit agent handoff prompts/bundles for the surrounding chat agent.",
       "true": "Enable backend-only helper-model API calls through models[0]."
     }
   },

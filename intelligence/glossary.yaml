@@ -72,7 +72,7 @@ terms:
       - claim moderation
       - claim triage
   - key: strict_llm_first_semantic_workflow
-    definition: Semantic compile/query path that must call a configured helper LLM and must fail instead of falling back to deterministic answer drafts when no helper LLM is available.
+    definition: Semantic compile/query path that must use an LLM. A configured helper LLM may run locally; when no helper is configured, the workflow emits an agent handoff bundle for the surrounding chat LLM instead of falling back to deterministic answer drafts.
     aliases:
       - strict LLM mode
       - no-fallback semantic workflow
