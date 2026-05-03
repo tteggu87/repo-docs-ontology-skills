@@ -1,0 +1,17 @@
+---
+status: Active
+source_of_truth: Yes
+last_updated: 2026-03-18
+superseded_by: N/A
+---
+
+# Documentation Portal
+
+## Current References
+
+- `docs/CURRENT_STATE.md`
+- `docs/IMPACT_SUMMARY.md`
+
+## Operating Intent
+
+- Keep the current intelligence layer stable while extending only what is missing.

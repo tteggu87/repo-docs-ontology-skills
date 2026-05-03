@@ -1,0 +1,15 @@
+metadata:
+  status: Active
+  source_of_truth: false
+  last_updated: 2026-03-18
+  purpose: "Action contracts for the CLI surface."
+
+actions:
+  - key: cli.run
+    status: implemented
+    description: "Run the official command surface."
+    capability: cli.run_command
+    implementation: "pkg_app.cli:main"
+    writes_layers:
+      - Serve
+    touches_datasets: []

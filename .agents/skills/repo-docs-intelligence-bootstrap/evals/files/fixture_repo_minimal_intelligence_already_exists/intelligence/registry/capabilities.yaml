@@ -1,0 +1,14 @@
+metadata:
+  status: Active
+  source_of_truth: false
+  last_updated: 2026-03-18
+  purpose: "Capability bindings for search actions."
+
+capabilities:
+  - key: search.rebuild_index
+    implementation: app.worker:rebuild_search_index
+    input_contract: search.index.request
+    output_contract: search.index.result
+    side_effects:
+      - "Rebuilds the index dataset."
+    status: active

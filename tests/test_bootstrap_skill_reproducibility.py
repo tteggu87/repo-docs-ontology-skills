@@ -12,6 +12,14 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 BOOTSTRAP = ROOT / ".agents/skills/llm-wiki-bootstrap/scripts/bootstrap_llm_wiki.py"
 SKILL_ROOT = ROOT / ".agents/skills"
+EXPECTED_SKILLS = {
+    "repo-docs-intelligence-bootstrap",
+    "llm-wiki-bootstrap",
+    "lightweight-ontology-core",
+    "lg-ontology",
+    "llm-wiki-ontology-ingest",
+    "ontology-pipeline-operator",
+}
 
 
 class BootstrapSkillReproducibilityTests(unittest.TestCase):
@@ -55,6 +63,25 @@ class BootstrapSkillReproducibilityTests(unittest.TestCase):
         self.assertNotIn(".codex/skills", content)
         self.assertNotIn(".agents/skills", content)
         self.assertIn("llm-first-ontology", content)
+
+    def test_full_doctology_skillset_is_repo_local(self) -> None:
+        for skill in sorted(EXPECTED_SKILLS):
+            skill_dir = SKILL_ROOT / skill
+            self.assertTrue(skill_dir.is_dir(), skill)
+            self.assertTrue((skill_dir / "SKILL.md").is_file(), skill)
+
+        expected_support = [
+            "repo-docs-intelligence-bootstrap/scripts/validate_repo_docs_intelligence.py",
+            "lightweight-ontology-core/scripts/validate_ontology_graph.py",
+            "lightweight-ontology-core/references/claim-lifecycle.md",
+            "lg-ontology/scripts/export_graph_projection.py",
+            "lg-ontology/references/graph-projection-model.md",
+            "llm-wiki-bootstrap/scripts/bootstrap_llm_wiki.py",
+            "llm-wiki-ontology-ingest/SKILL.md",
+            "ontology-pipeline-operator/references/operating-model.md",
+        ]
+        for relative in expected_support:
+            self.assertTrue((SKILL_ROOT / relative).is_file(), relative)
 
     def test_default_llm_first_ontology_profile_with_empty_home(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir, tempfile.TemporaryDirectory() as home_dir:

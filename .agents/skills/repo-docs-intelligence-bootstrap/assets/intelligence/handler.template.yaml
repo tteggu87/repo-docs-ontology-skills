@@ -1,0 +1,22 @@
+metadata:
+  status: Draft
+  source_of_truth: false
+  last_updated: YYYY-MM-DD
+  execution_mode: documented_only
+  purpose: "Impact chain for a repository event, including gates and follow-on alignment work."
+
+event_key: sample.event
+emitted_by:
+  - sample.action
+
+chain:
+  - action: sample.followup
+    reason: "Explain why this follow-up action is required."
+  - action: sample.gated_followup
+    reason: "Use a second step when the event requires an explicit gate."
+    gate: true
+
+notes:
+  - "Use documented_only unless there is a real runtime hook."
+  - "Describe the real impact chain even if automation is not live yet."
+  - "Add gates where a failed step should block downstream changes."

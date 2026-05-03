@@ -1,0 +1,16 @@
+metadata:
+  status: Active
+  source_of_truth: true
+  last_updated: YYYY-MM-DD
+  purpose: "Canonical terminology used by docs, manifests, and runtime guidance."
+
+terms:
+  - term: sample.term
+    aliases:
+      - sample_alias
+    status: active
+    definition: "Replace with the canonical definition."
+    owned_by: platform
+    related_terms:
+      - sample.related
+    replaced_by: null

@@ -1,0 +1,14 @@
+metadata:
+  status: Active
+  source_of_truth: false
+  last_updated: 2026-03-18
+  purpose: "Named entities used by the search fixture."
+
+entities:
+  - key: search.document
+    description: "A document included in the index."
+    canonical_terms:
+      - search.document
+    owned_by: search
+    used_by_actions:
+      - search.rebuild_index

@@ -21,6 +21,10 @@ That means:
   - use for repository-level docs and intelligence alignment
 - `llm-wiki-bootstrap`
   - use for new repositories that should start with the promoted strict `llm-first-ontology` contract scaffold
+- `lightweight-ontology-core`
+  - use for lower-level entities, claims, evidence, segment, and relation primitives
+- `lg-ontology`
+  - use for graph workflow extensions over the lightweight ontology core
 - `llm-wiki-ontology-ingest`
   - use when processing new sources into canonical registries plus wiki pages
 - `ontology-pipeline-operator`
@@ -73,6 +77,7 @@ python3 -m pytest tests/test_bootstrap_skill_reproducibility.py
 This test verifies:
 
 - empty-`HOME` execution of the repo-local bootstrap generator
+- presence of the full repo-local DocTology skillset under `.agents/skills`
 - default `llm-first-ontology` profile generation
 - lighter shape checks for `wiki-only`
 - legacy/deprecation shape checks for `wiki-plus-ontology`

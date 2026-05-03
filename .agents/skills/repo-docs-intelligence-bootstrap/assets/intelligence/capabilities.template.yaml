@@ -1,0 +1,14 @@
+metadata:
+  status: Active
+  source_of_truth: false
+  last_updated: YYYY-MM-DD
+  purpose: "Capability bindings that map action keys to executable Python implementations."
+
+capabilities:
+  - key: cli.sample_action
+    implementation: package.module:function
+    input_contract: sample.input
+    output_contract: sample.output
+    side_effects:
+      - "Describe the writes, external calls, or durable effects."
+    status: active

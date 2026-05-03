@@ -64,6 +64,15 @@ For durable answers (comparisons, synthesis, recommendations, recurring question
 
 DocTology's reusable skills are committed under `.agents/skills/`.
 
+The repo-local skillset includes:
+
+- `repo-docs-intelligence-bootstrap`
+- `llm-wiki-bootstrap`
+- `lightweight-ontology-core`
+- `lg-ontology`
+- `llm-wiki-ontology-ingest`
+- `ontology-pipeline-operator`
+
 Use the repo-local bootstrap generator when creating a new DocTology-style LLM
 Wiki workspace:
 
