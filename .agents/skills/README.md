@@ -7,10 +7,10 @@ visible in GitHub:
 - `llm-wiki-ontology-ingest`
 - `ontology-pipeline-operator`
 
-These files document the intended LLM-first ontology workflow for agents working
-from this repository.  The bootstrap skill keeps a thin local launcher and
-delegates the full scaffold generator to the installed Codex skill script to
-avoid maintaining two divergent generator implementations.
+These files are the committed project-local DocTology skill package for agents
+working from this repository.  The bootstrap skill includes the full scaffold
+generator and support files so a clean GitHub clone can create a new
+`llm-first-ontology` workspace without relying on `~/.codex/skills`.
 
 Core rules preserved here:
 

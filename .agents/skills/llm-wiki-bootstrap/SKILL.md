@@ -33,12 +33,12 @@ Do not use this skill when the user only wants to ingest one source into an exis
    - `wiki-only` only when the user explicitly wants a plain Obsidian-first wiki
 4. Run `scripts/bootstrap_llm_wiki.py <target-dir> --profile <profile>` from this skill.
 5. Inspect the generated tree and verify that these exist:
-   - `AGENTS.md`
-   - `README.md`
-   - `.gitignore`
-   - `raw/`
-   - `wiki/`
-   - `scripts/llm_wiki.py`
+     - `AGENTS.md`
+     - `README.md`
+     - `.gitignore`
+     - `raw/`
+     - `wiki/`
+     - `scripts/llm_wiki.py`
    - `templates/source_page_template.md`
    - `wiki/_meta/index.md`, `dashboard.md`, `log.md`
    - for `llm-first-ontology`, also verify:
@@ -82,8 +82,6 @@ Do not use this skill when the user only wants to ingest one source into an exis
 7. Tell the user what was created and what the next maintenance prompt should look like.
 
 ## Default Command
-
-From this project-local skill directory:
 
 ```bash
 python3 .agents/skills/llm-wiki-bootstrap/scripts/bootstrap_llm_wiki.py /absolute/path/to/new-project
@@ -162,7 +160,7 @@ After changes to this skill:
 4. Run the bootstrap script in a second temporary directory for `wiki-only`.
 5. Run the bootstrap script in a third temporary directory for legacy `wiki-plus-ontology`.
 6. Verify the expected files exist for all profiles.
-7. Spot-check `AGENTS.md`, `README.md`, and `scripts/llm_wiki.py`.
-8. Confirm the generated wording does not imply markdown pages are canonical truth in ontology-ready repos.
+5. Spot-check `AGENTS.md`, `README.md`, and `scripts/llm_wiki.py`.
+6. Confirm the generated wording does not imply markdown pages are canonical truth in ontology-ready repos.
 
 Prefer deterministic script validation over vague chat-only claims.

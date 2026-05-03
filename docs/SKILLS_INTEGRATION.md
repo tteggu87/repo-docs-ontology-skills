@@ -1,6 +1,6 @@
 # Skills Integration
 
-Updated: 2026-04-13
+Updated: 2026-05-03
 
 ## Repo-local source of truth
 
@@ -58,3 +58,26 @@ When updating DocTology skills:
 5. Run repository tests.
 6. Sync to `~/.codex/skills` only as a local install step after the repository
    copy is correct.
+
+## Bootstrap reproducibility check
+
+`llm-wiki-bootstrap` must work from `.agents/skills` without reading a local
+installed copy from `~/.codex/skills`.
+
+Run:
+
+```bash
+python3 -m pytest tests/test_bootstrap_skill_reproducibility.py
+```
+
+This test verifies:
+
+- empty-`HOME` execution of the repo-local bootstrap generator
+- default `llm-first-ontology` profile generation
+- lighter shape checks for `wiki-only`
+- legacy/deprecation shape checks for `wiki-plus-ontology`
+- helper-disabled query/compile behavior emits handoff material rather than
+  semantic success
+- generated `wikiconfig.json` is ignored
+- vendored skill tree excludes caches, `.pyc`, `results.tsv`, `.codex`, and
+  `.omx`

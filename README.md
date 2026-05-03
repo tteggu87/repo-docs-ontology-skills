@@ -60,6 +60,34 @@ Agent startup order for non-trivial work:
 
 For durable answers (comparisons, synthesis, recommendations, recurring questions), save back under `wiki/analyses/` whenever writes are available.
 
+## Repo-Local Skillset Reproducibility
+
+DocTology's reusable skills are committed under `.agents/skills/`.
+
+Use the repo-local bootstrap generator when creating a new DocTology-style LLM
+Wiki workspace:
+
+```bash
+python3 .agents/skills/llm-wiki-bootstrap/scripts/bootstrap_llm_wiki.py /absolute/path/to/new-wiki
+```
+
+The default profile is `llm-first-ontology`.  It creates a strict LLM-first
+ontology workspace with contract-only YAML, proposal/review lifecycle, citation
+anchors, optional helper LLM config, and agent handoff behavior when helpers are
+disabled.
+
+The repository copy is the canonical skill source for GitHub reproducibility.
+Installed copies under `~/.codex/skills` are local installs only.
+
+Smoke-test the vendored skillset with:
+
+```bash
+python3 -m pytest tests/test_bootstrap_skill_reproducibility.py
+```
+
+That test runs the repo-local generator with an empty `HOME` so it cannot
+accidentally rely on `~/.codex/skills`.
+
 ## Folder Layout
 
 ```text

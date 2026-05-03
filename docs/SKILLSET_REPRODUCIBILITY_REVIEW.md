@@ -13,36 +13,40 @@ runtime is already relatively mature.  The higher-leverage question is:
 > Can a fresh GitHub clone reproduce the DocTology LLM Wiki / ontology bootstrap
 > workflow without relying on hidden machine-local skill files?
 
-Current answer: **not yet completely**.
+Current answer after the vendoring implementation: **yes for the repo-local
+bootstrap path, guarded by smoke tests**.
 
 ## Current State
 
-The repository now tracks project-local skill surfaces under:
+The repository now tracks project-local skill surfaces and the full bootstrap
+generator package under:
 
 ```text
 .agents/skills/
   README.md
   llm-wiki-bootstrap/
     SKILL.md
+    agents/openai.yaml
+    references/
     scripts/bootstrap_llm_wiki.py
+    scripts/refresh_duckdb_analytics.py
+    scripts/reindex_sqlite_operational.py
+    scripts/verify_three_layer_drift.py
   llm-wiki-ontology-ingest/
     SKILL.md
   ontology-pipeline-operator/
     SKILL.md
+    evals/evals.json
+    references/operating-model.md
 ```
 
-This is an improvement over the previous GitHub state, where the DocTology
-skillset was effectively only present in local installed skill directories.
+This replaces the previous temporary state where GitHub contained the skill
+surface but the project-local `llm-wiki-bootstrap` script delegated to an
+installed local generator under `~/.codex/skills`.
 
-However, the current project-local `llm-wiki-bootstrap` script is only a thin
-launcher.  It delegates to an installed local generator such as:
-
-```text
-~/.codex/skills/llm-wiki-bootstrap/scripts/bootstrap_llm_wiki.py
-```
-
-That means the GitHub repository documents the workflow, but does not yet fully
-contain the workflow implementation.
+The repo-local generator is now exercised by
+`tests/test_bootstrap_skill_reproducibility.py`, including an empty-`HOME`
+bootstrap run that cannot accidentally depend on `~/.codex/skills`.
 
 ## Ralplan Consensus
 
@@ -189,7 +193,7 @@ The review passes only when:
 4. the repository tests still pass
 5. docs clearly state that `.agents/skills` is the canonical committed skillset
 
-## Recommended Next PR
+## Implemented PR Scope
 
 ### P0. Vendor the full bootstrap package
 
