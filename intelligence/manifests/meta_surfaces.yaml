@@ -1,0 +1,40 @@
+version: 1
+purpose: "Map-first wiki surfaces that help LLMs navigate before reading bodies."
+surfaces:
+  wiki_index:
+    path: wiki/_meta/index.md
+    used_by:
+      - query_selection
+      - compile
+    max_chars: 16000
+  wiki_moc:
+    path: wiki/_meta/moc.md
+    used_by:
+      - query_selection
+      - compile
+    max_chars: 16000
+  wiki_link_map:
+    path: wiki/_meta/link-map.md
+    used_by:
+      - query_selection
+      - compile
+    max_chars: 16000
+  source_coverage:
+    path: wiki/_meta/source-coverage.md
+    used_by:
+      - query_selection
+      - query_answer
+      - compile
+    max_chars: 8000
+  orphan_review:
+    path: wiki/_meta/orphan-review.md
+    used_by:
+      - query_answer
+      - compile
+    max_chars: 8000
+  contradiction_review:
+    path: wiki/_meta/contradiction-review.md
+    used_by:
+      - query_answer
+      - compile
+    max_chars: 8000

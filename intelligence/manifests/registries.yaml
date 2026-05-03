@@ -1,0 +1,105 @@
+version: 1
+purpose: "Canonical JSONL registry shape contract."
+registries:
+  documents:
+    path: warehouse/jsonl/documents.jsonl
+    key: document_id
+    required_fields:
+      - document_id
+      - raw_path
+  content_units:
+    path: warehouse/jsonl/content_units.jsonl
+    key: unit_id
+    required_fields:
+      - unit_id
+      - document_id
+      - source_family_id
+      - profile_id
+      - unit_kind
+      - sequence
+      - text
+    references:
+      document_id:
+        registry: documents
+        key: document_id
+      profile_id:
+        registry: profiles
+        key: profile_id
+  source_versions:
+    path: warehouse/jsonl/source_versions.jsonl
+    key: source_version_id
+    alternate_key: export_version_id
+    required_fields:
+      - document_id
+      - raw_path
+      - content_hash
+      - source_family_id
+      - ingested_at
+    references:
+      document_id:
+        registry: documents
+        key: document_id
+      profile_id:
+        registry: profiles
+        key: profile_id
+  observations:
+    path: warehouse/jsonl/observations.jsonl
+    key: observation_id
+    required_fields:
+      - observation_id
+      - profile_id
+      - observation_type
+    references:
+      profile_id:
+        registry: profiles
+        key: profile_id
+      unit_id:
+        registry: content_units
+        key: unit_id
+  analysis_runs:
+    path: warehouse/jsonl/analysis_runs.jsonl
+    key: analysis_run_id
+    required_fields:
+      - analysis_run_id
+      - profile_id
+      - status
+      - output_path
+    references:
+      profile_id:
+        registry: profiles
+        key: profile_id
+  analysis_findings:
+    path: warehouse/jsonl/analysis_findings.jsonl
+    key: analysis_finding_id
+    required_fields:
+      - analysis_finding_id
+      - analysis_run_id
+      - finding_key
+      - status
+    references:
+      analysis_run_id:
+        registry: analysis_runs
+        key: analysis_run_id
+  compile_proposals:
+    path: warehouse/jsonl/compile_proposals.jsonl
+    key: proposal_id
+    required_fields:
+      - proposal_id
+      - proposal_path
+      - status
+      - analysis_method
+      - trust_level
+      - created_at
+  review_events:
+    path: warehouse/jsonl/review_events.jsonl
+    key: review_event_id
+    required_fields:
+      - review_event_id
+      - target_type
+      - target_id
+      - action
+      - reviewed_at
+    references:
+      target_id:
+        registry: compile_proposals
+        key: proposal_id

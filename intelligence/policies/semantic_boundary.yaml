@@ -1,0 +1,32 @@
+version: 1
+purpose: "Boundary between deterministic infrastructure and LLM semantic judgment."
+yaml_role: contract_only
+semantic_fallback_allowed: false
+semantic_llm_required_for_semantic_workflows: true
+helper_llm_required_for_semantic_workflows: false
+agent_llm_handoff_allowed: true
+deterministic_code_allowed:
+  - read_files
+  - compute_ids
+  - compute_line_ranges
+  - create_citation_anchors
+  - project_source_pages
+  - update_indexes
+  - validate_contracts
+deterministic_code_forbidden:
+  - infer_semantic_truth
+  - draft_answers
+  - select_evidence_as_truth
+  - apply_compile_results_to_active_wiki_without_human_review
+content_units:
+  role: citation_anchor
+  forbidden_role: rag_answer_chunk
+compile_proposals:
+  status: draft
+  human_review_required: true
+  query_evidence_allowed_before_review: false
+prompt_bundle_emission:
+  explicit_flag_required: true
+agent_handoff_bundle_emission:
+  default_when_helper_missing: true
+  not_semantic_success: true

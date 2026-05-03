@@ -62,13 +62,16 @@ If you are unsure where to start, use the default DocTology path:
 
 1. bootstrap a wiki-first workspace
 2. ingest sources into wiki + canonical ontology
-3. use route receipts and operator workflows only as complexity grows
+3. let LLM-first compile/query workflows grow the wiki from source-backed evidence
+4. use route receipts, graph projection, and operator workflows only as complexity grows
 
 That default path is the main product promise:
 
 - readable wiki first
 - verifiable truth second
 - graph/operator complexity only when it becomes genuinely useful
+
+Current safety rule: semantic growth is LLM-first and proposal-aware. Deterministic scripts may register sources, create citation anchors, refresh indexes, and validate contracts, but they must not turn lexical or graph output into semantic truth. Compile results should become human-review proposals before active concept/entity/project pages are rewritten.
 
 ## Which path am I on?
 
@@ -95,8 +98,9 @@ The flow is simple:
 
 - run the wiki bootstrap
 - put documents into the generated `raw/inbox/`
-- run `llm-wiki-ontology-ingest`
-- keep growing the wiki through question and analysis workflows
+- run `llm-wiki-ontology-ingest` to register/project sources and citation anchors
+- use LLM compile/query workflows to read the wiki map first, then page bodies and source citations
+- review/apply proposed semantic updates, then keep growing the wiki through question and analysis workflows
 
 Current ontology-profile bootstrap behavior now also ships lightweight local rebuild helpers and state paths for longer-lived repos:
 
@@ -111,6 +115,8 @@ It is separate from the ontology-core / lg ontology mirror contract.
 Its intended scope is lightweight wiki-facing analytics such as source registry, page coverage, and audit-style inspection.
 
 In other words, the first step is always **wiki-first**.
+
+Helper LLMs configured in `wikiconfig.json` are optional accelerators. If helper LLMs are disabled or absent, scripts should hand off explicit prompt/bundle material to the surrounding chat agent, and the chat agent can perform the LLM-first semantic work directly. `wikiconfig.json` is local/private; use `wikiconfig.example.json` as the committed template.
 
 ### 2) Do you want to redefine ontology relationships inside the generated wiki?
 Then use `lightweight-ontology-core`.
@@ -148,6 +154,8 @@ Choose first:
 Both matter, but the initial bootstrap should be only one.
 
 ## Core skill paths
+
+The canonical repo-local skillset lives under `.agents/skills/`. Installed copies under `~/.codex/skills` are local installs only.
 
 - `llm-wiki-bootstrap`
   - start an Obsidian-first LLM Wiki

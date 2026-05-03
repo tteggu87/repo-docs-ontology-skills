@@ -1,0 +1,247 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+import argparse
+import json
+import re
+import sys
+from pathlib import Path
+from typing import Any
+
+ROOT = Path(__file__).resolve().parent.parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from scripts.workbench.llm_config import (
+    helper_model_public_summary,
+    load_continue_helper_config,
+    run_helper_chat_completion,
+)
+from scripts.intelligence_contracts import load_manifest, meta_surface_contents
+from scripts.query_analysis import save_query_analysis
+
+
+def _read(path: Path, max_chars: int = 16000) -> str:
+    if not path.exists():
+        return ""
+    return path.read_text(encoding="utf-8")[:max_chars]
+
+
+def _wikilinks(text: str) -> list[str]:
+    return sorted(set(re.findall(r"\[\[([^\]|#]+)", text)))
+
+
+def _frontmatter(text: str) -> dict[str, str]:
+    if not text.startswith("---\n"):
+        return {}
+    end = text.find("\n---", 4)
+    if end == -1:
+        return {}
+    data: dict[str, str] = {}
+    for raw in text[4:end].splitlines():
+        if ":" not in raw:
+            continue
+        key, value = raw.split(":", 1)
+        data[key.strip()] = value.strip().strip('"')
+    return data
+
+
+def _page_policy(root: Path) -> dict[str, Any]:
+    data = load_manifest(root, "page_policy.yaml")
+    queryable = data.get("queryable", {}) or {}
+    if not isinstance(queryable, dict):
+        raise ValueError("page_policy.queryable must be a mapping.")
+    return queryable
+
+
+def _meta_surface_contents(root: Path, stage: str) -> dict[str, str]:
+    return meta_surface_contents(root, stage)
+
+
+def _is_queryable_page(root: Path, path: Path, text: str) -> bool:
+    policy = _page_policy(root)
+    rel_parts = path.relative_to(root / "wiki").parts
+    if rel_parts and rel_parts[0] in set(policy.get("denied_sections", []) or []):
+        return False
+    fm = _frontmatter(text)
+    if fm.get("status") in set(policy.get("denied_status", []) or []):
+        return False
+    if fm.get("analysis_method") in set(policy.get("denied_analysis_methods", []) or []):
+        return False
+    return True
+
+
+def _page_inventory(root: Path) -> list[dict[str, str]]:
+    pages: list[dict[str, str]] = []
+    for path in sorted((root / "wiki").rglob("*.md")):
+        rel = path.relative_to(root).as_posix()
+        text = _read(path, 2200)
+        if not _is_queryable_page(root, path, text):
+            continue
+        fm = _frontmatter(text)
+        title = path.stem
+        if fm.get("title"):
+            title = fm["title"]
+        section = path.relative_to(root / "wiki").parts[0]
+        pages.append(
+            {
+                "stem": path.stem,
+                "path": rel,
+                "section": section,
+                "title": title,
+                "type": fm.get("type") or section.rstrip("s"),
+                "status": fm.get("status") or "unknown",
+                "outgoing_links": ", ".join(_wikilinks(text)[:20]),
+            }
+        )
+    return pages
+
+
+def _resolve_page(root: Path, stem: str) -> Path | None:
+    for path in (root / "wiki").rglob(f"{stem}.md"):
+        text = _read(path, 2200)
+        if not _is_queryable_page(root, path, text):
+            continue
+        return path
+    return None
+
+
+SELECT_SYSTEM_PROMPT = """You are an LLM Wiki navigation agent.
+Given a user question and a wiki page inventory, select the pages that should be read before answering.
+Do not answer yet.
+Return strict JSON:
+{"selected_page_stems": ["..."], "selection_rationale": "...", "missing_information": ["..."]}.
+Prefer concept/entity/source/analysis pages that carry explanatory structure, not just lexical overlap.
+Use the MOC, link map, source coverage, and page metadata as a map.
+Do not rely on page body excerpts during selection; page bodies are only read in the answer step."""
+
+
+ANSWER_SYSTEM_PROMPT = """You are an LLM-first Obsidian/Ontology reasoning agent.
+Use the provided wiki pages, wikilink neighborhood, and source citations as the primary reasoning surface.
+This is not simple RAG context stuffing and not a heuristic answer draft.
+Answer the user question with:
+1. direct answer
+2. evidence and citations from source/wiki pages
+3. inference boundaries
+4. uncertainty / missing information
+5. suggested wiki updates if useful
+Do not invent facts beyond the provided wiki/ontology/source material."""
+
+
+def _parse_selected_stems(text: str) -> list[str]:
+    data = json.loads(text)
+    stems = data.get("selected_page_stems", [])
+    if not isinstance(stems, list):
+        raise ValueError("LLM page selection must return selected_page_stems as a list.")
+    return [str(stem) for stem in stems if str(stem).strip()]
+
+
+def build_query_bundle(root: Path, question: str, selected_stems: list[str] | None = None, max_pages: int = 8) -> dict[str, Any]:
+    inventory = _page_inventory(root)
+    answer_meta = _meta_surface_contents(root, "query_answer")
+    pages: list[dict[str, str]] = []
+    stems = selected_stems or []
+    neighborhood: set[str] = set(stems)
+    for stem in stems[:max_pages]:
+        path = _resolve_page(root, stem)
+        if not path:
+            continue
+        text = _read(path)
+        pages.append({"stem": path.stem, "path": path.relative_to(root).as_posix(), "content": text})
+        neighborhood.update(_wikilinks(text))
+
+    for stem in sorted(neighborhood):
+        if len(pages) >= max_pages * 2:
+            break
+        if any(page["stem"] == stem for page in pages):
+            continue
+        path = _resolve_page(root, stem)
+        if not path:
+            continue
+        pages.append({"stem": path.stem, "path": path.relative_to(root).as_posix(), "content": _read(path, 9000)})
+
+    return {
+        "question": question,
+        "meta_surfaces": answer_meta,
+        "selected_pages": pages,
+        "page_inventory_count": len(inventory),
+    }
+
+
+def llm_query(root: Path, question: str, *, emit_selection_prompt: bool = False, save_analysis: bool = False) -> dict[str, Any]:
+    inventory = _page_inventory(root)
+    selection_meta = _meta_surface_contents(root, "query_selection")
+    selection_prompt = json.dumps(
+        {
+            "question": question,
+            "meta_surfaces": selection_meta,
+            "page_inventory": inventory,
+        },
+        ensure_ascii=False,
+        indent=2,
+    )
+    config = load_continue_helper_config(root)
+    if emit_selection_prompt:
+        return {
+            "status": "selection_prompt",
+            "mode": "llm_query",
+            "llm_selection_system_prompt": SELECT_SYSTEM_PROMPT,
+            "llm_selection_user_prompt": selection_prompt,
+            "message": "Explicit selection prompt emission only; this is not semantic success.",
+        }
+    if not config or not config.get("enabled", True):
+        return {
+            "status": "agent_handoff",
+            "mode": "llm_query",
+            "llm_selection_system_prompt": SELECT_SYSTEM_PROMPT,
+            "llm_selection_user_prompt": selection_prompt,
+            "message": (
+                "No enabled wikiconfig.json helper model found. Hand this selection prompt to the current chat agent/LLM. "
+                "This is not semantic success; the agent must select pages, read the answer bundle, and cite wiki/source evidence explicitly."
+            ),
+        }
+
+    selection_output = run_helper_chat_completion(config, system_prompt=SELECT_SYSTEM_PROMPT, user_prompt=selection_prompt, temperature=0.1)
+    selected_stems = _parse_selected_stems(selection_output)
+    bundle = build_query_bundle(root, question, selected_stems)
+    answer_prompt = json.dumps(bundle, ensure_ascii=False, indent=2)
+    answer = run_helper_chat_completion(config, system_prompt=ANSWER_SYSTEM_PROMPT, user_prompt=answer_prompt, temperature=0.2)
+    result = {
+        "status": "ok",
+        "mode": "llm_query",
+        "helper_model": helper_model_public_summary(config),
+        "selection_output": selection_output,
+        "selected_page_stems": selected_stems,
+        "answer_markdown": answer,
+    }
+    if save_analysis:
+        sources = [page["path"] for page in bundle.get("selected_pages", []) if page.get("path")]
+        result["analysis_path"] = save_query_analysis(
+            root,
+            question=question,
+            answer_markdown=answer,
+            title=f"Query answer - {question[:80]}",
+            sources=sources,
+            evidence_mix={"helper_llm": 100},
+            analysis_method="helper_llm_query",
+            trust_level="evidence_grounded",
+        )
+    return result
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="LLM-first wiki/ontology query workflow for DocTology.")
+    parser.add_argument("question")
+    parser.add_argument("--emit-selection-prompt", action="store_true", help="Explicitly print the first LLM page-selection prompt instead of calling the helper model.")
+    parser.add_argument("--save-analysis", action="store_true", help="When helper LLM produces an answer, save it under wiki/analyses and update index/log.")
+    args = parser.parse_args()
+    try:
+        print(json.dumps(llm_query(ROOT, args.question, emit_selection_prompt=args.emit_selection_prompt, save_analysis=args.save_analysis), ensure_ascii=False, indent=2))
+        return 0
+    except (RuntimeError, ValueError, json.JSONDecodeError) as error:
+        print(json.dumps({"status": "error", "message": str(error)}, ensure_ascii=False), file=sys.stderr)
+        return 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

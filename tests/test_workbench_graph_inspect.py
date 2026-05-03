@@ -204,52 +204,13 @@ class WorkbenchGraphInspectTests(unittest.TestCase):
         )
         self.assertLessEqual(len(calls), returned_count)
 
-    def test_save_query_analysis_persists_graph_context_section(self) -> None:
+    def test_save_query_analysis_is_disabled_in_strict_mode(self) -> None:
         repo_root = self.make_repo()
         repo = WorkbenchRepository(repo_root)
 
-        payload = repo.save_query_analysis("graph memory operators", limit=5)
-        analysis_path = repo_root / payload["analysis_path"]
-        analysis_text = analysis_path.read_text(encoding="utf-8")
-
-        self.assertIn("## Graph context", analysis_text)
-        self.assertIn("Graph hints", analysis_text)
-        self.assertIn("Graph seeds", analysis_text)
-        self.assertNotIn("### Graph paths", analysis_text)
-
-    def test_save_query_analysis_persists_seed_only_graph_context(self) -> None:
-        repo_root = self.make_repo()
-        repo = WorkbenchRepository(repo_root)
-
-        payload = repo.save_query_analysis("orphan ledger", limit=5)
-        analysis_path = repo_root / payload["analysis_path"]
-        analysis_text = analysis_path.read_text(encoding="utf-8")
-
-        self.assertIn("## Graph hints", payload["preview"]["answer_markdown"])
-        self.assertIn("## Graph context", analysis_text)
-        self.assertIn("### Graph seeds", analysis_text)
-
-    def test_save_query_analysis_skips_graph_context_when_preview_did_not_render_it(self) -> None:
-        repo_root = self.make_repo()
-        repo = WorkbenchRepository(repo_root)
-
-        payload = repo.save_query_analysis("topic that does not exist here", limit=5)
-        analysis_path = repo_root / payload["analysis_path"]
-        analysis_text = analysis_path.read_text(encoding="utf-8")
-
-        self.assertNotIn("## Graph hints", payload["preview"]["answer_markdown"])
-        self.assertNotIn("## Graph context", analysis_text)
-
-    def test_save_query_analysis_skips_graph_context_for_empty_query_preview(self) -> None:
-        repo_root = self.make_repo()
-        repo = WorkbenchRepository(repo_root)
-
-        payload = repo.save_query_analysis("", limit=5)
-        analysis_path = repo_root / payload["analysis_path"]
-        analysis_text = analysis_path.read_text(encoding="utf-8")
-
-        self.assertNotIn("## Graph hints", payload["preview"]["answer_markdown"])
-        self.assertNotIn("## Graph context", analysis_text)
+        with self.assertRaises(ValueError) as raised:
+            repo.save_query_analysis("graph memory operators", limit=5)
+        self.assertIn("strict LLM mode", str(raised.exception))
 
 
 if __name__ == "__main__":

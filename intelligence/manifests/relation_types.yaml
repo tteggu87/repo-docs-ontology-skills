@@ -1,0 +1,83 @@
+version: 1
+purpose: "Vocabulary contract for relation labels; not a store of asserted facts."
+yaml_role: vocabulary_only
+relation_types:
+  supports:
+    class: semantic
+    inverse: supported_by
+    from:
+      - claim
+      - concept
+      - source
+    to:
+      - claim
+      - concept
+      - source
+    evidence_required: true
+    approval_required: true
+  contradicts:
+    class: semantic
+    inverse: contradicted_by
+    from:
+      - claim
+      - concept
+      - source
+    to:
+      - claim
+      - concept
+      - source
+    evidence_required: true
+    approval_required: true
+  supersedes:
+    class: semantic
+    inverse: superseded_by
+    from:
+      - claim
+      - concept
+      - source_version
+      - analysis
+    to:
+      - claim
+      - concept
+      - source_version
+      - analysis
+    evidence_required: true
+    approval_required: true
+  depends_on:
+    class: semantic
+    inverse: depended_on_by
+    from:
+      - concept
+      - project
+      - analysis
+    to:
+      - concept
+      - project
+      - source
+    evidence_required: false
+    approval_required: true
+  documents:
+    class: mechanical
+    inverse: documented_by
+    from:
+      - source
+      - document
+    to:
+      - concept
+      - entity
+      - project
+    evidence_required: true
+    approval_required: false
+  implemented_by:
+    class: semantic
+    inverse: implements
+    from:
+      - concept
+      - project
+      - workflow
+    to:
+      - script
+      - registry
+      - wiki_page
+    evidence_required: true
+    approval_required: true

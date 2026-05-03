@@ -264,6 +264,74 @@ class WorkbenchRepository:
             "recent_analyses": top(analyses),
         }
 
+    def ingest_inbox(self) -> dict[str, Any]:
+        from scripts.ingest.resolver import resolve_family, resolve_profile_for_family
+
+        items: list[dict[str, Any]] = []
+        inbox = self.raw_dir / "inbox"
+        for path in sorted(inbox.rglob("*")) if inbox.exists() else []:
+            if not path.is_file() or path.suffix.lower() not in {".md", ".txt"}:
+                continue
+            rel = path.relative_to(self.root).as_posix()
+            warnings: list[str] = []
+            try:
+                family = resolve_family(self.root, path)
+            except ValueError as error:
+                family = None
+                warnings.append(str(error))
+            items.append(
+                {
+                    "path": rel,
+                    "detected_source_family_id": family,
+                    "detected_profile_id": resolve_profile_for_family(self.root, family or ""),
+                    "warnings": warnings,
+                }
+            )
+        return {"items": items}
+
+    def ingest_preview(self, raw_path: str) -> dict[str, Any]:
+        from scripts.ingest.adapters.education_md_txt import parse_education_source
+        from scripts.ingest.adapters.email_md_txt import parse_email_source
+        from scripts.ingest.adapters.markdown import parse_markdown
+        from scripts.ingest.adapters.report_md_txt import parse_report_source
+        from scripts.ingest.resolver import resolve_family, resolve_profile_for_family
+
+        source = (self.root / raw_path).resolve()
+        resolved_root = self.root.resolve()
+        if resolved_root not in source.parents and source != resolved_root:
+            raise ValueError("path must stay inside repository")
+        if not source.exists() or not source.is_file():
+            raise FileNotFoundError(raw_path)
+        if source.suffix.lower() not in {".md", ".txt"}:
+            raise ValueError("only md/txt preview is supported")
+        rel = source.relative_to(resolved_root).as_posix()
+        if not rel.startswith(("raw/inbox/", "raw/processed/", "raw/notes/")):
+            raise ValueError("preview path must be under raw/inbox/, raw/processed/, or raw/notes/")
+        warnings: list[str] = []
+        try:
+            family = resolve_family(self.root, source)
+        except ValueError as error:
+            family = "generic-md-note"
+            warnings.append(str(error))
+        profile = resolve_profile_for_family(self.root, family)
+        if profile == "email-analysis":
+            parsed = parse_email_source(source, raw_path=rel)
+        elif profile == "education-analysis":
+            parsed = parse_education_source(source, raw_path=rel)
+        elif profile == "report-consistency-analysis":
+            parsed = parse_report_source(source, raw_path=rel)
+        else:
+            parsed = parse_markdown(source, profile, family, raw_path=rel)
+        warnings.extend(parsed.document.get("warnings", []))
+        return {
+            "path": rel,
+            "detected_source_family_id": family,
+            "detected_profile_id": profile,
+            "expected_unit_count": len(parsed.units),
+            "unit_kinds": sorted({unit.get("unit_kind") for unit in parsed.units}),
+            "warnings": warnings,
+        }
+
     def review_summary(self, limit: int = 5) -> dict[str, Any]:
         records = self.all_page_records()
         documents_by_id = {
@@ -391,13 +459,14 @@ class WorkbenchRepository:
         tokens = tokenize_query(question)
         if not tokens:
             return {
-                "mode": "repo_local_search",
+                "mode": "lexical_diagnostics",
                 "question": question,
                 "tokens": [],
                 "coverage": "none",
                 "answer_markdown": (
-                    "# Ask workspace\n\n"
-                    "Enter a more specific question to search the wiki and canonical registries.\n"
+                    "# Lexical diagnostics\n\n"
+                    "Enter a more specific question to inspect lexical wiki/canonical registry matches.\n\n"
+                    "This is not an answer draft.\n"
                 ),
                 "related_pages": [],
                 "related_sources": [],
@@ -619,11 +688,17 @@ class WorkbenchRepository:
             )
 
         return {
-            "mode": "repo_local_search",
+            "mode": "lexical_diagnostics",
             "question": question,
             "tokens": tokens,
             "coverage": coverage,
-            "answer_markdown": "\n".join(answer_lines).strip() + "\n",
+            "answer_markdown": (
+                "# Lexical diagnostics\n\n"
+                "This preview shows lexical wiki/canonical registry matches and graph hints only. "
+                "It is not an answer draft.\n\n"
+                + "\n".join(answer_lines).strip()
+                + "\n"
+            ),
             "related_pages": top_pages,
             "related_sources": top_sources,
             "provenance_sections": provenance_sections,
@@ -723,6 +798,7 @@ class WorkbenchRepository:
         return linked_paths
 
     def save_query_analysis(self, question: str, limit: int = 5) -> dict[str, Any]:
+        raise ValueError("save-analysis is disabled in strict LLM mode; use LLM query with explicit save or scripts/query_analysis.py.")
         preview = self.query_preview(question, limit=limit)
         today = dt.date.today().isoformat()
         stem = f"analysis-{today}-{slugify(question)[:64]}"

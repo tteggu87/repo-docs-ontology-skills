@@ -9,9 +9,14 @@ test-results/
 continue.json
 .gstack/
 .omx/
+.codex/
 RESEARCH/
+wikiconfig.json
 
 # Agent-local runtime artifacts
 .agents/tmp/
 .agents/context/
 .agents/skills/**/.agents/
+.agents/skills/**/.codex/
+.agents/skills/**/.omx/
+.agents/skills/**/results.tsv
