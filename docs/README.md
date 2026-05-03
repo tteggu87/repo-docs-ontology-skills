@@ -8,6 +8,7 @@ Start here when you need current truth from the codebase rather than historical 
 - [`ARCHITECTURE.md`](./ARCHITECTURE.md): runtime components, entrypoints, and data flow
 - [`LAYERS.md`](./LAYERS.md): source-vs-canonical-vs-human-facing-vs-derived boundaries
 - [`SKILLS_INTEGRATION.md`](./SKILLS_INTEGRATION.md): how repo rules, skills, and local tooling fit together
+- [`SKILLSET_REPRODUCIBILITY_REVIEW.md`](./SKILLSET_REPRODUCIBILITY_REVIEW.md): review and next plan for making the DocTology skillset fully reproducible from GitHub
 - [`ROADMAP.md`](./ROADMAP.md): near-term alignment work and known gaps
 - [`IMPACT_SUMMARY.md`](./IMPACT_SUMMARY.md): current refresh summary, checked files, and remaining drift
 - [`LLM_FIRST_ONTOLOGY_BOOTSTRAP_PROFILE.md`](./LLM_FIRST_ONTOLOGY_BOOTSTRAP_PROFILE.md): promoted default `llm-wiki-bootstrap --profile llm-first-ontology` contract
