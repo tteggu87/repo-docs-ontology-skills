@@ -184,7 +184,7 @@ Canonical repo-local skillset은 `.agents/skills/` 아래에 있습니다. `~/.c
 
 ## 운영 모델
 
-e736 스타일의 DocTology baseline은 의도적으로 작습니다.
+DocTology baseline은 의도적으로 작습니다.
 
 ```text
 raw source

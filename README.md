@@ -184,7 +184,7 @@ The canonical repo-local skillset lives under `.agents/skills/`. Installed copie
 
 ## Operating model
 
-The e736-style DocTology baseline is intentionally small:
+The DocTology baseline is intentionally small:
 
 ```text
 raw source
