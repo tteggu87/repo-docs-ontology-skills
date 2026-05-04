@@ -7,7 +7,9 @@ description: Use this skill when the user wants to scaffold a new Obsidian-first
 
 ## Overview
 
-Create a fresh markdown-first LLM Wiki workspace that is ready for Codex-style maintenance. The skill scaffolds the folder structure, `AGENTS.md`, starter `README.md`, local CLI, template files, meta pages, strict LLM-first contracts, and optional derived-state helpers so the next agent can operate the vault consistently. It supports a promoted `llm-first-ontology` default, a plain wiki scaffold, and a deprecated legacy ontology scaffold.
+Create a fresh markdown-first LLM Wiki workspace that is ready for Codex-style maintenance. The skill scaffolds the folder structure, `AGENTS.md`, starter `README.md`, local CLI, template files, meta pages, strict LLM-first contracts, and derived-state helpers so the next agent can operate the vault consistently.
+
+The default profile is `llm-first-ontology`: a strict no-fallback LLM-first ontology scaffold with contract-only YAML, proposal lifecycle policy, proposal/review registries, ambient chat-agent semantic handoff, optional helper-LLM semantic workflows, and lightweight SQLite/DuckDB/drift helpers as rebuildable non-canonical state.
 
 This is the recommended **start here** skill for DocTology-style wiki-first repos.
 
@@ -28,13 +30,14 @@ Do not use this skill when the user only wants to ingest one source into an exis
 1. Confirm the target directory and whether it is new or already contains files.
 2. If the directory is non-empty, avoid destructive overwrite unless the user explicitly wants replacement.
 3. Choose the profile:
-   - `llm-first-ontology` as the default for strict ontology-ready repos with contract YAML, proposal lifecycle, helper-optional LLM handoff, and three-layer helper scripts
+   - `llm-first-ontology` as the default for strict no-fallback LLM Wiki repos with contract-only YAML, proposal lifecycle, source/citation substrate, ambient chat-agent handoff, optional helper-LLM semantic workflows, and three-layer helper scripts
    - `wiki-only` only when the user explicitly wants a plain Obsidian-first wiki
-   - `wiki-plus-ontology` only for deprecated legacy compatibility
+   - `wiki-plus-ontology` only for legacy ontology-ready repos; it emits a deprecation warning
 4. Run `scripts/bootstrap_llm_wiki.py <target-dir> --profile <profile>` from this skill.
 5. Inspect the generated tree and verify that these exist:
    - `AGENTS.md`
    - `README.md`
+   - `.gitignore`
    - `raw/`
    - `wiki/`
    - `scripts/llm_wiki.py`
@@ -45,7 +48,23 @@ Do not use this skill when the user only wants to ingest one source into an exis
      - `wikiconfig.json` ignored by `.gitignore`
      - `intelligence/contract_index.yaml`
      - `intelligence/policies/semantic_boundary.yaml`
+     - `intelligence/policies/proposal_lifecycle.yaml`
      - `intelligence/manifests/semantic_workflows.yaml`
+     - `intelligence/manifests/page_policy.yaml`
+     - `intelligence/manifests/meta_surfaces.yaml`
+     - `intelligence/manifests/relation_types.yaml`
+     - `intelligence/manifests/registries.yaml`
+     - `intelligence/packs/*/pack.yaml`
+     - `scripts/llm_compile_source.py`
+     - `scripts/llm_query.py`
+     - `scripts/query_analysis.py`
+     - `scripts/wiki_graph_navigation.py`
+     - `scripts/validate_intelligence.py`
+     - `scripts/validate_workbench_manifest.py`
+     - `scripts/validate_profiles.py`
+     - `scripts/validate_registries.py`
+     - `scripts/validate_repo_docs_intelligence.py`
+     - `scripts/proposal_review.py`
      - `state/`
      - `scripts/reindex_sqlite_operational.py`
      - `scripts/refresh_duckdb_analytics.py`
@@ -65,13 +84,19 @@ Do not use this skill when the user only wants to ingest one source into an exis
 python3 ~/.agents/skills/llm-wiki-bootstrap/scripts/bootstrap_llm_wiki.py /absolute/path/to/new-project
 ```
 
-For an explicit ontology-ready scaffold:
+For an explicit strict ontology-ready scaffold:
 
 ```bash
 python3 ~/.agents/skills/llm-wiki-bootstrap/scripts/bootstrap_llm_wiki.py /absolute/path/to/new-project --profile llm-first-ontology
 ```
 
 `llm-first-ontology` is also the default when `--profile` is omitted. `wiki-plus-ontology` remains available only for deprecated legacy compatibility.
+
+For the legacy ontology-ready scaffold:
+
+```bash
+python3 ~/.agents/skills/llm-wiki-bootstrap/scripts/bootstrap_llm_wiki.py /absolute/path/to/new-project --profile wiki-plus-ontology
+```
 
 For an explicit plain wiki scaffold:
 
@@ -89,7 +114,9 @@ Add `--force` only when the user explicitly wants overwrites.
 - minimal CLI for `ingest`, `reindex`, `lint`, `status`, `log`
 - source-page template
 - starter dashboard, index, and log pages
-- default ontology-ready `warehouse/jsonl/`, `intelligence/`, `state/`, and lightweight SQLite/DuckDB helper files
+- default strict ontology-ready `warehouse/jsonl/`, `intelligence/`, LLM compile/query scripts, proposal review CLI, validators, `state/`, and lightweight SQLite/DuckDB helper files
+- durable query-answer persistence helper under `scripts/query_analysis.py`
+- `wikiconfig.example.json` plus a local ignored `wikiconfig.json` placeholder with `llmWiki.enabled=false`; disabled helper mode emits agent handoff bundles/prompts rather than semantic success
 
 ## Three-Layer Follow-On Guidance
 
@@ -126,10 +153,12 @@ The default `llm-first-ontology` bootstrap ships lightweight local SQLite/DuckDB
 After changes to this skill:
 
 1. Run quick validation.
-2. Run the bootstrap script in a temporary directory for `wiki-only`.
-3. Run the bootstrap script in a second temporary directory for `wiki-plus-ontology`.
-4. Verify the expected files exist for both profiles.
-5. Spot-check `AGENTS.md`, `README.md`, and `scripts/llm_wiki.py`.
-6. Confirm the generated wording does not imply markdown pages are canonical truth in ontology-ready repos.
+2. Run the bootstrap script in a temporary directory for default `llm-first-ontology`.
+3. Run the generated validators and three-layer helper smoke in that temporary directory.
+4. Run the bootstrap script in a second temporary directory for `wiki-only`.
+5. Run the bootstrap script in a third temporary directory for legacy `wiki-plus-ontology`.
+6. Verify the expected files exist for all profiles.
+7. Spot-check `AGENTS.md`, `README.md`, and `scripts/llm_wiki.py`.
+8. Confirm the generated wording does not imply markdown pages, SQLite, or DuckDB are canonical semantic truth.
 
 Prefer deterministic script validation over vague chat-only claims.
