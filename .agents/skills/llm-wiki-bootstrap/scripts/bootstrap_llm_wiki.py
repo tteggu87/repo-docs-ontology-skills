@@ -1967,6 +1967,12 @@ source_families:
     description: Create a human-review compile proposal through strict helper-LLM workflow.
   - key: answer_query_with_llm_wiki
     description: Answer through strict helper-LLM wiki/ontology query workflow.
+  - key: reindex_wiki_operational_index
+    description: Rebuild the derived SQLite operational index from canonical wiki files.
+  - key: refresh_wiki_analytics_mirror
+    description: Refresh the derived DuckDB wiki analytics mirror from canonical JSONL and wiki files.
+  - key: verify_three_layer_drift
+    description: Check coarse drift across file truth, SQLite operational state, and DuckDB analytics state.
 """,
         "intelligence/manifests/datasets.yaml": """datasets:
   - key: raw_inbox
@@ -1977,6 +1983,15 @@ source_families:
     truth_class: human_facing
   - key: contract_index
     path: intelligence/contract_index.yaml
+    truth_class: contract
+  - key: sqlite_operational_index
+    path: state/wiki_index.sqlite
+    truth_class: derived_operational
+  - key: duckdb_wiki_analytics_mirror
+    path: state/wiki_analytics.duckdb
+    truth_class: derived_analytics
+  - key: three_layer_schema_templates
+    path: templates/llm-wiki-three-layer/
     truth_class: contract
 """,
         "intelligence/manifests/entities.yaml": "entities: []\n",
@@ -1994,6 +2009,15 @@ workbench:
   - key: llm.query.answer
     action: answer_query_with_llm_wiki
     implementation: scripts/llm_query.py:llm_query
+  - key: wiki.operational.reindex
+    action: reindex_wiki_operational_index
+    implementation: scripts/reindex_sqlite_operational.py:main
+  - key: wiki.analytics.refresh
+    action: refresh_wiki_analytics_mirror
+    implementation: scripts/refresh_duckdb_analytics.py:main
+  - key: wiki.three_layer.verify_drift
+    action: verify_three_layer_drift
+    implementation: scripts/verify_three_layer_drift.py:main
 """,
         "intelligence/packs/generic-md-note/pack.yaml": """profile_id: generic-analysis
 pack_id: generic-analysis
@@ -2362,6 +2386,8 @@ def scaffold(target: Path, force: bool, profile: str) -> None:
                 target / "intelligence" / "policies",
                 target / "intelligence" / "registry",
                 target / "intelligence" / "schemas",
+                target / "state",
+                target / "templates" / "llm-wiki-three-layer",
                 target / "warehouse" / "jsonl",
                 target / "warehouse" / "graph_projection",
             ]
@@ -2395,6 +2421,11 @@ def scaffold(target: Path, force: bool, profile: str) -> None:
             write_text(target / rel_path, content)
         for rel_path, content in llm_first_script_files().items():
             write_text(target / rel_path, content)
+        write_text(target / "scripts" / "reindex_sqlite_operational.py", generated_helper_script("reindex_sqlite_operational.py"))
+        write_text(target / "scripts" / "refresh_duckdb_analytics.py", generated_helper_script("refresh_duckdb_analytics.py"))
+        write_text(target / "scripts" / "verify_three_layer_drift.py", generated_helper_script("verify_three_layer_drift.py"))
+        write_text(target / "templates" / "llm-wiki-three-layer" / "sqlite_operational.schema.sql", sqlite_operational_schema_sql())
+        write_text(target / "templates" / "llm-wiki-three-layer" / "duckdb_analytical.schema.sql", duckdb_analytical_schema_sql())
         write_text(target / "docs" / "README.md", "# Docs Portal\n\nStart with `../AGENTS.md` and `../intelligence/contract_index.yaml`.\n")
         write_text(target / "docs" / "LLM_FIRST_ONTOLOGY_BOOTSTRAP_PROFILE.md", "# LLM-First Ontology Bootstrap Profile\n\nThis repo was generated with the strict LLM-first ontology profile.\n")
         for name in ("documents.jsonl", "content_units.jsonl", "source_versions.jsonl", "compile_proposals.jsonl", "review_events.jsonl"):

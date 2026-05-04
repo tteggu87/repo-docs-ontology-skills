@@ -38,6 +38,12 @@ intelligence/
   registry/
   schemas/
 scripts/
+  reindex_sqlite_operational.py
+  refresh_duckdb_analytics.py
+  verify_three_layer_drift.py
+state/
+templates/
+  llm-wiki-three-layer/
 tests/
 docs/
 AGENTS.md
@@ -82,8 +88,19 @@ The minimum generated scripts should be thin execution surfaces:
 - `scripts/validate_registries.py`
 - `scripts/validate_repo_docs_intelligence.py`
 - `scripts/proposal_review.py`
+- `scripts/reindex_sqlite_operational.py`
+- `scripts/refresh_duckdb_analytics.py`
+- `scripts/verify_three_layer_drift.py`
 
 Python owns execution, validation, IDs, line ranges, citation anchors, source projection, indexes, logs, and navigation pages.
+
+The three-layer helper scripts are derived-state maintenance helpers:
+
+- `reindex_sqlite_operational.py` rebuilds `state/wiki_index.sqlite` from canonical wiki files
+- `refresh_duckdb_analytics.py` refreshes `state/wiki_analytics.duckdb` from canonical JSONL and wiki files
+- `verify_three_layer_drift.py` checks coarse drift across file truth, SQLite state, and DuckDB analytics
+
+They must not become canonical truth owners.
 
 ## Default no-fallback behavior
 
@@ -156,6 +173,17 @@ python3 scripts/llm_compile_source.py --source-page wiki/sources/<source>.md
 
 python3 scripts/llm_compile_source.py --source-page wiki/sources/<source>.md --emit-bundle
 # expected: zero, prompt bundle only
+```
+
+Three-layer helper smoke:
+
+```bash
+python3 scripts/reindex_sqlite_operational.py --repo-root .
+python3 scripts/verify_three_layer_drift.py --repo-root .
+
+# Optional when duckdb is installed:
+python3 scripts/refresh_duckdb_analytics.py --repo-root .
+python3 scripts/verify_three_layer_drift.py --repo-root .
 ```
 
 ## What not to generate

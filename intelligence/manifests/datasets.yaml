@@ -109,3 +109,13 @@ datasets:
     role: declarative contract for sidecar workbench routes, actions, and mutation boundaries
     truth_class: contract
     owner: operator
+  - key: repo_local_llm_wiki_bootstrap_skill
+    path: .agents/skills/llm-wiki-bootstrap/
+    role: committed bootstrap generator and references for new strict LLM-first ontology workspaces
+    truth_class: contract
+    owner: operator
+  - key: bootstrap_three_layer_schema_templates
+    path: .agents/skills/llm-wiki-bootstrap/scripts/
+    role: source package for generated SQLite, DuckDB, and drift helper scripts
+    truth_class: contract
+    owner: operator

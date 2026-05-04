@@ -87,6 +87,7 @@ Checked and left unchanged:
 
 - `frontmatter.yaml` remains deferred
 - `llm-wiki-bootstrap --profile llm-first-ontology` is now promoted as the default strict bootstrap scaffold after the DocTology contract set, proposal lifecycle, registries, validators, and strict route tests stabilized
+- The promoted default now also generates the lightweight three-layer helper scripts and schema templates for rebuildable SQLite operational state and DuckDB wiki analytics mirrors
 - The intelligence layer remains intentionally minimal and does not document every workbench route as a first-class entity
 - Installed bootstrap skill promotion is complete; future changes should still stabilize in DocTology before being copied into the reusable bootstrap profile
 

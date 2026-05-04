@@ -97,6 +97,7 @@ class BootstrapSkillReproducibilityTests(unittest.TestCase):
                 "wikiconfig.example.json",
                 "wikiconfig.json",
                 "docs/LLM_FIRST_ONTOLOGY_BOOTSTRAP_PROFILE.md",
+                "state",
                 "intelligence/contract_index.yaml",
                 "intelligence/policies/semantic_boundary.yaml",
                 "intelligence/policies/proposal_lifecycle.yaml",
@@ -114,11 +115,16 @@ class BootstrapSkillReproducibilityTests(unittest.TestCase):
                 "scripts/llm_compile_source.py",
                 "scripts/query_analysis.py",
                 "scripts/proposal_review.py",
+                "scripts/reindex_sqlite_operational.py",
+                "scripts/refresh_duckdb_analytics.py",
+                "scripts/verify_three_layer_drift.py",
                 "scripts/validate_intelligence.py",
                 "scripts/validate_profiles.py",
                 "scripts/validate_registries.py",
                 "scripts/validate_workbench_manifest.py",
                 "scripts/validate_repo_docs_intelligence.py",
+                "templates/llm-wiki-three-layer/sqlite_operational.schema.sql",
+                "templates/llm-wiki-three-layer/duckdb_analytical.schema.sql",
             ]
             for relative in required:
                 self.assertTrue((target / relative).exists(), relative)
@@ -156,6 +162,9 @@ class BootstrapSkillReproducibilityTests(unittest.TestCase):
                 cwd=target,
             )
             self.assertEqual(json.loads(compile_result.stdout)["status"], "agent_handoff")
+
+            self.run_cmd([sys.executable, "scripts/reindex_sqlite_operational.py", "--repo-root", "."], cwd=target)
+            self.assertTrue((target / "state/wiki_index.sqlite").exists())
 
     def test_wiki_only_profile_is_plain_wiki_shape(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir, tempfile.TemporaryDirectory() as home_dir:

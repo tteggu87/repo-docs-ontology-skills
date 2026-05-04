@@ -23,6 +23,11 @@ Updated: 2026-05-02
    - contract layer for workflow, boundary, registry, relation, and meta-surface policy
    - not a second wiki
    - not a semantic claim store
+6. `state/`
+   - optional rebuildable local runtime state created by bootstrap helper scripts
+   - `state/wiki_index.sqlite` is an operational index
+   - `state/wiki_analytics.duckdb` is a local wiki analytics mirror
+   - not canonical truth
 
 ## Contract layer
 

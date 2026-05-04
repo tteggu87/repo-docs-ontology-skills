@@ -1,8 +1,8 @@
 ---
 title: "Gap checklist: llm-wiki-bootstrap vs three-layer runtime"
-status: draft
+status: resolved
 created: 2026-04-17
-updated: 2026-04-17
+updated: 2026-05-04
 owner: "Codex"
 type: issue-breakdown
 tags:
@@ -16,11 +16,21 @@ tags:
 
 # Gap Checklist: LLM Wiki Bootstrap Vs Three-Layer Runtime
 
+> Resolution note, 2026-05-04:
+> The promoted default `llm-first-ontology` bootstrap now generates `state/`,
+> `scripts/reindex_sqlite_operational.py`,
+> `scripts/refresh_duckdb_analytics.py`,
+> `scripts/verify_three_layer_drift.py`, and
+> `templates/llm-wiki-three-layer/`.
+> The helper scripts read the generated wiki directories and canonical JSONL
+> surfaces directly. Keep the checklist below as historical context for the
+> gap that drove the alignment.
+
 This document converts the identified support gap into concrete issue-style checkpoints.
 
 ## Short verdict
 
-The current repository has a real gap:
+The original repository had a real gap:
 
 - repo philosophy and runtime references now describe a three-layer model
 - `llm-wiki-bootstrap` still generates a lighter ontology-ready scaffold

@@ -24,10 +24,34 @@ def run_py(path: Path, *args: str) -> subprocess.CompletedProcess[str]:
 
 
 class LlmWikiBootstrapThreeLayerTests(unittest.TestCase):
-    def make_repo(self) -> Path:
+    def make_repo(self, profile: str = "wiki-plus-ontology") -> Path:
         temp_dir = Path(tempfile.mkdtemp(prefix="llmwiki-three-layer-test-"))
-        run_py(BOOTSTRAP, str(temp_dir), "--profile", "wiki-plus-ontology")
+        if profile == "llm-first-ontology":
+            run_py(BOOTSTRAP, str(temp_dir))
+        else:
+            run_py(BOOTSTRAP, str(temp_dir), "--profile", profile)
         return temp_dir
+
+    def test_default_llm_first_profile_generates_three_layer_support_files(self) -> None:
+        repo = self.make_repo("llm-first-ontology")
+
+        expected_paths = [
+            repo / "state",
+            repo / "scripts" / "reindex_sqlite_operational.py",
+            repo / "scripts" / "refresh_duckdb_analytics.py",
+            repo / "scripts" / "verify_three_layer_drift.py",
+            repo / "templates" / "llm-wiki-three-layer" / "sqlite_operational.schema.sql",
+            repo / "templates" / "llm-wiki-three-layer" / "duckdb_analytical.schema.sql",
+        ]
+        for path in expected_paths:
+            self.assertTrue(path.exists(), f"Missing expected path: {path}")
+
+        sqlite_script = repo / "scripts" / "reindex_sqlite_operational.py"
+        drift_script = repo / "scripts" / "verify_three_layer_drift.py"
+        run_py(sqlite_script, "--repo-root", str(repo))
+        result = run_py(drift_script, "--repo-root", str(repo))
+        self.assertTrue((repo / "state" / "wiki_index.sqlite").exists())
+        self.assertIn("DRIFT_OK", result.stdout)
 
     def test_bootstrap_generates_three_layer_support_files(self) -> None:
         repo = self.make_repo()

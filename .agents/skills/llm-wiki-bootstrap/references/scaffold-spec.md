@@ -1,10 +1,11 @@
 # Scaffold Spec
 
 This skill bootstraps a small, opinionated LLM Wiki workspace.
-It supports two profiles:
+It supports three profiles:
 
 - `wiki-only`
-- `wiki-plus-ontology`
+- `llm-first-ontology` (default)
+- `wiki-plus-ontology` (deprecated legacy compatibility)
 
 ## Generated Tree
 
@@ -35,7 +36,7 @@ It supports two profiles:
     timelines/
 ```
 
-## Generated Tree: wiki-plus-ontology
+## Generated Tree: llm-first-ontology
 
 ```text
 <target>/
@@ -43,9 +44,21 @@ It supports two profiles:
   README.md
   intelligence/
     glossary.yaml
+    contract_index.yaml
     manifests/
       actions.yaml
       datasets.yaml
+      meta_surfaces.yaml
+      page_policy.yaml
+      registries.yaml
+      relation_types.yaml
+      semantic_workflows.yaml
+      source_families.yaml
+      workbench.yaml
+    packs/
+    policies/
+    registry/
+    schemas/
   raw/
     inbox/
     processed/
@@ -63,14 +76,13 @@ It supports two profiles:
       sqlite_operational.schema.sql
       duckdb_analytical.schema.sql
   warehouse/
+    graph_projection/
     jsonl/
-      messages.jsonl
       documents.jsonl
-      entities.jsonl
-      claims.jsonl
-      claim_evidence.jsonl
-      segments.jsonl
-      derived_edges.jsonl
+      content_units.jsonl
+      source_versions.jsonl
+      compile_proposals.jsonl
+      review_events.jsonl
   wiki/
     _meta/
       dashboard.md
@@ -95,7 +107,7 @@ It supports two profiles:
 - `AGENTS.md` is the repo-local contract for future agents.
 - `intelligence/` is optional repo-local vocabulary plus dataset/action contracts.
 - `scripts/llm_wiki.py` handles lightweight maintenance tasks.
-- ontology-ready scaffolds also ship lightweight SQLite/DuckDB rebuild helpers plus schema templates.
+- the default `llm-first-ontology` scaffold ships lightweight SQLite/DuckDB rebuild helpers plus schema templates.
 - The scaffold should be immediately usable without third-party Python dependencies.
 
 ## Three-Layer Extension Path
@@ -130,5 +142,5 @@ After scaffolding:
 2. Add the first source to `raw/inbox/`.
 3. Ask Codex to use the repo-local `AGENTS.md`.
 4. Register the source with the local CLI.
-5. If the repo uses `wiki-plus-ontology`, run ontology-backed ingest from there.
+5. If the repo uses `llm-first-ontology`, run strict LLM-first compile/query or ontology-backed ingest from there.
 6. If the user later wants a longer-lived architecture, consult the three-layer references before adding SQLite or DuckDB.

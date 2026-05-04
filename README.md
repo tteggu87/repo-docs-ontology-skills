@@ -81,6 +81,7 @@ Use this quick map:
 - **Daily path:** `llm-wiki-ontology-ingest`
 - **Advanced canonical engine:** `lightweight-ontology-core`
 - **Optional graph extension:** `lg-ontology`
+- **Operator maintenance:** `ontology-pipeline-operator`
 
 Most users should begin with:
 
@@ -167,6 +168,8 @@ The canonical repo-local skillset lives under `.agents/skills/`. Installed copie
   - extend into ontology graph / neighborhood exploration
 - `repo-docs-intelligence-bootstrap`
   - bootstrap project-specific memory / repo intelligence
+- `ontology-pipeline-operator`
+  - refresh existing ontology/wiki artifacts and repeated maintenance flows
 
 ## Three-layer operating model
 

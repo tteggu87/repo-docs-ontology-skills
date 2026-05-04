@@ -7,7 +7,7 @@ description: Use this skill when the user wants to scaffold a new Obsidian-first
 
 ## Overview
 
-Create a fresh markdown-first LLM Wiki workspace that is ready for Codex-style maintenance. The skill scaffolds the folder structure, `AGENTS.md`, starter `README.md`, local CLI, template files, and meta pages so the next agent can operate the vault consistently. It now supports both a plain wiki scaffold and an ontology-ready scaffold.
+Create a fresh markdown-first LLM Wiki workspace that is ready for Codex-style maintenance. The skill scaffolds the folder structure, `AGENTS.md`, starter `README.md`, local CLI, template files, meta pages, strict LLM-first contracts, and optional derived-state helpers so the next agent can operate the vault consistently. It supports a promoted `llm-first-ontology` default, a plain wiki scaffold, and a deprecated legacy ontology scaffold.
 
 This is the recommended **start here** skill for DocTology-style wiki-first repos.
 
@@ -28,8 +28,9 @@ Do not use this skill when the user only wants to ingest one source into an exis
 1. Confirm the target directory and whether it is new or already contains files.
 2. If the directory is non-empty, avoid destructive overwrite unless the user explicitly wants replacement.
 3. Choose the profile:
-   - `wiki-plus-ontology` as the default for ontology-ready repos with `warehouse/jsonl/` and minimal intelligence manifests
+   - `llm-first-ontology` as the default for strict ontology-ready repos with contract YAML, proposal lifecycle, helper-optional LLM handoff, and three-layer helper scripts
    - `wiki-only` only when the user explicitly wants a plain Obsidian-first wiki
+   - `wiki-plus-ontology` only for deprecated legacy compatibility
 4. Run `scripts/bootstrap_llm_wiki.py <target-dir> --profile <profile>` from this skill.
 5. Inspect the generated tree and verify that these exist:
    - `AGENTS.md`
@@ -39,10 +40,12 @@ Do not use this skill when the user only wants to ingest one source into an exis
    - `scripts/llm_wiki.py`
    - `templates/source_page_template.md`
    - `wiki/_meta/index.md`, `dashboard.md`, `log.md`
-   - for `wiki-plus-ontology`, also verify:
-     - `intelligence/glossary.yaml`
-     - `intelligence/manifests/datasets.yaml`
-     - `intelligence/manifests/actions.yaml`
+   - for `llm-first-ontology`, also verify:
+     - `wikiconfig.example.json`
+     - `wikiconfig.json` ignored by `.gitignore`
+     - `intelligence/contract_index.yaml`
+     - `intelligence/policies/semantic_boundary.yaml`
+     - `intelligence/manifests/semantic_workflows.yaml`
      - `state/`
      - `scripts/reindex_sqlite_operational.py`
      - `scripts/refresh_duckdb_analytics.py`
@@ -65,8 +68,10 @@ python3 ~/.agents/skills/llm-wiki-bootstrap/scripts/bootstrap_llm_wiki.py /absol
 For an explicit ontology-ready scaffold:
 
 ```bash
-python3 ~/.agents/skills/llm-wiki-bootstrap/scripts/bootstrap_llm_wiki.py /absolute/path/to/new-project --profile wiki-plus-ontology
+python3 ~/.agents/skills/llm-wiki-bootstrap/scripts/bootstrap_llm_wiki.py /absolute/path/to/new-project --profile llm-first-ontology
 ```
+
+`llm-first-ontology` is also the default when `--profile` is omitted. `wiki-plus-ontology` remains available only for deprecated legacy compatibility.
 
 For an explicit plain wiki scaffold:
 
@@ -84,7 +89,7 @@ Add `--force` only when the user explicitly wants overwrites.
 - minimal CLI for `ingest`, `reindex`, `lint`, `status`, `log`
 - source-page template
 - starter dashboard, index, and log pages
-- optional ontology-ready `warehouse/jsonl/`, `intelligence/`, `state/`, and lightweight SQLite/DuckDB helper files
+- default ontology-ready `warehouse/jsonl/`, `intelligence/`, `state/`, and lightweight SQLite/DuckDB helper files
 
 ## Three-Layer Follow-On Guidance
 
@@ -100,7 +105,7 @@ Use these repo-local materials for that transition:
 - `references/three-layer-file-contract.md`
 - `templates/llm-wiki-three-layer/`
 
-The bootstrap now ships lightweight local SQLite/DuckDB rebuild helpers and schema templates for ontology-ready repos, but it still avoids heavy always-on runtime infrastructure.
+The default `llm-first-ontology` bootstrap ships lightweight local SQLite/DuckDB rebuild helpers and schema templates for ontology-ready repos, but it still avoids heavy always-on runtime infrastructure.
 
 ## Generated Contract Expectations
 

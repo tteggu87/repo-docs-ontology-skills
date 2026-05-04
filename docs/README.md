@@ -12,6 +12,7 @@ Start here when you need current truth from the codebase rather than historical 
 - [`ROADMAP.md`](./ROADMAP.md): near-term alignment work and known gaps
 - [`IMPACT_SUMMARY.md`](./IMPACT_SUMMARY.md): current refresh summary, checked files, and remaining drift
 - [`LLM_FIRST_ONTOLOGY_BOOTSTRAP_PROFILE.md`](./LLM_FIRST_ONTOLOGY_BOOTSTRAP_PROFILE.md): promoted default `llm-wiki-bootstrap --profile llm-first-ontology` contract
+- [`SKILLS_INTEGRATION.md`](./SKILLS_INTEGRATION.md): repo-local skillset boundaries, including the default bootstrap generator and three-layer helper smoke tests
 
 Current repository posture:
 

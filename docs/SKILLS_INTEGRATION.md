@@ -79,6 +79,7 @@ This test verifies:
 - empty-`HOME` execution of the repo-local bootstrap generator
 - presence of the full repo-local DocTology skillset under `.agents/skills`
 - default `llm-first-ontology` profile generation
+- default `llm-first-ontology` generation of SQLite/DuckDB/drift helper scripts and schema templates
 - lighter shape checks for `wiki-only`
 - legacy/deprecation shape checks for `wiki-plus-ontology`
 - helper-disabled query/compile behavior emits handoff material rather than

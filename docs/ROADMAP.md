@@ -19,11 +19,11 @@ Updated: 2026-05-02
   - schema excerpts if canonical DuckDB or graph materialization contracts become operator-facing
 - keep `scripts/validate_repo_docs_intelligence.py` aligned as docs/intelligence contracts evolve
 - add `frontmatter.yaml` when proposal review/apply tooling becomes explicit
-- keep the promoted `llm-wiki-bootstrap --profile llm-first-ontology` scaffold aligned with DocTology's stabilized contract set
+- keep the promoted `llm-wiki-bootstrap --profile llm-first-ontology` scaffold aligned with DocTology's stabilized contract set and three-layer helper contract
 
 ## Known gaps
 
-- the automated bootstrap implementation exists in the installed `llm-wiki-bootstrap` skill and defaults to `llm-first-ontology`
+- the automated bootstrap implementation exists in the repo-local `llm-wiki-bootstrap` skill, defaults to `llm-first-ontology`, and generates the lightweight SQLite/DuckDB/drift helper scripts
 - only `docs/CURRENT_STATE.md` existed before this refresh, so the portal is still young
 - the incremental ingest path is intentionally narrow and not yet a generic multi-family ingest framework
 - the workbench route set is documented, but the frontend remains optional and sidecar-only

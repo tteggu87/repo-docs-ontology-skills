@@ -1,8 +1,8 @@
 ---
 title: "Patch plan: upgrade llm-wiki-bootstrap for three-layer support"
-status: draft
+status: implemented
 created: 2026-04-17
-updated: 2026-04-17
+updated: 2026-05-04
 owner: "Codex"
 type: execution-plan
 tags:
@@ -15,6 +15,12 @@ tags:
 ---
 
 # Patch Plan: Upgrade LLM Wiki Bootstrap For Three-Layer Support
+
+> Implementation note, 2026-05-04:
+> The promoted default `llm-first-ontology` profile now generates the
+> three-layer helper scripts and schema templates, and bootstrap smoke tests
+> verify the default path. Keep this plan as the historical execution shape
+> behind the implemented default.
 
 This plan assumes the chosen design baseline is:
 
