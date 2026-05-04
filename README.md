@@ -44,7 +44,7 @@ Use DocTology if you want:
 
 _DocTology workbench question workspace — an optional read-and-review surface for the generated wiki, previews, and source/graph hints._
 
-Current workbench reality: it is not the source of truth and not the primary LLM reasoning layer. Durable synthesis belongs in the wiki under the repo-local `AGENTS.md` contract.
+Workbench status: it is an optional review surface, not the source of truth or the primary LLM reasoning layer. Durable synthesis belongs in the wiki under the repo-local `AGENTS.md` contract.
 
 ![Reference example: knowledge growing into a wiki](assets/readme/doctology-reference-obsidian-notes-forming-a-wiki.jpg)
 
@@ -184,7 +184,7 @@ The canonical repo-local skillset lives under `.agents/skills/`. Installed copie
 
 ## Operating model
 
-The DocTology baseline is intentionally small:
+The DocTology core model is intentionally small:
 
 ```text
 raw source
@@ -229,7 +229,7 @@ YAML may define vocabulary, dataset boundaries, profiles, and validation hints. 
 
 ## Helper LLMs
 
-`wikiconfig.json` is local/private. Use `wikiconfig.example.json` as the committed template.
+`wikiconfig.json` is a local-only configuration file. Use `wikiconfig.example.json` as the committed template.
 
 Helper LLMs are optional accelerators for narrow tasks. If helper LLMs are disabled or absent, the surrounding chat agent can still perform semantic work directly by reading:
 
@@ -241,9 +241,9 @@ Helper LLMs are optional accelerators for narrow tasks. If helper LLMs are disab
 
 In other words, helper LLMs should not replace the main agent-maintained wiki loop.
 
-## About the checked-in reference runtime
+## About the reference runtime
 
-The local runtime is a reference implementation, not the whole product.
+The included local runtime is a reference implementation, not the whole product.
 
 Useful entry points include:
 
