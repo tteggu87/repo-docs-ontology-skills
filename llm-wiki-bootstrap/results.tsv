@@ -1,0 +1,5 @@
+commit	metric	value	status	description
+baseline-bootstrap	scaffold_validation_score	11.000000	keep	baseline scaffold validation before script optimization
+baseline-skill	trigger_score	5.000000	keep	baseline trigger score before description optimization
+exp-trigger-1	trigger_score	10.000000	keep	added explicit non-trigger boundary for existing wiki and single-source work
+baseline-bootstrap-v2	scaffold_validation_score	14.000000	keep	expanded validation: scaffold + CLI + ingest + non-empty safety + force rerun all passed

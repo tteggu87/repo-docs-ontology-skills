@@ -4,7 +4,6 @@ import DOMPurify from "dompurify";
 import { marked } from "marked";
 import {
   draftSourceSummary,
-  fetchGraphInspect,
   fetchQueryPreview,
   fetchSourceDetail,
   fetchWorkbenchReview,
@@ -16,8 +15,6 @@ import {
   runWorkbenchAction,
   saveAnalysis,
   type DraftSourceSummaryPayload,
-  type GraphInspectPayload,
-  type GraphInspectSeed,
   type QueryPreviewPayload,
   type ReviewClaimPayload,
   type SaveAnalysisPayload,
@@ -30,9 +27,7 @@ import {
   type WikiPagePayload,
   type WorkbenchSummary,
 } from "./lib/api";
-import { GraphInspectPanel } from "./components/GraphInspectPanel";
 import { buildGraphSurface } from "./lib/graph";
-import { buildGraphInspectSeeds, hasRenderableGraphHints } from "./lib/graph-inspect";
 
 type SectionId = "home" | "ask" | "wiki" | "sources" | "review" | "warehouse" | "doctor" | "graph";
 type PageFilterId =
@@ -217,7 +212,6 @@ function RelatedPageList(props: {
   title: string;
   pages: { stem: string; title: string; summary: string; section: string }[];
   onOpen: (stem: string) => void;
-  onOpenGraph?: (stem: string) => void;
 }) {
   if (!props.pages.length) {
     return null;
@@ -228,20 +222,11 @@ function RelatedPageList(props: {
       <h3>{props.title}</h3>
       <ul className="compact-list compact-list-plain">
         {props.pages.map((item) => (
-          <li key={item.stem} className="review-item">
-            <div>
-              <button type="button" className="link-button" onClick={() => props.onOpen(item.stem)}>
-                {item.title}
-              </button>
-              <span>{item.summary}</span>
-            </div>
-            {props.onOpenGraph ? (
-              <div className="review-actions">
-                <button type="button" className="ghost-button" onClick={() => props.onOpenGraph?.(item.stem)}>
-                  그래프
-                </button>
-              </div>
-            ) : null}
+          <li key={item.stem}>
+            <button type="button" className="link-button" onClick={() => props.onOpen(item.stem)}>
+              {item.title}
+            </button>
+            <span>{item.summary}</span>
           </li>
         ))}
       </ul>
@@ -318,11 +303,6 @@ export default function App() {
   const [warehouseError, setWarehouseError] = useState<string | null>(null);
   const [queryInput, setQueryInput] = useState("이 작업공간이 ontology builders에 대해 현재 무엇을 알고 있나?");
   const [queryResult, setQueryResult] = useState<QueryPreviewPayload | null>(null);
-  const [graphInspectResult, setGraphInspectResult] = useState<GraphInspectPayload | null>(null);
-  const [graphInspectError, setGraphInspectError] = useState<string | null>(null);
-  const [graphInspectBusy, setGraphInspectBusy] = useState(false);
-  const [activeGraphSeedKey, setActiveGraphSeedKey] = useState<string | null>(null);
-  const [graphSeedOverrides, setGraphSeedOverrides] = useState<GraphInspectSeed[]>([]);
   const [queryError, setQueryError] = useState<string | null>(null);
   const [queryBusy, setQueryBusy] = useState(false);
   const [saveResult, setSaveResult] = useState<SaveAnalysisPayload | null>(null);
@@ -570,10 +550,7 @@ export default function App() {
   const queryResultHtml = renderMarkdown(
     queryResult?.answer_markdown ?? "# 질문\n\n질문을 입력하면 근거가 있는 초안을 여기에서 확인할 수 있습니다.",
   );
-  const renderableGraphHints = hasRenderableGraphHints(queryResult?.graph_hints) ? queryResult?.graph_hints ?? null : null;
-  const askHasSideContent = Boolean(
-    queryResult?.related_pages.length || queryResult?.related_sources.length || renderableGraphHints,
-  );
+  const askHasSideContent = Boolean(queryResult?.related_pages.length || queryResult?.related_sources.length);
   const layoutClass =
     activeSection === "home"
       ? "simple-layout home-layout"
@@ -613,143 +590,9 @@ export default function App() {
     });
   };
 
-  const openGraphSection = () => {
-    setActiveSection("graph");
-    window.location.hash = "graph";
-  };
-
-  const setGraphSeedOverride = (seed: GraphInspectSeed) => {
-    setGraphSeedOverrides([seed]);
-    setActiveGraphSeedKey(seed.key);
-  };
-
-  const openGraphForPage = (stem: string) => {
-    startTransition(() => {
-      setSelectedPageStem(stem);
-      setGraphSeedOverride({
-        key: `page:${stem}`,
-        type: "page",
-        value: stem,
-        title: selectedPage?.stem === stem ? String(selectedPage.frontmatter.title ?? stem) : stem,
-        subtitle: "pending page seed",
-        description: "Requested page graph inspect.",
-      });
-      openGraphSection();
-    });
-  };
-
-  const openGraphForSource = (stem: string) => {
-    startTransition(() => {
-      setSelectedSourceStem(stem);
-      setGraphSeedOverride({
-        key: `source:${stem}`,
-        type: "source",
-        value: stem,
-        title: selectedSource?.stem === stem ? String(selectedSource.frontmatter.title ?? stem) : stem,
-        subtitle: "pending source seed",
-        description: "Requested source graph inspect.",
-      });
-      openGraphSection();
-    });
-  };
-
-  const openGraphForClaim = (claimId: string, sourceStem?: string | null) => {
-    startTransition(() => {
-      if (sourceStem) {
-        setSelectedSourceStem(sourceStem);
-      }
-      setGraphSeedOverride({
-        key: `claim:${claimId}`,
-        type: "claim",
-        value: claimId,
-        title: claimId,
-        subtitle: sourceStem ? `requested from ${sourceStem}` : "pending claim seed",
-        description: "Requested claim graph inspect.",
-      });
-      openGraphSection();
-    });
-  };
-
-  const openGraphFromPreview = () => {
-    const seeds = queryResult?.graph_hints?.seeds ?? [];
-    const seed = seeds.find((item) => item.type === "page") ?? seeds.find((item) => item.type === "source") ?? seeds[0];
-    if (!seed) {
-      openGraphSection();
-      return;
-    }
-    setGraphSeedOverride(seed);
-    if (seed.type === "page") {
-      setSelectedPageStem(seed.value);
-    }
-    if (seed.type === "source") {
-      setSelectedSourceStem(seed.value);
-    }
-    openGraphSection();
-  };
-
   const primarySections = sections.filter((item) => item.rail === "primary");
   const advancedSections = sections.filter((item) => item.rail === "advanced");
   const graphSurface = buildGraphSurface(summary);
-  const graphSeeds = buildGraphInspectSeeds({
-    selectedPage,
-    selectedSource,
-    querySeeds: queryResult?.graph_hints?.seeds ?? [],
-    extraSeeds: graphSeedOverrides,
-  });
-
-  useEffect(() => {
-    if (activeSection !== "graph" && graphSeedOverrides.length) {
-      setGraphSeedOverrides([]);
-    }
-  }, [activeSection, graphSeedOverrides.length]);
-
-  useEffect(() => {
-    if (!graphSeeds.length) {
-      setActiveGraphSeedKey(null);
-      setGraphInspectResult(null);
-      return;
-    }
-    if (!activeGraphSeedKey || !graphSeeds.some((seed) => seed.key === activeGraphSeedKey)) {
-      setActiveGraphSeedKey(graphSeeds[0]?.key ?? null);
-    }
-  }, [activeGraphSeedKey, graphSeeds]);
-
-  useEffect(() => {
-    if (activeSection !== "graph") {
-      return;
-    }
-    const seed = graphSeeds.find((item) => item.key === activeGraphSeedKey) ?? graphSeeds[0];
-    if (!seed) {
-      return;
-    }
-    const controller = new AbortController();
-    setGraphInspectBusy(true);
-    setGraphInspectError(null);
-    fetchGraphInspect(seed.type, seed.value, controller.signal)
-      .then((payload) => {
-        setGraphInspectResult(payload);
-      })
-      .catch((error: Error) => {
-        if (controller.signal.aborted) {
-          return;
-        }
-        setGraphInspectError(error.message);
-      })
-      .finally(() => {
-        if (!controller.signal.aborted) {
-          setGraphInspectBusy(false);
-        }
-      });
-    return () => controller.abort();
-  }, [activeGraphSeedKey, activeSection, graphSeeds]);
-
-  function handleGraphInspect(seedKey: string) {
-    const nextSeed = graphSeeds.find((item) => item.key === seedKey);
-    if (!nextSeed) {
-      return;
-    }
-    setActiveGraphSeedKey(nextSeed.key);
-  }
 
   return (
     <div className="app-shell simple-shell">
@@ -1029,34 +872,8 @@ export default function App() {
 
               {askHasSideContent ? (
                 <div className="inspector-panel simple-panel ask-side-panel">
-                  <RelatedPageList title="관련 페이지" pages={queryResult?.related_pages ?? []} onOpen={openWikiPage} onOpenGraph={openGraphForPage} />
-                  <RelatedPageList title="소스 페이지" pages={queryResult?.related_sources ?? []} onOpen={openSourcePage} onOpenGraph={openGraphForSource} />
-                  {renderableGraphHints ? (
-                    <section className="message-panel">
-                      <div className="save-result-header">
-                        <div>
-                          <p className="eyebrow">Graph hints</p>
-                          <h4>{renderableGraphHints.summary}</h4>
-                        </div>
-                        <button type="button" className="ghost-button" onClick={openGraphFromPreview}>
-                          그래프 열기
-                        </button>
-                      </div>
-                      <ul className="compact-list compact-list-plain detail-list">
-                        {renderableGraphHints.related_nodes.map((item) => (
-                          <li key={item}>{item}</li>
-                        ))}
-                        {!renderableGraphHints.related_nodes.length ? <li>추가 related node 힌트는 아직 없습니다.</li> : null}
-                      </ul>
-                      {renderableGraphHints.path_hints.length ? (
-                        <ul className="compact-list compact-list-plain detail-list">
-                          {renderableGraphHints.path_hints.map((item) => (
-                            <li key={item}>{item}</li>
-                          ))}
-                        </ul>
-                      ) : null}
-                    </section>
-                  ) : null}
+                  <RelatedPageList title="관련 페이지" pages={queryResult?.related_pages ?? []} onOpen={openWikiPage} />
+                  <RelatedPageList title="소스 페이지" pages={queryResult?.related_sources ?? []} onOpen={openWikiPage} />
                 </div>
               ) : null}
             </>
@@ -1113,7 +930,7 @@ export default function App() {
                       })}
                     </section>
                   ))}
-                  <RelatedPageList title="관련 페이지" pages={selectedPage?.related_pages ?? []} onOpen={openWikiPage} onOpenGraph={openGraphForPage} />
+                  <RelatedPageList title="관련 페이지" pages={selectedPage?.related_pages ?? []} onOpen={openWikiPage} />
                 </div>
               </div>
 
@@ -1123,14 +940,7 @@ export default function App() {
                     <p className="eyebrow">문서</p>
                     <h3>{selectedPage?.frontmatter.title?.toString() ?? "페이지를 선택하세요"}</h3>
                   </div>
-                  <div className="review-actions">
-                    {selectedPage ? (
-                      <button type="button" className="ghost-button" onClick={() => openGraphForPage(selectedPage.stem)}>
-                        그래프 보기
-                      </button>
-                    ) : null}
-                    <span className="reader-status">{sectionNameLabel(selectedPage?.section ?? "wiki")}</span>
-                  </div>
+                  <span className="reader-status">{sectionNameLabel(selectedPage?.section ?? "wiki")}</span>
                 </div>
                 {pageError ? <p className="error-copy">{pageError}</p> : null}
                 <article className="markdown-surface wiki-surface" dangerouslySetInnerHTML={{ __html: selectedPageHtml }} />
@@ -1168,14 +978,7 @@ export default function App() {
                     <p className="eyebrow">소스 상세</p>
                     <h3>{selectedSource?.frontmatter.title?.toString() ?? "소스를 선택하세요"}</h3>
                   </div>
-                  <div className="review-actions">
-                    {selectedSource ? (
-                      <button type="button" className="ghost-button" onClick={() => openGraphForSource(selectedSource.stem)}>
-                        그래프 보기
-                      </button>
-                    ) : null}
-                    <span className="reader-status">Update lane</span>
-                  </div>
+                  <span className="reader-status">Update lane</span>
                 </div>
                 {sourceError ? <p className="error-copy">{sourceError}</p> : null}
                 {draftSummaryError ? <p className="error-copy">{draftSummaryError}</p> : null}
@@ -1242,13 +1045,6 @@ export default function App() {
                                 <button
                                   type="button"
                                   className="ghost-button"
-                                  onClick={() => openGraphForClaim(item.claim_id, selectedSource.stem)}
-                                >
-                                  그래프
-                                </button>
-                                <button
-                                  type="button"
-                                  className="ghost-button"
                                   disabled={reviewActionBusyId === item.claim_id}
                                   onClick={() => void handleReviewClaim(item.claim_id, "approved")}
                                 >
@@ -1270,13 +1066,6 @@ export default function App() {
                         )}
                       </ul>
                     </section>
-
-                    <RelatedPageList
-                      title="연결된 페이지"
-                      pages={selectedSource.related_pages}
-                      onOpen={openWikiPage}
-                      onOpenGraph={openGraphForPage}
-                    />
                   </>
                 ) : null}
               </div>
@@ -1297,52 +1086,28 @@ export default function App() {
                     <section className="selection-group">
                       <h4>Low coverage <span>{reviewSummary.low_coverage_pages.length}</span></h4>
                       {reviewSummary.low_coverage_pages.map((item) => (
-                        <article key={item.stem} className="selection-item">
-                          <button type="button" className="link-button" onClick={() => openWikiPage(item.stem)}>
-                            {item.title}
-                          </button>
+                        <button key={item.stem} type="button" className="selection-item" onClick={() => openWikiPage(item.stem)}>
+                          <strong className="selection-title">{item.title}</strong>
                           <span className="selection-summary">{item.reason ?? item.section}</span>
-                          {item.graph_hint ? <span className="selection-meta">{item.graph_hint}</span> : null}
-                          <div className="review-actions">
-                            <button type="button" className="ghost-button" onClick={() => openGraphForPage(item.stem)}>
-                              그래프
-                            </button>
-                          </div>
-                        </article>
+                        </button>
                       ))}
                     </section>
                     <section className="selection-group">
                       <h4>Stale <span>{reviewSummary.stale_pages.length}</span></h4>
                       {reviewSummary.stale_pages.map((item) => (
-                        <article key={item.stem} className="selection-item">
-                          <button type="button" className="link-button" onClick={() => openWikiPage(item.stem)}>
-                            {item.title}
-                          </button>
+                        <button key={item.stem} type="button" className="selection-item" onClick={() => openWikiPage(item.stem)}>
+                          <strong className="selection-title">{item.title}</strong>
                           <span className="selection-summary">{item.age_days ?? "?"}일 경과</span>
-                          {item.graph_hint ? <span className="selection-meta">{item.graph_hint}</span> : null}
-                          <div className="review-actions">
-                            <button type="button" className="ghost-button" onClick={() => openGraphForPage(item.stem)}>
-                              그래프
-                            </button>
-                          </div>
-                        </article>
+                        </button>
                       ))}
                     </section>
                     <section className="selection-group">
                       <h4>Uncertainty <span>{reviewSummary.uncertainty_candidates.length}</span></h4>
                       {reviewSummary.uncertainty_candidates.map((item) => (
-                        <article key={item.stem} className="selection-item">
-                          <button type="button" className="link-button" onClick={() => openWikiPage(item.stem)}>
-                            {item.title}
-                          </button>
+                        <button key={item.stem} type="button" className="selection-item" onClick={() => openWikiPage(item.stem)}>
+                          <strong className="selection-title">{item.title}</strong>
                           <span className="selection-summary">{item.reason ?? item.section}</span>
-                          {item.graph_hint ? <span className="selection-meta">{item.graph_hint}</span> : null}
-                          <div className="review-actions">
-                            <button type="button" className="ghost-button" onClick={() => openGraphForPage(item.stem)}>
-                              그래프
-                            </button>
-                          </div>
-                        </article>
+                        </button>
                       ))}
                     </section>
                   </div>
@@ -1366,7 +1131,6 @@ export default function App() {
                             <strong>{item.claim_id}</strong>
                             <p>{item.claim_text ?? "claim text 없음"}</p>
                             <p>source page: {item.source_page ?? "없음"} / confidence: {item.confidence ?? "?"}</p>
-                            {item.graph_hint ? <p>{item.graph_hint}</p> : null}
                           </div>
                           <div className="review-actions">
                             {item.source_page ? (
@@ -1374,13 +1138,6 @@ export default function App() {
                                 소스 열기
                               </button>
                             ) : null}
-                            <button
-                              type="button"
-                              className="ghost-button"
-                              onClick={() => openGraphForClaim(item.claim_id, item.source_page)}
-                            >
-                              그래프
-                            </button>
                             <button
                               type="button"
                               className="ghost-button"
@@ -1538,20 +1295,10 @@ export default function App() {
                 <div className="panel-header panel-header-compact">
                   <div>
                     <p className="eyebrow">Derived only</p>
-                    <h3>Graph inspect</h3>
+                    <h3>Graph notes</h3>
                   </div>
                   <span className="reader-status">Bounded</span>
                 </div>
-                <GraphInspectPanel
-                  seeds={graphSeeds}
-                  activeSeedKey={activeGraphSeedKey}
-                  inspect={graphInspectResult}
-                  loading={graphInspectBusy}
-                  error={graphInspectError}
-                  onInspect={(seed) => {
-                    handleGraphInspect(seed.key);
-                  }}
-                />
                 <section className="message-panel">
                   <ul className="compact-list compact-list-plain detail-list">
                     {graphSurface.notes.map((note) => (

@@ -106,19 +106,26 @@ actions:
     notes:
       - This is the current Ask workspace contract exposed through the workbench adapter.
       - It is a routing and draft surface, not a hidden autonomous generation path.
-  - key: strict_disabled_save_analysis_route
-    description: Preserve the legacy Workbench save-analysis route as a strict-disabled error surface so lexical previews cannot become semantic saved analyses.
+  - key: save_query_analysis_draft
+    description: Save a durable analysis page from a repo-local query preview and add bounded link-backs on confident related pages.
     inputs:
-      - attempted query preview result
+      - query preview result
       - user question
     outputs:
-      - structured strict-disabled error
+      - wiki/analyses/<analysis-page>
+      - wiki/_meta/log.md
+      - wiki/_meta/index.md
+      - related wiki page link-backs when confidence is sufficient
     reads:
-      - none
-    writes: []
+      - wiki/
+      - warehouse/jsonl/
+    writes:
+      - wiki/analyses/
+      - wiki/_meta/log.md
+      - wiki/_meta/index.md
+      - selected wiki pages under the allowed workbench write scope
     notes:
-      - Durable synthesis should use strict LLM query or proposal workflows instead of saving lexical diagnostics.
-      - The backend implementation intentionally raises in strict LLM mode.
+      - This is backend-gated and intentionally bounded to wiki-facing durable outputs.
   - key: review_claim_state
     description: Update canonical claim review state through the backend while keeping browser-side mutation restricted.
     inputs:
@@ -146,28 +153,3 @@ actions:
       - wiki/_meta/index.md when action is reindex
     notes:
       - Allowed actions are intentionally limited to status, reindex, and lint.
-  - key: bootstrap_llm_first_ontology_workspace
-    description: Scaffold a new DocTology-style LLM Wiki workspace with the promoted strict llm-first-ontology profile and three-layer helper support.
-    inputs:
-      - target directory
-      - optional --force for intentional overwrite
-    outputs:
-      - AGENTS.md
-      - README.md
-      - wikiconfig.example.json
-      - wikiconfig.json ignored by generated .gitignore
-      - intelligence/ contract layer
-      - scripts/llm_query.py
-      - scripts/llm_compile_source.py
-      - scripts/reindex_sqlite_operational.py
-      - scripts/refresh_duckdb_analytics.py
-      - scripts/verify_three_layer_drift.py
-      - templates/llm-wiki-three-layer/
-      - state/ for rebuildable SQLite and DuckDB outputs
-    reads:
-      - .agents/skills/llm-wiki-bootstrap/
-    writes:
-      - target directory only
-    notes:
-      - This action describes the repo-local bootstrap generator, not a re-init path for the current DocTology repository.
-      - The generated SQLite and DuckDB files are derived state, not canonical truth.

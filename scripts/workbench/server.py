@@ -18,11 +18,6 @@ except ModuleNotFoundError:
     from scripts.workbench.common import json_ready, load_json_body
     from scripts.workbench.repository import WorkbenchRepository
 
-try:
-    from scripts.llm_query import llm_query
-except ModuleNotFoundError:
-    from llm_query import llm_query  # type: ignore
-
 def route_request(
     repo: WorkbenchRepository,
     method: str,
@@ -70,13 +65,6 @@ def route_request(
         if path == "/api/workbench/review":
             limit = int(query.get("limit", ["5"])[0])
             return 200, repo.review_summary(limit=limit)
-        if path == "/api/ingest/inbox":
-            return 200, repo.ingest_inbox()
-        if path == "/api/ingest/preview":
-            raw_path = query.get("path", [""])[0]
-            if not raw_path:
-                raise ValueError("path is required")
-            return 200, repo.ingest_preview(raw_path)
         if path == "/api/wiki/index":
             return 200, repo.wiki_index()
         if path.startswith("/api/wiki/related/"):
@@ -92,14 +80,6 @@ def route_request(
             question = query.get("q", [""])[0]
             limit = int(query.get("limit", ["5"])[0])
             return 200, repo.query_preview(question, limit=limit)
-        if path == "/api/query/llm":
-            question = query.get("q", [""])[0]
-            emit_selection_prompt = query.get("emit_selection_prompt", ["0"])[0] in {"1", "true", "yes"}
-            return 200, llm_query(repo.root, question, emit_selection_prompt=emit_selection_prompt)
-        if path == "/api/graph/inspect":
-            seed_type = query.get("seed_type", [""])[0]
-            seed = query.get("seed", [""])[0]
-            return 200, repo.graph_inspect(seed_type, seed)
         if path == "/api/warehouse/summary":
             return 200, repo.warehouse_summary()
         if path == "/api/meta/log/recent":

@@ -180,12 +180,17 @@ workbench:
       method: POST
       path: /api/actions/save-analysis
       wraps:
-        - strict-disabled legacy route that rejects preview-to-analysis saves
-      writes: []
+        - backend-gated analysis draft generation from repo-local query preview
+      writes:
+        - wiki/analyses/
+        - wiki/_meta/log.md
+        - wiki/_meta/index.md
+        - related wiki pages with sufficient confidence for link-back
       output_contract:
-        - return a strict LLM mode error
-        - point users toward LLM query with explicit save or `scripts/query_analysis.py`
-        - keep `wiki/`, `raw/`, and `warehouse/jsonl/` untouched
+        - show changed files
+        - show saved analysis path
+        - show linked wiki pages when link-back occurs
+        - keep `raw/` and `warehouse/jsonl/` untouched
 
     - key: review_claim
       method: POST

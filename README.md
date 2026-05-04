@@ -1,205 +1,357 @@
-<p align="center">
-  <img src="apps/workbench/public/doctology-logo.jpeg" alt="DocTology logo" width="460">
-</p>
+# LLM Wiki for Obsidian
+
+An Obsidian-first, agent-maintained living knowledge workspace inspired by Andrej Karpathy's `LLM Wiki` idea:
+[LLM Wiki gist](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f)
+
+This repository is no longer just a starter scaffold.
+It already contains:
+
+- an Obsidian-first wiki workspace
+- a canonical JSONL warehouse for structured truth
+- a minimal local CLI for wiki maintenance
+- a lightweight incremental ingest path for recurring exports
+- repo-local operating rules in `AGENTS.md` and `intelligence/`
+- an optional local sidecar workbench in `apps/workbench/` backed by `scripts/workbench_api.py`
+
+## What This System Is
+
+This is not a generic RAG chatbot.
+
+It is a persistent knowledge base with four layers:
+
+1. `raw/`: immutable source material you collect
+2. `warehouse/jsonl/`: canonical structured ontology truth
+3. `wiki/`: markdown pages the LLM creates and updates for human reading
+4. `AGENTS.md` plus `intelligence/`: the operating contract that tells the LLM how to work
+
+You read and curate.
+The agent registers sources, updates canonical truth when ontology-backed or incremental ingest is available, projects synthesis into the wiki, and keeps the workspace healthy.
+
+## Current Repository Reality
+
+At the time of this update, the repo already includes:
+
+- a real Agent Korea KakaoTalk source corpus in `raw/inbox/`
+- canonical records under `warehouse/jsonl/`
+- populated `wiki/people/`, `wiki/concepts/`, `wiki/sources/`, `wiki/analyses/`, and `wiki/timelines/`
+- incremental ingest tooling for repeated export files of a known source family
+
+So treat this repo as an active knowledge workspace, not an empty template.
+
+## Folder Layout
+
+```text
+llm-wiki-obsidian/
+├── AGENTS.md
+├── README.md
+├── apps/
+│   └── workbench/
+├── raw/
+│   ├── inbox/
+│   ├── processed/
+│   ├── assets/
+│   └── notes/
+├── intelligence/
+│   ├── glossary.yaml
+│   └── manifests/
+├── warehouse/
+│   ├── jsonl/
+│   └── graph_projection/
+├── scripts/
+│   ├── llm_wiki.py
+│   ├── incremental_ingest.py
+│   ├── incremental_support.py
+│   └── migrate_incremental_jsonl.py
+├── templates/
+│   └── source_page_template.md
+└── wiki/
+    ├── _meta/
+    ├── analyses/
+    ├── concepts/
+    ├── entities/
+    ├── people/
+    ├── projects/
+    ├── sources/
+    └── timelines/
+```
 
-# DocTology
+## Dependency Notes
 
-[English](README.md) | [한국어](README.ko.md)
+Core wiki maintenance uses the Python standard library.
 
-DocTology is a **wiki-first knowledge operating system for humans and agents**.
+However, incremental ingest currently requires:
 
-It helps you build a repository where:
+- `PyYAML` for `scripts/incremental_ingest.py`
 
-- humans read and maintain a durable wiki
-- agents verify claims against canonical JSONL truth
-- graph and operator workflows remain optional support layers instead of becoming the product face
+Recommended setup:
 
-The core idea is simple:
+```bash
+cd /path/to/your/llm-wiki-obsidian
+python3 -m venv .venv
+source .venv/bin/activate
+pip install pyyaml
+```
 
-- start with an Obsidian-first wiki that people can actually read
-- add canonical ontology truth only when stronger provenance or contradiction handling becomes useful
-- add graph or operator workflows only when deeper structure or repeated maintenance really earns its keep
+For the optional workbench:
 
-In one repository, DocTology gives you:
+```bash
+cd apps/workbench
+npm ci
+```
 
-- a portable skill pack for bootstrap, ontology, and operator workflows
-- a runnable local reference runtime with an LLM Wiki CLI and optional workbench UI
-- a clean baseline for bootstrapping your own private workspace without committing corpus data
+Windows batch helpers:
 
-## What this is
+- `install_windows.bat`
+  - creates `.venv`
+  - upgrades `pip`
+  - installs `pyyaml`
+  - runs `npm ci` in `apps/workbench`
+- `run_windows_workbench.bat`
+  - starts `python scripts\workbench_api.py --serve`
+  - starts the Vite frontend on `http://127.0.0.1:4174/#home`
 
-DocTology is not just a notes repo, not just an ontology toolkit, and not just a graph experiment.
+If you are on Windows, run:
 
-It is a way to build a knowledge system where:
+```bat
+install_windows.bat
+run_windows_workbench.bat
+```
 
-- the **wiki** is the front surface for human reading and synthesis
-- **canonical JSONL** is the back surface for machine-truth, provenance, and review state
-- **graph/operator layers** are optional extensions, not mandatory complexity on day one
+## Quick Start
 
-## Who this is for
+### 1. Open This Folder As An Obsidian Vault
 
-Use DocTology if you want:
+In Obsidian:
 
-- a readable knowledge base, not just a vector index or raw context dump
-- stronger provenance than plain notes
-- a system that can grow from personal wiki -> ontology-backed verification -> optional graph/operator workflows
+1. `Open folder as vault`
+2. Select `/path/to/your/llm-wiki-obsidian`
 
-This repository is best for teams or individuals who want their knowledge system to stay readable for humans **and** reliable for agents.
+Recommended Obsidian settings:
 
-![DocTology workbench question workspace](assets/readme/doctology-workbench-question-workspace.jpg)
+- Files and Links -> `New link format`: `Relative path to file`
+- Files and Links -> `Use [[Wikilinks]]`: enabled
+- Files and Links -> `Attachment folder path`: `raw/assets`
 
-_DocTology workbench question workspace — review the current wiki, inspect repo-local lexical previews and graph hints, then hand durable synthesis off to LLM-first query or proposal workflows._
+Helpful plugins:
 
-Current workbench reality: this is primarily a read-and-review surface for the generated wiki and related previews. It is not yet a freeform, actively conversational LLM chat workspace, and preview-only routes must not save semantic analyses as if they were LLM-grounded answers.
+- `Dataview`
+- `Web Clipper`
+- `Templater` (optional)
+- `Marp` (optional for decks)
 
-![Reference example: knowledge growing into a wiki](assets/readme/doctology-reference-obsidian-notes-forming-a-wiki.jpg)
+### 2. Check Current State
 
-_Reference example — a view of knowledge growing into a wiki as previously unlinked Obsidian notes begin to form visible structure and neighborhoods._
+```bash
+python3 scripts/llm_wiki.py status
+python3 scripts/llm_wiki.py lint
+python3 -m unittest -q
+```
 
-## Default path
+### 3. Add Sources
 
-If you are unsure where to start, use the default DocTology path:
+Drop files into `raw/inbox/`.
 
-1. bootstrap a wiki-first workspace
-2. ingest sources into wiki + canonical ontology
-3. let LLM-first compile/query workflows grow the wiki from source-backed evidence
-4. use route receipts, graph projection, and operator workflows only as complexity grows
+Examples:
 
-That default path is the main product promise:
+- Markdown clipped from a web article
+- Notes exported from Obsidian or Apple Notes
+- Meeting transcripts
+- Research summaries
+- Plain text files
+- Repeated export files for a known source family
 
-- readable wiki first
-- verifiable truth second
-- graph/operator complexity only when it becomes genuinely useful
+If a source is a PDF, web page, or image-heavy document, keep the raw file in `raw/inbox/` and either:
 
-Current safety rule: semantic growth is LLM-first and proposal-aware. Deterministic scripts may register sources, create citation anchors, refresh indexes, and validate contracts, but they must not turn lexical or graph output into semantic truth. Compile results should become human-review proposals before active concept/entity/project pages are rewritten.
+- also save a companion markdown/text note into `raw/notes/`, or
+- ask the agent to read the file directly and write the wiki updates
 
-## Which path am I on?
+## Workflows
 
-Use this quick map:
+### A. Register A One-Off Source
 
-- **Start here:** `llm-wiki-bootstrap`
-- **Daily path:** `llm-wiki-ontology-ingest`
-- **Advanced canonical engine:** `lightweight-ontology-core`
-- **Optional graph extension:** `lg-ontology`
-- **Operator maintenance:** `ontology-pipeline-operator`
+Run:
 
-Most users should begin with:
+```bash
+python3 scripts/llm_wiki.py ingest raw/inbox/my-source.md --title "My Source Title"
+```
 
-1. project-local `llm-wiki-bootstrap`
-2. repeated `llm-wiki-ontology-ingest`
+This does three things:
 
-Treat the other ontology skills as later-stage refinement or optional extension layers.
+- creates a source page stub in `wiki/sources/`
+- appends an ingest entry to `wiki/_meta/log.md`
+- rebuilds `wiki/_meta/index.md`
 
-## Choose your starting path first
+This is source registration only.
+It does not auto-summarize the source or perform ontology-backed extraction.
+That synthesis is still expected from the agent.
 
-### 1) Do you want to start with an LLM Wiki?
-Then start with `llm-wiki-bootstrap`.
+### B. Run Incremental Ingest For A Repeated Export
 
-The flow is simple:
+For recurring exports of a known source family:
 
-- run the wiki bootstrap
-- put documents into the generated `raw/inbox/`
-- run `llm-wiki-ontology-ingest` to register/project sources and citation anchors
-- use LLM compile/query workflows to read the wiki map first, then page bodies and source citations
-- review/apply proposed semantic updates, then keep growing the wiki through question and analysis workflows
+```bash
+python3 scripts/incremental_ingest.py raw/inbox/<export-file>
+```
 
-Current ontology-profile bootstrap behavior now also ships lightweight local rebuild helpers and state paths for longer-lived repos:
+This workflow:
 
-- `state/wiki_index.sqlite`
-- `state/wiki_analytics.duckdb`
-- `scripts/reindex_sqlite_operational.py`
-- `scripts/refresh_duckdb_analytics.py`
-- `scripts/verify_three_layer_drift.py`
+- resolves the source family from `intelligence/manifests/source_families.yaml`
+- registers an export version in `warehouse/jsonl/source_versions.jsonl`
+- upserts canonical records such as `messages.jsonl` and `documents.jsonl`
+- refreshes the related wiki source status page and meta pages
+- returns explicit lineage and affected-surface signals so operators can see which canonical registries and wiki surfaces changed
 
-This bootstrap-layer DuckDB is a local wiki analytics mirror.
-It is separate from the ontology-core / lg ontology mirror contract.
-Its intended scope is lightweight wiki-facing analytics such as source registry, page coverage, and audit-style inspection.
+Important:
 
-In other words, the first step is always **wiki-first**.
+- the current implementation is lightweight and intentionally narrow
+- today it is effectively specialized around the Agent Korea KakaoTalk export family
+- the manifest makes expansion easier, but generic parser coverage is not finished yet
 
-Helper LLMs configured in `wikiconfig.json` are optional accelerators. If helper LLMs are disabled or absent, scripts should hand off explicit prompt/bundle material to the surrounding chat agent, and the chat agent can perform the LLM-first semantic work directly. `wikiconfig.json` is local/private; use `wikiconfig.example.json` as the committed template.
+### C. Ask The Agent To Maintain The Wiki
 
-### 2) Do you want to redefine ontology relationships inside the generated wiki?
-Then use `lightweight-ontology-core`.
+Use prompts like:
 
-At this stage you are:
+- `Use AGENTS.md. Read raw/inbox/my-source.md and fully ingest it into the wiki.`
+- `Use AGENTS.md. Update the relevant concept, entity, and project pages based on the new source.`
+- `Use AGENTS.md. Create any missing pages that should exist after this ingest.`
+- `Use AGENTS.md. Run a wiki health check and fix broken or missing cross-links.`
+- `Use AGENTS.md. Answer my question using the wiki, then save the answer under wiki/analyses/.`
 
-- refining the canonical ontology layer under the wiki
-- tightening entities, claims, evidence, and relations in JSONL truth
-- and, when needed, extending into graph / neighborhood workflows later with `lg-ontology`
+Before substantial wiki work in a fresh conversation, the agent should:
 
-This is the stage for strengthening structure after the wiki already exists.
+1. read `AGENTS.md`
+2. read `wiki/_meta/index.md`
+3. scan the newest relevant entries in `wiki/_meta/log.md`
 
-### 3) Do you want a project-specific memory store instead?
-Then use `repo-docs-intelligence-bootstrap`.
+### D. Use The Optional Sidecar Workbench
 
-This path is better for:
+In one terminal:
 
-- capturing the current state of a specific codebase or project
-- building agent-readable project memory
-- establishing AGENTS and intelligence contracts in a repo-docs intelligence style
+```bash
+python3 scripts/workbench_api.py --serve
+```
 
-In other words, this is an **alternative starting bootstrap**, not something you stack on top of the wiki bootstrap.
+In another:
 
-## Caution
+```bash
+cd apps/workbench
+npm run dev
+```
 
-**Use only one bootstrap to start.**
+Current workbench scope:
 
-If you run multiple bootstraps in sequence, `AGENTS.md` can be overwritten and the earlier operating rules may be invalidated.
+- dashboard summary
+- operator review surfaces for low-coverage, stale, and uncertainty candidates
+- live wiki and source reader
+- source coverage and claim review queues from canonical registries
+- warehouse summary
+- guarded `status` / `reindex` / `lint` actions
+- repo-local Ask preview with provenance sections, related page suggestions, bounded analysis draft saves, and confident related-page link-back
+- related-page navigation from Ask, Pages, and Sources panels
+- backend-gated claim approve/reject actions from operator review surfaces
+- optional backend-gated helper-model draft actions loaded from repo-root `wikiconfig.json`
 
-Choose first:
+The workbench is additive. Obsidian and `wiki/` remain the default reading/editing surface.
 
-- do you want to grow an LLM Wiki?
-- or do you want repo-focused intelligence / project memory?
+If helper-model config is introduced:
 
-Both matter, but the initial bootstrap should be only one.
+- keep the live file at repo root as `wikiconfig.json`
+- keep it server-side only
+- use `llmWiki.enabled: false` to disable helper-model API usage and stay in local-only mode
+- keep the current compatibility layer limited to OpenAI-compatible chat endpoints
+- do not let the browser read or own provider secrets
+- keep helper-model outputs draft-only
 
-## Core skill paths
+## Commands
 
-The canonical repo-local skillset lives under `.agents/skills/`. Installed copies under `~/.codex/skills` are local installs only.
+### Status
 
-- `llm-wiki-bootstrap`
-  - start an Obsidian-first LLM Wiki
-- `llm-wiki-ontology-ingest`
-  - ingest inbox documents into an ontology-backed wiki
-- `lightweight-ontology-core`
-  - refine canonical ontology truth beneath the wiki
-- `lg-ontology`
-  - extend into ontology graph / neighborhood exploration
-- `repo-docs-intelligence-bootstrap`
-  - bootstrap project-specific memory / repo intelligence
-- `ontology-pipeline-operator`
-  - refresh existing ontology/wiki artifacts and repeated maintenance flows
+```bash
+python3 scripts/llm_wiki.py status
+```
 
-## Three-layer operating model
+Shows counts for raw files, wiki pages, log entries, and index entries.
 
-For longer-lived wiki systems, the recommended layering is:
+### Rebuild Index
 
-1. **files as canonical truth**
-   - markdown, yaml, and jsonl remain the durable truth surface
-2. **SQLite as operational index**
-   - backlinks, unresolved links, aliases, memories, and jobs
-3. **DuckDB as analytical warehouse**
-   - source registry mirrors, page coverage snapshots, and audit-oriented inspection
+```bash
+python3 scripts/llm_wiki.py reindex
+```
 
-Claims, entities, and relations belong in canonical ontology JSONL and proposal-reviewed wiki updates. The bootstrap DuckDB mirror is a derived analytics aid, not a semantic truth layer.
+Recreates `wiki/_meta/index.md` from the current wiki pages while preserving the existing `created` date.
 
-The intended rollout is:
+### Lint
 
-- v0: file-first wiki
-- v1: SQLite operational index
-- v2: DuckDB analytical warehouse
+```bash
+python3 scripts/llm_wiki.py lint
+```
 
-This keeps the wiki readable for humans, trustworthy for agents, and rebuildable when derived layers fail.
+Checks for:
 
-## About the checked-in reference runtime
+- broken wikilinks
+- orphan pages
+- pages without YAML frontmatter
+- pages missing from the index
+- oversized pages
+- duplicate titles
 
-The workbench included in this repository is currently closer to a read-and-review surface than a freeform conversational LLM app.
+### Append A Log Entry
 
-Its role today is mainly to:
+```bash
+python3 scripts/llm_wiki.py log query "Compared two vendors" "Saved the result to wiki/analyses/."
+```
 
-- inspect the generated wiki
-- review repo-local lexical previews and graph/source hints
-- hand off durable synthesis to LLM-first query or proposal workflows
+## Design Notes
 
-So the main point of this README is not detailed runtime setup. It is understanding **which bootstrap to choose and which memory layer you want to build first**.
+### What Is Strong Today
+
+- durable markdown synthesis as the main human interface
+- explicit truth separation between raw source, canonical structured truth, and human-facing pages
+- repo-local rules in `AGENTS.md` so future agents can resume with less drift
+- lightweight operational tooling that is easy to inspect and modify
+- a sidecar workbench that can inspect the repo through explicit backend routes instead of browser-side file or model hacks
+
+### What Is Still Early
+
+- incremental ingest is not yet broadly generalized beyond the current known family
+- higher-order semantic extraction remains sparse compared with message/event coverage
+- `warehouse/graph_projection/` is still optional and mostly a placeholder layer
+- the Ask workspace now saves bounded analysis drafts and performs confident related-page link-back, but it is not yet a full durable answer loop with richer synthesis policies
+- this is not yet a full retrieval product or graph reasoning runtime
+
+## Current Quality Policy
+
+- duplicate page titles are lint-worthy and should be resolved or intentionally renamed
+- oversized analyses are allowed temporarily, but are tracked refactor targets rather than hidden debt
+- new workbench API surfaces should land with route-level tests
+- the browser must not mutate `raw/` or `warehouse/jsonl/` directly
+
+## Suggested Operating Rhythm
+
+### Ingest One Source Carefully
+
+1. Put a source into `raw/inbox/`
+2. If it is a one-off source, register it with `python3 scripts/llm_wiki.py ingest ...`
+3. If it is a repeated export from a known family, run `python3 scripts/incremental_ingest.py ...`
+4. Ask the agent to update canonical truth and/or wiki pages
+5. Review the changed pages in Obsidian
+6. Move the raw file into `raw/processed/` when you are happy
+
+### Query / Review Cycle
+
+1. Ask a question against the current wiki
+2. Save durable answers into `wiki/analyses/`
+3. Re-run `lint` periodically
+4. Refactor page structure when a page becomes too large or too mixed
+
+## Scaling Later
+
+As the repo grows, likely next additions are:
+
+- broader source-family coverage
+- stronger claim and segment extraction
+- derived edges or graph projection that earns its keep
+- retrieval utilities over canonical JSONL plus curated wiki pages
+- richer dashboards and review workflows
+
+Until then, the current combination of `AGENTS.md`, `intelligence/`, `warehouse/jsonl/`, `wiki/_meta/index.md`, and `wiki/_meta/log.md` is the real operating surface.

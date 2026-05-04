@@ -48,7 +48,7 @@ SKIP_SUFFIXES = {
 }
 
 SKIP_REL_PREFIXES = {
-    ".agents/review-loop/",
+    ".codex/review-loop/",
     ".gstack/",
     ".omx/",
     ".obsidian/",

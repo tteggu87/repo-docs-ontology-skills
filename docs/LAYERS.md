@@ -1,6 +1,6 @@
 # Layers
 
-Updated: 2026-05-02
+Updated: 2026-04-13
 
 ## Truth hierarchy
 
@@ -19,15 +19,6 @@ Updated: 2026-05-02
    - derived exploration layer
    - useful for graph-style inspection
    - not canonical
-5. `intelligence/`
-   - contract layer for workflow, boundary, registry, relation, and meta-surface policy
-   - not a second wiki
-   - not a semantic claim store
-6. `state/`
-   - optional rebuildable local runtime state created by bootstrap helper scripts
-   - `state/wiki_index.sqlite` is an operational index
-   - `state/wiki_analytics.duckdb` is a local wiki analytics mirror
-   - not canonical truth
 
 ## Contract layer
 
@@ -36,21 +27,18 @@ Updated: 2026-05-02
 - `intelligence/glossary.yaml`
   - canonical terms
 - `intelligence/manifests/*.yaml`
-  - action, dataset, source-family, workbench, semantic workflow, page policy, relation, registry, and meta-surface contracts
+  - action, dataset, source-family, and workbench contracts
 - `intelligence/policies/*.yaml`
-  - truth, mutation, entrypoint, and strict semantic boundary rules
+  - truth, mutation, and entrypoint rules
 - `intelligence/registry/capabilities.yaml`
   - action-to-implementation bindings
 
 These files define names and boundaries. They do not replace the runtime.
-They must not contain answer drafts, source summaries, or inferred semantic claims.
 
 ## Execution layer
 
 - Python owns execution
 - manifests and registry files describe contracts around that execution
-- surrounding chat agent or configured helper LLM owns semantic compile/query judgment
-- deterministic code owns ID generation, line ranges, citation anchors, source projection, meta navigation, and validation
 - the repo currently uses a thin-wrapper / thick-core pattern for the workbench:
   - wrapper: `scripts/workbench_api.py`
   - core: `scripts/workbench/`

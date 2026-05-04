@@ -1,68 +1,24 @@
 source_families:
   - key: kakao-agent-korea-chat
     source_kind: kakao_chat_export
-    status: test_fixture
     match:
       path_contains:
         - KakaoTalk_Chat_
         - 에이전트코리아
     default_parser: kakao_chat_csv
     notes:
-      - Compatibility fixture family for regression tests.
-
-  - key: kakao-agent-korea-chat-normalized
-    source_kind: kakao_chat_export
-    status: built_in
-    match:
-      path_contains:
-        - kakao-agent-korea-full-chat-normalized
-      extensions:
-        - .txt
-    default_parser: kakao_chat_normalized_txt
-    notes:
-      - Normalized KakaoTalk text export in `[YYYY-MM-DD HH:MM:SS] speaker: message` format.
-
-  - key: email-md-txt
-    source_kind: email_document
-    status: built_in
-    match:
-      path_contains:
-        - /email/
-      extensions:
-        - .md
-        - .txt
-    default_parser: email_md_txt
-
-  - key: education-md-txt
-    source_kind: education_document
-    status: built_in
-    match:
-      path_contains:
-        - /education/
-      extensions:
-        - .md
-        - .txt
-    default_parser: education_md_txt
-
-  - key: report-md-txt
-    source_kind: report_document
-    status: built_in
-    match:
-      path_contains:
-        - /reports/
-      extensions:
-        - .md
-        - .txt
-    default_parser: report_md_txt
+      - Use this family for cumulative exports of the same Agent Korea KakaoTalk room.
+      - Matching stays declarative here; runtime logic is responsible for fingerprinting and version registration.
 
   - key: markdown-note-export
     source_kind: markdown_note_export
     match:
       path_contains:
         - note-export-
-      extensions:
         - .md
     default_parser: markdown_note
+    notes:
+      - Use this family for repeated markdown note exports that should register through the same incremental ingest path.
 
 defaults:
   unknown_family_policy: require_explicit_mapping_or_clear_filename_match

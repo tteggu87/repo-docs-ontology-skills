@@ -24,14 +24,10 @@ capabilities:
     implementation: scripts/workbench/repository.py:query_preview
     entrypoint: GET /api/query/preview?q=<question>
   - key: workbench.analysis.save
-    action: strict_disabled_save_analysis_route
+    action: save_query_analysis_draft
     implementation: scripts/workbench/repository.py:save_query_analysis
     entrypoint: POST /api/actions/save-analysis
   - key: workbench.claim.review
     action: review_claim_state
     implementation: scripts/workbench/repository.py:review_claim
     entrypoint: POST /api/actions/review-claim
-  - key: bootstrap.llm_first_ontology.scaffold
-    action: bootstrap_llm_first_ontology_workspace
-    implementation: .agents/skills/llm-wiki-bootstrap/scripts/bootstrap_llm_wiki.py:scaffold
-    entrypoint: python3 .agents/skills/llm-wiki-bootstrap/scripts/bootstrap_llm_wiki.py <target>

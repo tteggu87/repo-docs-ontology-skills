@@ -1,6 +1,6 @@
 # Architecture
 
-Updated: 2026-05-02
+Updated: 2026-04-13
 
 ## Canonical entrypoints
 
@@ -12,26 +12,6 @@ Updated: 2026-05-02
   - resolves source families from `intelligence/manifests/source_families.yaml`
   - upserts canonical sequential records into `warehouse/jsonl/`
   - refreshes affected wiki source pages and meta pages
-- `scripts/generic_ingest.py`
-  - profile-aware ingest for md/txt sources
-  - resolves source family from `intelligence/manifests/source_families.yaml`
-  - resolves profile mapping from `intelligence/packs/*/pack.yaml`
-  - writes documents, source versions, content units, and source page projection
-- `scripts/llm_compile_source.py`
-  - strict helper-LLM source compile workflow
-  - reads source page, content units, related pages, and compile-stage meta surfaces declared in `meta_surfaces.yaml`
-  - writes draft compile proposals only
-- `scripts/llm_query.py`
-  - strict helper-LLM query workflow
-  - selection stage reads map surfaces and page inventory, not page bodies
-  - answer stage reads selected page bodies and wikilink neighborhood
-- `scripts/validate_intelligence.py`
-  - validates contract entrypoint, strict semantic workflows, page policy, relation policy shape, and meta surfaces
-- `scripts/proposal_review.py`
-  - lists compile proposals
-  - moves proposals through accepted/rejected/applied lifecycle states
-  - applies only explicit human-reviewed markdown content to explicit wiki targets
-  - records proposal and review event registries under `warehouse/jsonl/`
 - `scripts/workbench_api.py`
   - live compatibility wrapper
   - imports the actual workbench implementation from `scripts/workbench/`
@@ -73,33 +53,6 @@ Updated: 2026-05-02
 4. The workflow writes or updates a source-family incremental status page under `wiki/sources/`
 5. The workflow rebuilds `wiki/_meta/index.md` and appends `wiki/_meta/log.md`
 
-### Strict source compile
-
-1. Source ingest creates or updates a source page and citation-anchored `content_units`
-2. Wiki graph navigation surfaces are refreshed under `wiki/_meta/`
-3. `scripts/llm_compile_source.py --source-page <page>` builds an LLM bundle
-4. Compile-stage meta surfaces are selected from `intelligence/manifests/meta_surfaces.yaml`
-5. If helper LLM is missing or disabled, the workflow emits an agent handoff bundle for the surrounding chat LLM and does not claim semantic success
-6. If helper LLM is available, output is saved as a draft compile proposal under `wiki/analyses/`
-7. Active concept/entity/project pages are not modified automatically
-
-### Proposal review/apply
-
-1. Human reviews a draft compile proposal
-2. `scripts/proposal_review.py set-status <proposal> --status accepted|rejected` updates proposal status according to `proposal_lifecycle.yaml`
-3. `scripts/proposal_review.py apply <proposal> --target <wiki-page> --content-file <reviewed-md>` applies only human-supplied reviewed markdown
-4. The proposal moves to `applied`
-5. `warehouse/jsonl/compile_proposals.jsonl` and `warehouse/jsonl/review_events.jsonl` record lifecycle state and review actions
-6. No LLM output is automatically transformed into active wiki truth
-
-### Strict query
-
-1. `scripts/llm_query.py <question>` builds a selection prompt from page inventory plus query-selection meta surfaces
-2. The helper LLM returns strict JSON page selections
-3. JSON parse failure fails the workflow instead of falling back to regex
-4. The answer bundle reads selected pages and wikilink neighborhood
-5. Draft compile proposals and `_meta` pages are excluded as direct query evidence by `page_policy.yaml`
-
 ### Workbench query and review flow
 
 1. The frontend in `apps/workbench/` calls explicit adapter routes only
@@ -116,17 +69,15 @@ Updated: 2026-05-02
 
 1. The backend may read `wikiconfig.json` from repo root only
 2. No parent-directory or workspace-wide config crawl is allowed
-3. `llmWiki.enabled=false` disables helper-model API usage; strict semantic CLI commands then emit agent handoff prompt/bundle output rather than claiming semantic success
-4. `llmWiki.enabled=true` makes strict compile/query use `models[0]` as the backend helper LLM
-5. Only a whitelisted subset is normalized:
+3. `llmWiki.enabled` may disable helper-model API usage while keeping the repo in local-only mode
+4. Only a whitelisted subset is normalized:
    - `models`
    - `embeddingsProvider`
    - `rerankerProvider`
-6. The current helper-model compatibility path is limited to OpenAI-compatible chat providers
-7. Browser routes must not expose provider secrets or raw provider internals
-8. Helper-model routes must return draft output only and must not write to `raw/` or `warehouse/jsonl/`
-9. Helper-model source reads must stay under `raw/inbox/`, `raw/processed/`, or `raw/notes/`
-10. The surrounding Codex/ChatGPT conversation model is not reachable from local scripts directly; chat-agent processing happens when the agent reads emitted handoff bundles/prompts and intentionally saves proposals or reviewed pages
+5. The current helper-model compatibility path is limited to OpenAI-compatible chat providers
+6. Browser routes must not expose provider secrets or raw provider internals
+7. Helper-model routes must return draft output only and must not write to `raw/` or `warehouse/jsonl/`
+8. Helper-model source reads must stay under `raw/inbox/`, `raw/processed/`, or `raw/notes/`
 
 ## Current intentional legacy split
 
@@ -138,5 +89,3 @@ Updated: 2026-05-02
 
 - unit tests cover incremental ingest behavior in `tests/test_incremental_ingest.py`
 - route and repository behavior are covered in `tests/test_workbench_api.py`
-- strict compile/query and contract behavior are covered in `tests/test_generic_ingest.py`
-- contract validators are executable through `scripts/validate_intelligence.py`, `scripts/validate_profiles.py`, and `scripts/validate_registries.py`

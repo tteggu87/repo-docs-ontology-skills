@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import datetime as dt
 import difflib
-import json
 import subprocess
 import unicodedata
 from dataclasses import dataclass
@@ -264,74 +263,6 @@ class WorkbenchRepository:
             "recent_analyses": top(analyses),
         }
 
-    def ingest_inbox(self) -> dict[str, Any]:
-        from scripts.ingest.resolver import resolve_family, resolve_profile_for_family
-
-        items: list[dict[str, Any]] = []
-        inbox = self.raw_dir / "inbox"
-        for path in sorted(inbox.rglob("*")) if inbox.exists() else []:
-            if not path.is_file() or path.suffix.lower() not in {".md", ".txt"}:
-                continue
-            rel = path.relative_to(self.root).as_posix()
-            warnings: list[str] = []
-            try:
-                family = resolve_family(self.root, path)
-            except ValueError as error:
-                family = None
-                warnings.append(str(error))
-            items.append(
-                {
-                    "path": rel,
-                    "detected_source_family_id": family,
-                    "detected_profile_id": resolve_profile_for_family(self.root, family or ""),
-                    "warnings": warnings,
-                }
-            )
-        return {"items": items}
-
-    def ingest_preview(self, raw_path: str) -> dict[str, Any]:
-        from scripts.ingest.adapters.education_md_txt import parse_education_source
-        from scripts.ingest.adapters.email_md_txt import parse_email_source
-        from scripts.ingest.adapters.markdown import parse_markdown
-        from scripts.ingest.adapters.report_md_txt import parse_report_source
-        from scripts.ingest.resolver import resolve_family, resolve_profile_for_family
-
-        source = (self.root / raw_path).resolve()
-        resolved_root = self.root.resolve()
-        if resolved_root not in source.parents and source != resolved_root:
-            raise ValueError("path must stay inside repository")
-        if not source.exists() or not source.is_file():
-            raise FileNotFoundError(raw_path)
-        if source.suffix.lower() not in {".md", ".txt"}:
-            raise ValueError("only md/txt preview is supported")
-        rel = source.relative_to(resolved_root).as_posix()
-        if not rel.startswith(("raw/inbox/", "raw/processed/", "raw/notes/")):
-            raise ValueError("preview path must be under raw/inbox/, raw/processed/, or raw/notes/")
-        warnings: list[str] = []
-        try:
-            family = resolve_family(self.root, source)
-        except ValueError as error:
-            family = "generic-md-note"
-            warnings.append(str(error))
-        profile = resolve_profile_for_family(self.root, family)
-        if profile == "email-analysis":
-            parsed = parse_email_source(source, raw_path=rel)
-        elif profile == "education-analysis":
-            parsed = parse_education_source(source, raw_path=rel)
-        elif profile == "report-consistency-analysis":
-            parsed = parse_report_source(source, raw_path=rel)
-        else:
-            parsed = parse_markdown(source, profile, family, raw_path=rel)
-        warnings.extend(parsed.document.get("warnings", []))
-        return {
-            "path": rel,
-            "detected_source_family_id": family,
-            "detected_profile_id": profile,
-            "expected_unit_count": len(parsed.units),
-            "unit_kinds": sorted({unit.get("unit_kind") for unit in parsed.units}),
-            "warnings": warnings,
-        }
-
     def review_summary(self, limit: int = 5) -> dict[str, Any]:
         records = self.all_page_records()
         documents_by_id = {
@@ -430,56 +361,29 @@ class WorkbenchRepository:
             )
         )
 
-        low_coverage = low_coverage[:limit]
-        uncertainty = uncertainty[:limit]
-        stale = stale[:limit]
-        low_confidence_claims = low_confidence_claims[:limit]
-
-        for item in low_coverage:
-            item["graph_hint"] = self._graph_hint_text("page", str(item["stem"]))
-        for item in uncertainty:
-            item["graph_hint"] = self._graph_hint_text("page", str(item["stem"]))
-        for item in stale:
-            item["graph_hint"] = self._graph_hint_text("page", str(item["stem"]))
-        for item in low_confidence_claims:
-            claim_id = str(item.get("claim_id") or "")
-            item["graph_hint"] = self._graph_hint_text("claim", claim_id) or (
-                self._graph_hint_text("source", str(item.get("source_page") or "")) if item.get("source_page") else None
-            )
-
         return {
             "oversized_pages": oversized[:limit],
-            "low_coverage_pages": low_coverage,
-            "uncertainty_candidates": uncertainty,
-            "stale_pages": stale,
-            "low_confidence_claims": low_confidence_claims,
+            "low_coverage_pages": low_coverage[:limit],
+            "uncertainty_candidates": uncertainty[:limit],
+            "stale_pages": stale[:limit],
+            "low_confidence_claims": low_confidence_claims[:limit],
         }
 
     def query_preview(self, question: str, limit: int = 5) -> dict[str, Any]:
         tokens = tokenize_query(question)
         if not tokens:
             return {
-                "mode": "lexical_diagnostics",
+                "mode": "repo_local_search",
                 "question": question,
-                "tokens": [],
                 "coverage": "none",
                 "answer_markdown": (
-                    "# Lexical diagnostics\n\n"
-                    "Enter a more specific question to inspect lexical wiki/canonical registry matches.\n\n"
-                    "This is not an answer draft.\n"
+                    "# Ask workspace\n\n"
+                    "Enter a more specific question to search the wiki and canonical registries.\n"
                 ),
                 "related_pages": [],
                 "related_sources": [],
                 "provenance_sections": [],
                 "warnings": ["empty_query"],
-                "graph_hints": {
-                    "available": False,
-                    "summary": "Graph hints require a non-empty query.",
-                    "related_nodes": [],
-                    "path_hints": [],
-                    "warnings": ["empty_query"],
-                    "seeds": [],
-                },
             }
 
         page_results: list[dict[str, Any]] = []
@@ -589,14 +493,6 @@ class WorkbenchRepository:
             },
         ]
 
-        graph_seed_candidates: list[tuple[str, str]] = []
-        graph_seed_candidates.extend(("page", item["stem"]) for item in top_pages[:2])
-        graph_seed_candidates.extend(("source", item["stem"]) for item in top_sources[:2])
-        claim_seed = next((str(item["id"]) for item in registry_hits.get("claims", []) if item.get("id")), None)
-        if claim_seed:
-            graph_seed_candidates.append(("claim", claim_seed))
-        graph_hints = self._graph_hints_for_seeds(graph_seed_candidates)
-
         answer_lines = [
             "# Local query preview",
             "",
@@ -664,19 +560,6 @@ class WorkbenchRepository:
                 if hits:
                     answer_lines.append(f"- {name}: {len(hits)}")
             answer_lines.append("")
-        if self._should_render_graph_hints(graph_hints):
-            answer_lines.extend(["## Graph hints", "", f"- {graph_hints['summary']}"])
-            if graph_hints["related_nodes"]:
-                answer_lines.append("- Related nodes: " + ", ".join(f"`{item}`" for item in graph_hints["related_nodes"]))
-            if graph_hints["path_hints"]:
-                answer_lines.extend(["", "### Path hints", ""] + [f"- {hint}" for hint in graph_hints["path_hints"]])
-            if graph_hints["seeds"]:
-                answer_lines.extend(["", "### Graph seeds", ""])
-                for item in graph_hints["seeds"]:
-                    answer_lines.append(
-                        f"- `{item.get('type', 'seed')}` `{item.get('value', '')}` — {item.get('title', item.get('key', 'graph seed'))}"
-                    )
-            answer_lines.append("")
         if not top_pages and not top_sources and not total_registry_hits:
             answer_lines.extend(
                 [
@@ -688,22 +571,15 @@ class WorkbenchRepository:
             )
 
         return {
-            "mode": "lexical_diagnostics",
+            "mode": "repo_local_search",
             "question": question,
             "tokens": tokens,
             "coverage": coverage,
-            "answer_markdown": (
-                "# Lexical diagnostics\n\n"
-                "This preview shows lexical wiki/canonical registry matches and graph hints only. "
-                "It is not an answer draft.\n\n"
-                + "\n".join(answer_lines).strip()
-                + "\n"
-            ),
+            "answer_markdown": "\n".join(answer_lines).strip() + "\n",
             "related_pages": top_pages,
             "related_sources": top_sources,
             "provenance_sections": provenance_sections,
             "warnings": warnings,
-            "graph_hints": graph_hints,
         }
 
     def rebuild_index(self) -> bool:
@@ -798,7 +674,6 @@ class WorkbenchRepository:
         return linked_paths
 
     def save_query_analysis(self, question: str, limit: int = 5) -> dict[str, Any]:
-        raise ValueError("save-analysis is disabled in strict LLM mode; use LLM query with explicit save or scripts/query_analysis.py.")
         preview = self.query_preview(question, limit=limit)
         today = dt.date.today().isoformat()
         stem = f"analysis-{today}-{slugify(question)[:64]}"
@@ -851,18 +726,6 @@ class WorkbenchRepository:
             lines.extend(["## Provenance sections", ""])
             for section in provenance_items:
                 lines.append(f"- {section['label']}: {section['count']}")
-            lines.append("")
-
-        graph_hints = preview.get("graph_hints") or {}
-        if self._should_render_graph_hints(graph_hints):
-            lines.extend(["## Graph context", "", f"- Graph hints: {graph_hints.get('summary', 'No graph hint summary.')}" ])
-            graph_seeds = graph_hints.get("seeds") or []
-            if graph_seeds:
-                lines.extend(["", "### Graph seeds", ""])
-                for item in graph_seeds:
-                    lines.append(
-                        f"- `{item.get('type', 'seed')}` `{item.get('value', '')}` — {item.get('title', item.get('key', 'graph seed'))}"
-                    )
             lines.append("")
 
         next_text = "\n".join(lines).strip() + "\n"
@@ -1039,276 +902,6 @@ class WorkbenchRepository:
             name: len(read_jsonl(self.warehouse_jsonl_dir / f"{name}.jsonl"))
             for name in JSONL_REGISTRIES
         }
-
-    def _graph_projection_paths(self) -> tuple[Path, Path]:
-        return self.graph_dir / "nodes.jsonl", self.graph_dir / "edges.jsonl"
-
-    def _graph_projection_available(self) -> bool:
-        nodes_path, edges_path = self._graph_projection_paths()
-        return nodes_path.exists() and edges_path.exists()
-
-    def _graph_nodes(self) -> list[dict[str, Any]]:
-        nodes_path, _ = self._graph_projection_paths()
-        return read_jsonl(nodes_path)
-
-    def _graph_edges(self) -> list[dict[str, Any]]:
-        _, edges_path = self._graph_projection_paths()
-        return read_jsonl(edges_path)
-
-    def _graph_string(self, value: Any) -> str:
-        if value is None:
-            return ""
-        if isinstance(value, str):
-            return value
-        if isinstance(value, list):
-            return " ".join(self._graph_string(item) for item in value)
-        if isinstance(value, dict):
-            return " ".join(self._graph_string(item) for item in value.values())
-        return str(value)
-
-    def _graph_node_label(self, node: dict[str, Any]) -> str:
-        return str(node.get("label") or node.get("title") or node.get("name") or node.get("id") or "unnamed-node")
-
-    def _graph_edge_label(self, edge: dict[str, Any]) -> str:
-        return str(edge.get("label") or edge.get("predicate") or edge.get("kind") or "related_to")
-
-    def _graph_node_kind(self, node: dict[str, Any]) -> str:
-        return str(node.get("kind") or node.get("type") or "node")
-
-    def _graph_seed_payload(self, seed_type: str, seed: str) -> tuple[str, list[str]]:
-        normalized_type = seed_type.strip().lower()
-        normalized_seed = seed.strip()
-        if normalized_type not in {"page", "source", "claim"}:
-            raise ValueError("seed_type must be one of: page, source, claim")
-        if not normalized_seed:
-            raise ValueError("seed is required")
-
-        if normalized_type == "page":
-            record = self.wiki_page(normalized_seed)
-            label = str(record["frontmatter"].get("title") or record["stem"])
-            tokens = tokenize_query(" ".join([label, record["stem"], record.get("summary") or ""]))
-            return label, tokens
-
-        if normalized_type == "source":
-            record = self.source_detail(normalized_seed)
-            label = str(record["frontmatter"].get("title") or record["stem"])
-            tokens = tokenize_query(" ".join([label, record["stem"], record.get("summary") or ""]))
-            return label, tokens
-
-        claims = read_jsonl(self.warehouse_jsonl_dir / "claims.jsonl")
-        claim = next((row for row in claims if str(row.get("claim_id") or "") == normalized_seed), None)
-        label = str((claim or {}).get("claim_text") or normalized_seed)
-        token_source = " ".join(
-            [
-                label,
-                str((claim or {}).get("subject_id") or ""),
-                str((claim or {}).get("object_id") or ""),
-                str((claim or {}).get("predicate") or ""),
-            ]
-        )
-        return label, tokenize_query(token_source)
-
-    def graph_inspect(self, seed_type: str, seed: str, *, max_nodes: int = 8, max_edges: int = 12) -> dict[str, Any]:
-        seed_label, tokens = self._graph_seed_payload(seed_type, seed)
-        payload: dict[str, Any] = {
-            "seed": {"type": seed_type, "value": seed, "label": seed_label},
-            "source_path": "warehouse/graph_projection/",
-            "neighborhood": {"node_count": 0, "edge_count": 0, "nodes": [], "edges": []},
-            "path_hints": [],
-            "warnings": [],
-        }
-
-        if not self._graph_projection_available():
-            payload.update(
-                {
-                    "mode": "unavailable",
-                    "summary": "Graph projection is unavailable because `warehouse/graph_projection/` does not contain bounded graph artifacts yet.",
-                    "warnings": ["graph_projection_empty"],
-                }
-            )
-            return payload
-
-        nodes = self._graph_nodes()
-        edges = self._graph_edges()
-        searchable_tokens = [token.lower() for token in tokens if token]
-        matched_nodes = [node for node in nodes if any(token in self._graph_string(node).lower() for token in searchable_tokens)]
-
-        if not matched_nodes:
-            payload.update(
-                {
-                    "mode": "empty",
-                    "summary": f"No bounded neighborhood matched the current {seed_type} seed.",
-                }
-            )
-            return payload
-
-        matched_ids = [str(node.get("id") or "") for node in matched_nodes if node.get("id")][: max(1, max_nodes // 2)]
-        selected_ids = list(dict.fromkeys(matched_ids))
-        for edge in edges:
-            source = str(edge.get("source") or edge.get("from") or "")
-            target = str(edge.get("target") or edge.get("to") or "")
-            if source in selected_ids or target in selected_ids:
-                if source and source not in selected_ids and len(selected_ids) < max_nodes:
-                    selected_ids.append(source)
-                if target and target not in selected_ids and len(selected_ids) < max_nodes:
-                    selected_ids.append(target)
-
-        node_lookup = {str(node.get("id") or ""): node for node in nodes if node.get("id")}
-        selected_nodes = []
-        for node_id in selected_ids[:max_nodes]:
-            node = node_lookup.get(node_id)
-            if not node:
-                continue
-            selected_nodes.append(
-                {
-                    "id": node_id,
-                    "label": self._graph_node_label(node),
-                    "kind": self._graph_node_kind(node),
-                    "matched": node_id in matched_ids,
-                }
-            )
-
-        selected_id_set = {node["id"] for node in selected_nodes}
-        selected_edges = []
-        path_hints = []
-        for edge in edges:
-            source = str(edge.get("source") or edge.get("from") or "")
-            target = str(edge.get("target") or edge.get("to") or "")
-            if source in selected_id_set and target in selected_id_set:
-                label = self._graph_edge_label(edge)
-                selected_edges.append({"source": source, "target": target, "label": label})
-                source_label = next((node["label"] for node in selected_nodes if node["id"] == source), source)
-                target_label = next((node["label"] for node in selected_nodes if node["id"] == target), target)
-                path_hints.append(f"{source_label} --{label}--> {target_label}")
-            if len(selected_edges) >= max_edges:
-                break
-
-        payload.update(
-            {
-                "mode": "available",
-                "summary": f"Found a bounded neighborhood for the current {seed_type} seed.",
-                "neighborhood": {
-                    "node_count": len(selected_nodes),
-                    "edge_count": len(selected_edges),
-                    "nodes": selected_nodes,
-                    "edges": selected_edges,
-                },
-                "path_hints": path_hints[:5],
-            }
-        )
-        return payload
-
-    def _build_graph_seed(self, seed_type: str, seed: str) -> dict[str, str] | None:
-        try:
-            label, _ = self._graph_seed_payload(seed_type, seed)
-        except (ValueError, FileNotFoundError):
-            return None
-        return {
-            "key": f"{seed_type}:{seed}",
-            "type": seed_type,
-            "value": seed,
-            "title": label,
-            "subtitle": f"{seed_type} seed",
-            "description": f"Bounded graph hint for {seed_type} context.",
-        }
-
-    def _graph_hints_for_seeds(self, seeds: list[tuple[str, str]]) -> dict[str, Any]:
-        if not self._graph_projection_available():
-            return {
-                "available": False,
-                "summary": "Graph projection is unavailable for this query preview.",
-                "related_nodes": [],
-                "path_hints": [],
-                "warnings": ["graph_projection_empty"],
-                "seeds": [],
-            }
-
-        related_nodes: list[str] = []
-        path_hints: list[str] = []
-        warnings: list[str] = []
-        seed_payloads: list[dict[str, str]] = []
-        any_available = False
-
-        try:
-            for seed_type, seed in seeds:
-                if not seed:
-                    continue
-                seed_payload = self._build_graph_seed(seed_type, seed)
-                if seed_payload and not any(item["key"] == seed_payload["key"] for item in seed_payloads):
-                    seed_payloads.append(seed_payload)
-                try:
-                    inspect = self.graph_inspect(seed_type, seed)
-                except (ValueError, FileNotFoundError, OSError, UnicodeDecodeError, json.JSONDecodeError):
-                    return {
-                        "available": False,
-                        "summary": "Graph projection is unavailable for this query preview.",
-                        "related_nodes": [],
-                        "path_hints": [],
-                        "warnings": ["graph_projection_invalid"],
-                        "seeds": [],
-                    }
-                if inspect.get("mode") == "available":
-                    any_available = True
-                    for node in inspect.get("neighborhood", {}).get("nodes", []):
-                        label = str(node.get("label") or "").strip()
-                        if label and label not in related_nodes:
-                            related_nodes.append(label)
-                    for hint in inspect.get("path_hints", []):
-                        if hint not in path_hints:
-                            path_hints.append(hint)
-                for warning in inspect.get("warnings", []):
-                    if warning not in warnings:
-                        warnings.append(warning)
-        except (OSError, UnicodeDecodeError, json.JSONDecodeError):
-            return {
-                "available": False,
-                "summary": "Graph projection is unavailable for this query preview.",
-                "related_nodes": [],
-                "path_hints": [],
-                "warnings": ["graph_projection_invalid"],
-                "seeds": [],
-            }
-
-        if any_available:
-            summary = "Graph hints are available for this query preview."
-        elif seed_payloads:
-            summary = "Graph inspect is configured, but no bounded neighborhood matched the current preview seeds."
-        else:
-            summary = "No graph seeds were available for this query preview."
-
-        return {
-            "available": any_available,
-            "summary": summary,
-            "related_nodes": related_nodes[:6],
-            "path_hints": path_hints[:5],
-            "warnings": warnings,
-            "seeds": seed_payloads[:6],
-        }
-
-    def _graph_hint_text(self, seed_type: str, seed: str) -> str | None:
-        try:
-            inspect = self.graph_inspect(seed_type, seed)
-        except (ValueError, FileNotFoundError, OSError, UnicodeDecodeError, json.JSONDecodeError):
-            return None
-        if inspect.get("mode") == "available" and inspect.get("path_hints"):
-            return str(inspect["path_hints"][0])
-        if inspect.get("mode") == "available":
-            count = inspect.get("neighborhood", {}).get("node_count", 0)
-            return f"bounded neighborhood nodes: {count}"
-        return None
-
-    def _should_render_graph_hints(self, graph_hints: dict[str, Any] | None) -> bool:
-        if not graph_hints:
-            return False
-        warnings = list(graph_hints.get("warnings") or [])
-        if "empty_query" in warnings:
-            return False
-        return bool(
-            graph_hints.get("available")
-            or graph_hints.get("related_nodes")
-            or graph_hints.get("path_hints")
-            or graph_hints.get("seeds")
-        )
 
     def summary(self) -> dict[str, Any]:
         index_path = self.meta_dir / "index.md"

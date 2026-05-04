@@ -2,7 +2,7 @@
 title: "Current State"
 status: active
 source_of_truth: yes
-updated: 2026-05-02
+updated: 2026-04-14
 ---
 
 # Current State
@@ -12,8 +12,7 @@ updated: 2026-05-02
 - **Primary human reading surface:** `wiki/` inside the Obsidian vault
 - **Canonical machine truth:** `warehouse/jsonl/`
 - **Optional local sidecar workbench:** `apps/workbench/` via `scripts/workbench_api.py`
-- **Current shipped frontend focus:** `Ask` lexical diagnostics plus `Wiki` reader
-- **Strict semantic path:** helper-LLM compile/query over wiki, ontology, meta surfaces, and citation anchors
+- **Current shipped frontend focus:** `Ask` query preview plus `Wiki` reader
 
 The workbench is additive. It does not replace the vault and it must not mutate canonical truth directly.
 
@@ -23,37 +22,6 @@ The workbench is additive. It does not replace the vault and it must not mutate 
 2. `warehouse/jsonl/` is canonical structured ontology truth
 3. `wiki/` is maintained human-facing synthesis
 4. `warehouse/graph_projection/` is derived and read-only
-5. `intelligence/` is a contract layer, not a semantic truth layer
-
-## Strict LLM-first semantic workflow
-
-Semantic judgment has exactly one default path:
-
-1. source material is ingested into source pages and citation-anchored content units
-2. `scripts/wiki_graph_navigation.py` refreshes map surfaces such as MOC, link map, contradiction review, orphan review, and source coverage
-3. `scripts/llm_compile_source.py` reads the source page, content units, related pages, and `meta_surfaces.yaml`-declared compile surfaces
-4. compile output is saved only as a draft human-review proposal under `wiki/analyses/`
-5. `scripts/proposal_review.py` can accept/reject proposals and apply only human-supplied reviewed content to explicit wiki targets
-6. reviewed wiki/ontology pages become the primary reasoning surface
-7. `scripts/llm_query.py` uses page metadata and query selection meta surfaces first, then reads selected page bodies for the answer step
-
-If no helper LLM is configured, compile/query emits agent handoff prompt/bundle output for the surrounding chat LLM and does not claim semantic success. Deterministic lexical preview remains diagnostics only and must not become a semantic answer path.
-
-## Contract layer
-
-The current YAML contract entrypoint is `intelligence/contract_index.yaml`.
-
-Important contracts:
-
-- `intelligence/policies/semantic_boundary.yaml`
-- `intelligence/policies/proposal_lifecycle.yaml`
-- `intelligence/manifests/semantic_workflows.yaml`
-- `intelligence/manifests/page_policy.yaml`
-- `intelligence/manifests/meta_surfaces.yaml`
-- `intelligence/manifests/relation_types.yaml`
-- `intelligence/manifests/registries.yaml`
-
-These files define boundaries, policies, workflow contracts, relation vocabulary, and registry shape. They must not contain source summaries, answer drafts, or semantic claims.
 
 ## Workbench write contract
 
@@ -63,10 +31,15 @@ Current bounded browser-triggered actions remain intentionally narrow:
   - `python3 scripts/llm_wiki.py status`
   - `python3 scripts/llm_wiki.py reindex`
   - `python3 scripts/llm_wiki.py lint`
+- allowed backend-gated save flow:
+  - persist a query preview into `wiki/analyses/`
+  - append the matching `wiki/_meta/log.md` entry
+  - refresh `wiki/_meta/index.md`
 - allowed backend-gated helper flow:
   - read repo-root `wikiconfig.json` for bounded helper-model actions
   - return draft-only output without mutating canonical truth
 - allowed write targets from workbench-triggered actions:
+  - `wiki/analyses/`
   - `wiki/_meta/log.md`
   - `wiki/_meta/index.md`
 - explicitly disallowed from query/save surfaces:
@@ -77,36 +50,16 @@ Current bounded browser-triggered actions remain intentionally narrow:
 
 ## Query workspace v1
 
-The local Ask workspace now operates as a **repo-local lexical diagnostics surface**:
+The local Ask workspace now operates as a **repo-local query preview plus bounded save loop**:
 
 - it searches existing wiki pages first
 - it surfaces related source pages and canonical registry hits
 - it must show thin/empty coverage states honestly
-- it must not present lexical matching as a semantic answer draft
-- it must not save analysis pages from deterministic preview output
+- it may save a deterministic analysis draft through the backend into `wiki/analyses/`
+- it may add bounded link-back entries on confident related wiki pages
 - it supports related-page navigation from Ask and the current Wiki reader
 
-Semantic answers and durable answer saves belong to the strict LLM query workflow plus human review.
-
-## Current validators
-
-- `python3 scripts/validate_intelligence.py`
-- `python3 scripts/validate_workbench_manifest.py`
-- `python3 scripts/validate_profiles.py`
-- `python3 scripts/validate_registries.py`
-- `python3 -m pytest -q`
-
-Pipeline shorthand:
-
-- `python3 scripts/pipeline_refresh.py --source <path> --profile <profile> --validate`
-- `python3 scripts/pipeline_refresh.py --source <path> --profile <profile> --validate-full`
-
-The validator suite guards the no-fallback semantic boundary, proposal lifecycle, Workbench route/policy boundaries, profile compile targets, pack manifests, queryable page policy, relation type policy shape, registry shapes, and registry references.
-
-Proposal review operations also maintain:
-
-- `warehouse/jsonl/compile_proposals.jsonl`
-- `warehouse/jsonl/review_events.jsonl`
+This keeps the product useful without pretending browser-side generation is already safe or canonical.
 
 ## Operator review surfaces
 

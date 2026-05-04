@@ -8,7 +8,7 @@ API_HOST="127.0.0.1"
 API_PORT="8765"
 WEB_HOST="127.0.0.1"
 WEB_PORT="4174"
-TMP_DIR="$REPO_DIR/.agents/tmp"
+TMP_DIR="$REPO_DIR/.codex/tmp"
 API_LOG="$TMP_DIR/workbench-api.log"
 WEB_LOG="$TMP_DIR/workbench-web.log"
 WEB_URL="http://$WEB_HOST:$WEB_PORT"
@@ -23,34 +23,6 @@ require_command() {
 
 port_listener() {
   lsof -nP -iTCP:"$1" -sTCP:LISTEN -t 2>/dev/null | head -n 1 || true
-}
-
-process_command() {
-  ps -p "$1" -o command= 2>/dev/null || true
-}
-
-listener_matches_fragment() {
-  local pid="$1"
-  local fragment="$2"
-  local command
-  command="$(process_command "$pid")"
-  [ -n "$command" ] && [[ "$command" == *"$fragment"* ]]
-}
-
-api_listener_matches_repo() {
-  local pid="$1"
-  local reported_root
-
-  if ! listener_matches_fragment "$pid" "$REPO_DIR/scripts/workbench_api.py"; then
-    return 1
-  fi
-
-  if ! listener_matches_fragment "$pid" "--root $REPO_DIR"; then
-    return 1
-  fi
-
-  reported_root="$(curl -fsS "$API_READY_URL" | python3 -c 'import json, sys; print(json.load(sys.stdin).get("root", ""))' 2>/dev/null || true)"
-  [ "$reported_root" = "$REPO_DIR" ]
 }
 
 wait_for_url() {
@@ -75,14 +47,10 @@ start_api() {
   listener="$(port_listener "$API_PORT")"
   if [ -n "$listener" ]; then
     if wait_for_url "$API_READY_URL" 4 0.25; then
-      if api_listener_matches_repo "$listener"; then
-        echo "Workbench API already listening on $API_PORT (pid $listener)"
-        return 0
-      fi
-      echo "Workbench API listener on $API_PORT belongs to a different repo. Restarting (pid $listener)"
-    else
-      echo "Workbench API listener on $API_PORT is unhealthy. Restarting (pid $listener)"
+      echo "Workbench API already listening on $API_PORT (pid $listener)"
+      return 0
     fi
+    echo "Workbench API listener on $API_PORT is unhealthy. Restarting (pid $listener)"
     kill "$listener" 2>/dev/null || true
     sleep 0.5
   fi
@@ -97,12 +65,6 @@ start_api() {
 
   if ! wait_for_url "$API_READY_URL" 60 0.25; then
     echo "Workbench API did not become ready. Check: $API_LOG"
-    exit 1
-  fi
-
-  listener="$(port_listener "$API_PORT")"
-  if [ -z "$listener" ] || ! api_listener_matches_repo "$listener"; then
-    echo "Workbench API became reachable, but the listener does not match this repo. Check: $API_LOG"
     exit 1
   fi
 }
@@ -121,14 +83,10 @@ start_web() {
 
   if [ -n "$listener" ]; then
     if wait_for_url "$WEB_URL" 4 0.25; then
-      if listener_matches_fragment "$listener" "$WORKBENCH_DIR"; then
-        echo "Workbench web UI already listening on $WEB_PORT (pid $listener)"
-        return 0
-      fi
-      echo "Workbench web UI listener on $WEB_PORT belongs to a different repo. Restarting (pid $listener)"
-    else
-      echo "Workbench web UI listener on $WEB_PORT is unhealthy. Restarting (pid $listener)"
+      echo "Workbench web UI already listening on $WEB_PORT (pid $listener)"
+      return 0
     fi
+    echo "Workbench web UI listener on $WEB_PORT is unhealthy. Restarting (pid $listener)"
     kill "$listener" 2>/dev/null || true
     sleep 0.5
   fi
@@ -141,12 +99,6 @@ start_web() {
 
   if ! wait_for_url "$WEB_URL" 80 0.25; then
     echo "Workbench web UI did not become ready. Check: $WEB_LOG"
-    exit 1
-  fi
-
-  listener="$(port_listener "$WEB_PORT")"
-  if [ -z "$listener" ] || ! listener_matches_fragment "$listener" "$WORKBENCH_DIR"; then
-    echo "Workbench web UI became reachable, but the listener does not match this repo. Check: $WEB_LOG"
     exit 1
   fi
 }
