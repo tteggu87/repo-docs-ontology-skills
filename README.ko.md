@@ -195,14 +195,20 @@ better future answers
 
 YAML은 유용하지만 하위 계층입니다.
 
-우선순위:
+여기에는 서로 다른 두 우선순위 축이 있습니다.
+
+Truth / provenance 우선순위:
 
 1. `raw/` source material
-2. source-backed wiki page와 citation
-3. ontology-backed ingest가 있을 때 canonical JSONL
-4. `AGENTS.md` operating rules
-5. `intelligence/` YAML contract와 hint
-6. derived graph/retrieval/workbench preview
+2. ontology-backed ingest가 있을 때 `warehouse/jsonl/` canonical structured truth
+3. source-backed wiki page와 citation
+4. derived graph/retrieval/workbench preview
+
+운영 지침 우선순위:
+
+1. repo-local `AGENTS.md`
+2. `wiki/_meta/index.md`와 최근 `wiki/_meta/log.md`
+3. `intelligence/` YAML contract와 hint
 
 YAML은 vocabulary, dataset boundary, profile, validation hint를 정의할 수 있습니다. 하지만 두 번째 semantic wiki나 deterministic reasoning engine이 되면 안 됩니다.
 

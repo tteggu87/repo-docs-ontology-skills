@@ -195,14 +195,20 @@ This keeps the system close to a Karpathy-style LLM Wiki: the LLM reads a struct
 
 YAML is useful, but it is subordinate.
 
-Priority order:
+There are two separate priority axes.
+
+Truth / provenance priority:
 
 1. `raw/` source material
-2. source-backed wiki pages and citations
-3. canonical JSONL when ontology-backed ingest exists
-4. `AGENTS.md` operating rules
-5. `intelligence/` YAML contracts and hints
-6. derived graph/retrieval/workbench previews
+2. `warehouse/jsonl/` canonical structured truth when ontology-backed ingest exists
+3. source-backed wiki pages and citations
+4. derived graph/retrieval/workbench previews
+
+Operating guidance priority:
+
+1. repo-local `AGENTS.md`
+2. `wiki/_meta/index.md` and recent `wiki/_meta/log.md`
+3. `intelligence/` YAML contracts and hints
 
 YAML may define vocabulary, dataset boundaries, profiles, and validation hints. It must not become a second semantic wiki or a deterministic reasoning engine.
 
