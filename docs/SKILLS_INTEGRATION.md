@@ -14,12 +14,16 @@ That means:
 
 ## Relevant reusable skills
 
-- `repo-docs-intelligence-bootstrap`
+- `.agents/skills/repo-docs-intelligence-bootstrap`
   - use for repository-level docs and intelligence alignment
-- `llm-wiki-ontology-ingest`
+- `.agents/skills/llm-wiki-ontology-ingest`
   - use when processing new sources into canonical registries plus wiki pages
-- `ontology-pipeline-operator`
+- `.agents/skills/ontology-pipeline-operator`
   - use when refreshing existing ontology artifacts and repeated maintenance flows
+
+The repo-local skillset lives under `.agents/skills/`. Installed copies under
+`~/.codex/skills` are local conveniences only; they are not the canonical
+checked-in skill surface for this repository.
 
 ## Current repo/runtime fit
 
@@ -34,3 +38,4 @@ That means:
 - they should not promote graph projection to canonical truth
 - they should not treat the browser workbench as the primary ownership surface
 - they should not create a second manifest/runtime system parallel to the existing Python paths
+- they should not treat `intelligence/` YAML as a second semantic wiki

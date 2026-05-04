@@ -1,0 +1,236 @@
+<p align="center">
+  <img src="apps/workbench/public/doctology-logo.jpeg" alt="DocTology logo" width="460">
+</p>
+
+# DocTology
+
+[English](README.md) | [한국어](README.ko.md)
+
+DocTology는 **Obsidian-first LLM Wiki 런타임이자 재사용 가능한 스킬팩**입니다.
+
+핵심 계약은 단순합니다.
+
+- 사람은 source를 넣고 질문합니다
+- 에이전트는 wiki를 유지합니다
+- 스크립트는 source identity, index, provenance를 보존합니다
+- ontology와 graph layer는 선택적 support surface이지 제품의 중심이 아닙니다
+
+DocTology의 목적은 LLM이 durable wiki를 읽고, 링크를 따라가고, source-backed evidence를 확인하며, 시간이 지날수록 knowledge base를 더 좋게 유지하도록 만드는 것입니다.
+
+## 이것이 무엇인가
+
+DocTology는 단순한 노트 저장소도 아니고, ontology toolkit만도 아니며, graph 실험 레포만도 아닙니다.
+
+이 프로젝트는 다음 구조의 저장소를 만들기 위한 방식입니다.
+
+- **`raw/`** 는 immutable source material
+- **`warehouse/jsonl/`** 은 ontology-backed ingest가 유용할 때 쓰는 canonical structured truth
+- **`wiki/`** 는 에이전트가 Obsidian link로 유지하는 human-readable synthesis
+- **`AGENTS.md`** 는 미래 에이전트를 위한 repo-local operating contract
+- **`intelligence/` YAML** 은 AGENTS, wiki, source evidence보다 아래에 있는 얇은 contract/hint layer
+
+wiki가 주된 읽기와 reasoning surface입니다. YAML은 두 번째 wiki가 아니며 semantic conclusion을 담으면 안 됩니다.
+
+## 누가 써야 하나
+
+다음이 필요하면 DocTology가 맞습니다.
+
+- vector index나 raw context dump가 아니라 실제로 읽을 수 있는 knowledge base
+- 반복적인 source ingest와 질문을 통해 자라는 LLM-maintained wiki
+- 처음부터 무거운 ontology/graph 인프라를 강제하지 않는 provenance 구조
+- bootstrap, ingest, ontology maintenance, operator workflow용 재사용 스킬
+
+![DocTology 워크벤치 질문 작업공간](assets/readme/doctology-workbench-question-workspace.jpg)
+
+_DocTology workbench question workspace — 생성된 wiki, preview, source/graph hint를 읽고 검토하는 선택형 surface입니다._
+
+현재 workbench는 source of truth도 아니고 primary LLM reasoning layer도 아닙니다. Durable synthesis는 repo-local `AGENTS.md` 계약에 따라 wiki에 남아야 합니다.
+
+![참고 예시: 지식이 위키로 자라나는 모습](assets/readme/doctology-reference-obsidian-notes-forming-a-wiki.jpg)
+
+_참고 예시 — 서로 분리되어 있던 Obsidian 노트들이 구조, 링크, neighborhood를 만들며 자라나는 모습입니다._
+
+## 기본 시작 경로
+
+어디서 시작해야 할지 애매하다면 기본 경로는 이렇습니다.
+
+1. wiki-first workspace를 bootstrap
+2. source를 `raw/inbox/`에 넣기
+3. source page, citation anchor, 선택적 ontology JSONL로 ingest
+4. 에이전트가 `AGENTS.md`에 따라 wiki를 유지
+5. durable answer는 `wiki/analyses/`에 저장
+6. provenance, contradiction handling, 반복 유지보수가 필요해질 때만 ontology, graph, operator workflow 추가
+
+DocTology의 기본 약속은 다음입니다.
+
+- 먼저 readable wiki
+- 그다음 source-backed evidence
+- 필요할 때 ontology-backed verification
+- 마지막에만 graph/operator complexity
+
+## 내가 지금 어느 경로에 있나?
+
+빠른 기준은 이렇습니다.
+
+- **시작점:** `llm-wiki-bootstrap`
+- **일상 ingest:** `llm-wiki-ontology-ingest`
+- **canonical ontology engine:** `lightweight-ontology-core`
+- **선택적 graph 확장:** `lg-ontology`
+- **project-memory 대안:** `repo-docs-intelligence-bootstrap`
+- **운영/유지보수:** `ontology-pipeline-operator`
+
+대부분의 사용자는 다음 순서로 시작하면 됩니다.
+
+1. `llm-wiki-bootstrap`
+2. 반복적인 `llm-wiki-ontology-ingest`
+
+나머지 스킬은 나중 단계의 정제 또는 선택적 확장 레이어입니다.
+
+## 어디서 시작할지 먼저 고르세요
+
+### 1) LLM Wiki를 먼저 쓰고 싶나요?
+
+`llm-wiki-bootstrap`으로 시작하세요.
+
+흐름은 단순합니다.
+
+- wiki bootstrap 실행
+- 생성된 `raw/inbox/`에 문서 넣기
+- source page와 ontology-backed provenance가 필요하면 `llm-wiki-ontology-ingest` 실행
+- 에이전트가 먼저 wiki map을 읽고, 그다음 관련 page body와 source citation을 읽어 답변
+- durable answer는 `wiki/analyses/`와 관련 concept/entity/person/project page에 반영
+
+시작점은 항상 **wiki-first** 입니다.
+
+### 2) wiki 아래 ontology 구조를 더 강하게 만들고 싶나요?
+
+`lightweight-ontology-core`를 사용하세요.
+
+이 단계는 다음을 위한 것입니다.
+
+- entity
+- claim
+- evidence link
+- segment
+- relation vocabulary
+- contradiction 또는 supersession handling
+
+ontology layer는 wiki를 보조해야 합니다. 사람이 읽는 reasoning surface인 wiki를 대체하면 안 됩니다.
+
+### 3) graph-style neighborhood 탐색이 필요한가요?
+
+`lg-ontology`를 사용하세요.
+
+이 단계는 선택 사항입니다. Canonical truth는 JSONL에 유지한 채 graph projection, multi-hop inspection, neighborhood/path exploration을 돕습니다.
+
+Graph projection을 canonical truth로 취급하면 안 됩니다.
+
+### 4) 개인 LLM Wiki가 아니라 프로젝트 전용 repo memory가 필요한가요?
+
+`repo-docs-intelligence-bootstrap`을 사용하세요.
+
+이 경로는 다음에 더 맞습니다.
+
+- 코드베이스의 current state 기록
+- 에이전트가 읽을 repo-local project memory 생성
+- docs, AGENTS, manifests, lightweight intelligence contract 정렬
+
+이것은 wiki bootstrap 위에 무조건 얹는 단계가 아니라, 대체 시작점입니다.
+
+## 주의
+
+**부트스트랩은 하나만 사용하세요.**
+
+여러 부트스트랩을 연속 실행하면 `AGENTS.md`가 덮어쓰기되고 운영 규칙이 흐려질 수 있습니다.
+
+먼저 선택해야 합니다.
+
+- LLM Wiki를 키우고 싶은가?
+- 아니면 repo-focused intelligence / project memory를 만들고 싶은가?
+
+둘 다 중요하지만 첫 bootstrap은 하나의 명확한 선택이어야 합니다.
+
+## 핵심 skill 경로
+
+Canonical repo-local skillset은 `.agents/skills/` 아래에 있습니다. `~/.codex/skills` 아래 installed copy는 로컬 설치본일 뿐입니다.
+
+- `.agents/skills/llm-wiki-bootstrap`
+  - Obsidian-first LLM Wiki 시작
+- `.agents/skills/llm-wiki-ontology-ingest`
+  - inbox 문서를 ontology-backed wiki로 ingest
+- `.agents/skills/lightweight-ontology-core`
+  - wiki 아래 canonical ontology truth 정리
+- `.agents/skills/lg-ontology`
+  - ontology graph / neighborhood exploration 확장
+- `.agents/skills/repo-docs-intelligence-bootstrap`
+  - project-specific memory / repo intelligence bootstrap
+- `.agents/skills/ontology-pipeline-operator`
+  - 기존 ontology/wiki artifact와 반복 유지보수 flow refresh
+
+## 운영 모델
+
+e736 스타일의 DocTology baseline은 의도적으로 작습니다.
+
+```text
+raw source
+  ↓
+source page and optional ontology JSONL
+  ↓
+LLM-maintained wiki pages
+  ↓
+saved analyses and cross-links
+  ↓
+better future answers
+```
+
+역할 구분:
+
+- deterministic script는 source 등록, stable ID, index refresh, basic validation을 담당
+- LLM agent는 wiki, source page, 관련 ontology evidence를 읽고 semantic synthesis를 수행
+- 사람은 broad rewrite, 민감한 accepted claim, contradiction, 큰 ontology 변경을 검토
+
+이 구조는 Karpathy식 LLM Wiki에 가깝습니다. LLM은 top-k chunk만 받는 것이 아니라 구조화되고 링크된 knowledge base를 읽습니다.
+
+## YAML contract layer
+
+YAML은 유용하지만 하위 계층입니다.
+
+우선순위:
+
+1. `raw/` source material
+2. source-backed wiki page와 citation
+3. ontology-backed ingest가 있을 때 canonical JSONL
+4. `AGENTS.md` operating rules
+5. `intelligence/` YAML contract와 hint
+6. derived graph/retrieval/workbench preview
+
+YAML은 vocabulary, dataset boundary, profile, validation hint를 정의할 수 있습니다. 하지만 두 번째 semantic wiki나 deterministic reasoning engine이 되면 안 됩니다.
+
+## Helper LLM
+
+`wikiconfig.json`은 local/private 파일입니다. 커밋되는 템플릿은 `wikiconfig.example.json`입니다.
+
+Helper LLM은 좁은 작업을 빠르게 처리하는 선택적 accelerator입니다. Helper LLM이 꺼져 있거나 없으면 주변 chat agent가 직접 다음을 읽고 semantic work를 수행할 수 있습니다.
+
+- `AGENTS.md`
+- `wiki/_meta/index.md`
+- 관련 wiki page
+- source page
+- 필요 시 `warehouse/jsonl/` evidence
+
+즉 helper LLM은 main agent-maintained wiki loop를 대체하지 않습니다.
+
+## 체크인된 reference runtime
+
+로컬 runtime은 reference implementation이지 제품 전체가 아닙니다.
+
+유용한 entrypoint:
+
+- `scripts/llm_wiki.py` — source registration, indexing, lint, status check
+- `scripts/incremental_ingest.py` — 반복 export-style ingest path
+- `scripts/workbench_api.py` — local workbench adapter용 compatibility shell
+- `apps/workbench/` — 선택형 GUI/read-review surface
+
+이 저장소의 핵심은 다음 운영 방식입니다.
+
+> readable source-backed wiki를 만들고, agent가 유지하게 하며, reasoning quality와 provenance가 좋아질 때만 ontology/graph machinery를 추가한다.
