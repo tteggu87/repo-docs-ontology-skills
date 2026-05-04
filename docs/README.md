@@ -38,4 +38,4 @@ Strict LLM-first note:
 - explicit prompt/bundle emission flags are inspection surfaces, not semantic success
 - unreviewed compile proposals are draft pages and must not become query evidence
 - active wiki updates from compile output require explicit human-reviewed content
-- durable query answers should be saved automatically under `wiki/analyses/`; active concept/entity/person/project/timeline rewrites remain proposal/review-required
+- durable query answers may be saved under `wiki/analyses/` by the LLM-first query/answer workflow or surrounding chat agent when they are evidence-backed; Workbench lexical previews must not save semantic analyses through strict-disabled routes; active concept/entity/person/project/timeline rewrites remain proposal/review-required

@@ -48,9 +48,9 @@ This repository is best for teams or individuals who want their knowledge system
 
 ![DocTology workbench question workspace](assets/readme/doctology-workbench-question-workspace.jpg)
 
-_DocTology workbench question workspace — review the current wiki, inspect repo-local query previews, and save bounded analysis pages._
+_DocTology workbench question workspace — review the current wiki, inspect repo-local lexical previews and graph hints, then hand durable synthesis off to LLM-first query or proposal workflows._
 
-Current workbench reality: this is primarily a read-and-review surface for the generated wiki and related previews. It is not yet a freeform, actively conversational LLM chat workspace.
+Current workbench reality: this is primarily a read-and-review surface for the generated wiki and related previews. It is not yet a freeform, actively conversational LLM chat workspace, and preview-only routes must not save semantic analyses as if they were LLM-grounded answers.
 
 ![Reference example: knowledge growing into a wiki](assets/readme/doctology-reference-obsidian-notes-forming-a-wiki.jpg)
 
@@ -177,7 +177,9 @@ For longer-lived wiki systems, the recommended layering is:
 2. **SQLite as operational index**
    - backlinks, unresolved links, aliases, memories, and jobs
 3. **DuckDB as analytical warehouse**
-   - claims, entities, relations, coverage snapshots, and audit-oriented inspection
+   - source registry mirrors, page coverage snapshots, and audit-oriented inspection
+
+Claims, entities, and relations belong in canonical ontology JSONL and proposal-reviewed wiki updates. The bootstrap DuckDB mirror is a derived analytics aid, not a semantic truth layer.
 
 The intended rollout is:
 
@@ -194,7 +196,7 @@ The workbench included in this repository is currently closer to a read-and-revi
 Its role today is mainly to:
 
 - inspect the generated wiki
-- review repo-local previews
-- save bounded analysis pages
+- review repo-local lexical previews and graph/source hints
+- hand off durable synthesis to LLM-first query or proposal workflows
 
 So the main point of this README is not detailed runtime setup. It is understanding **which bootstrap to choose and which memory layer you want to build first**.
