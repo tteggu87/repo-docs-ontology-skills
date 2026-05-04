@@ -70,14 +70,20 @@ That default path is the product promise:
 
 ## Which path am I on?
 
-Use this quick map:
+Use this practical chooser:
 
-- **Start here:** `llm-wiki-bootstrap`
-- **Daily ingest path:** `llm-wiki-ontology-ingest`
-- **Canonical ontology engine:** `lightweight-ontology-core`
-- **Optional graph extension:** `lg-ontology`
-- **Project-memory alternative:** `repo-docs-intelligence-bootstrap`
-- **Maintenance/operator path:** `ontology-pipeline-operator`
+- Want to create a new wiki?
+  - Use `llm-wiki-bootstrap`
+- Want to ingest new material?
+  - Use `llm-wiki-ontology-ingest`
+- Want to inspect claims, evidence, or entities?
+  - Use `lightweight-ontology-core`
+- Want graph neighborhoods, paths, or relation exploration?
+  - Use `lg-ontology`
+- Want to organize codebase docs and AGENTS memory?
+  - Use `repo-docs-intelligence-bootstrap`
+- Want to refresh or validate existing ontology/wiki outputs?
+  - Use `ontology-pipeline-operator`
 
 Most users should begin with:
 
@@ -85,6 +91,15 @@ Most users should begin with:
 2. repeated `llm-wiki-ontology-ingest`
 
 Treat the other skills as later-stage refinement or optional extension layers.
+
+## If you are already operating a DocTology repo
+
+1. Read `AGENTS.md` first.
+2. Put new sources into `raw/inbox/`.
+3. Register the source with `scripts/llm_wiki.py ingest` when appropriate.
+4. Use `llm-wiki-ontology-ingest` or direct agent-maintained ingest.
+5. Run lint/status checks.
+6. Use `ontology-pipeline-operator` when existing outputs need refresh or validation.
 
 ## Choose your starting path first
 
@@ -240,3 +255,31 @@ Useful entry points include:
 The main point of this repository is the operating pattern:
 
 > build a readable source-backed wiki, let agents maintain it, and add ontology or graph machinery only when it improves provenance and reasoning quality.
+
+## Appendix: Skill invocation rule
+
+Skills are support tools. The center of DocTology remains:
+
+- `AGENTS.md`
+- `wiki/`
+- `raw/`
+- `warehouse/jsonl/`
+
+When using a skill, keep the repo-local contract explicit:
+
+```text
+Use <skill-name>.
+Follow the repo-local AGENTS.md.
+Do not replace the wiki with YAML or graph outputs.
+Keep wiki/ as the human-facing synthesis surface.
+```
+
+Example:
+
+```text
+Use llm-wiki-ontology-ingest.
+Follow the repo-local AGENTS.md.
+Process sources from raw/inbox.
+Update source pages, affected concept/project pages, and JSONL provenance when useful.
+Refresh wiki/_meta/index.md and wiki/_meta/log.md.
+```
