@@ -31,6 +31,12 @@ terms:
     definition: Durable answer or synthesis note saved under wiki/analyses/.
   - key: ontology_backed_ingest
     definition: Repeated source-processing workflow that updates canonical registries first and then projects results into wiki pages.
+  - key: closed_ingest_pipeline
+    definition: Artifact lifecycle contract for source ingest that continues beyond source registration into applicable canonical JSONL updates, wiki projection, meta refresh, structural validation, and completion reporting.
+  - key: source_registration_only
+    definition: Lightweight source identity registration performed by scripts/llm_wiki.py ingest; it is not full ontology-backed ingest by itself.
+  - key: structural_validation
+    definition: Validation that checks artifact presence, parseability, required fields, link integrity, and provenance shape without judging semantic truth.
   - key: source_family
     definition: Stable identity for a recurring corpus such as one chat room, mailbox, or note stream across multiple exports.
     aliases:

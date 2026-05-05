@@ -109,3 +109,8 @@ datasets:
     role: declarative contract for sidecar workbench routes, actions, and mutation boundaries
     truth_class: contract
     owner: operator
+  - key: pipeline_manifest
+    path: intelligence/manifests/pipelines.yaml
+    role: declarative stage contract for closed ingest lifecycle expectations
+    truth_class: contract
+    owner: operator

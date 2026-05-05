@@ -15,6 +15,7 @@ actions:
       - wiki/_meta/
     notes:
       - This is lighter than ontology-backed ingest and may be used when canonical extraction is not yet available.
+      - This is source registration only; do not report it as completed ontology-backed ingest by itself.
   - key: ingest_with_ontology
     description: Read a raw source, update canonical ontology registries, and project human-facing updates into wiki pages.
     inputs:
@@ -44,6 +45,8 @@ actions:
       - wiki/_meta/
     notes:
       - This is the intended repeated user-facing ingest workflow once the ontology-backed ingest skill exists.
+      - Close the lifecycle across source registration, applicable JSONL updates, wiki projection, meta refresh, structural validation, and completion reporting.
+      - Agent or helper-model judgment may choose affected pages, claims, relations, contradictions, and uncertainties; filename, keyword, token-shape, retrieval, graph, or YAML shortcuts must not decide semantic truth.
   - key: ingest_incremental_export
     description: Read a repeated export for a known source family, register the export version, upsert canonical sequential records, and then refresh the affected wiki pages.
     inputs:
@@ -68,6 +71,7 @@ actions:
     notes:
       - This action is for repeated exports such as A then A+B and should remain lightweight.
       - Manifests define family matching and dataset boundaries, but runtime logic still performs fingerprinting and upsert.
+      - This is a specialized canonical update path for recurring exports, not a generic arbitrary-source full ingest framework.
   - key: answer_query
     description: Answer a user question using wiki pages first, with ontology-backed verification when needed, then persist durable answers.
     inputs:

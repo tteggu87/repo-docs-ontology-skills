@@ -1,0 +1,93 @@
+pipelines:
+  - id: ontology_backed_ingest
+    description: Closed artifact lifecycle for source ingest in an ontology-backed LLM Wiki.
+    semantic_judgment_owner: agent_or_configured_helper_model
+    deterministic_script_scope:
+      - file_discovery
+      - source_registration
+      - id_generation
+      - jsonl_parseability
+      - required_field_validation
+      - link_integrity
+      - index_refresh
+      - log_append
+      - structural_completion_reporting
+    forbidden:
+      - filename_keyword_semantic_routing
+      - token_shape_semantic_routing
+      - regex_page_selection_as_understanding
+      - auto_accept_claims_without_review_metadata
+      - graph_projection_as_canonical_truth
+      - retrieval_result_as_truth
+      - browser_direct_raw_mutation
+      - browser_direct_broad_jsonl_mutation
+      - yaml_as_semantic_wiki
+      - manifest_as_runtime_executor
+    stages:
+      - id: register_source
+        required: true
+        deterministic: true
+        writes:
+          - wiki/sources/
+          - wiki/_meta/log.md
+          - wiki/_meta/index.md
+        notes:
+          - scripts/llm_wiki.py ingest covers this stage, not the whole pipeline.
+      - id: update_canonical_jsonl
+        required_when: ontology_backed_ingest_applies
+        agent_judgment_required: true
+        writes:
+          - warehouse/jsonl/documents.jsonl
+          - warehouse/jsonl/messages.jsonl
+          - warehouse/jsonl/entities.jsonl
+          - warehouse/jsonl/claims.jsonl
+          - warehouse/jsonl/claim_evidence.jsonl
+          - warehouse/jsonl/segments.jsonl
+          - warehouse/jsonl/derived_edges.jsonl
+          - warehouse/jsonl/source_versions.jsonl
+        notes:
+          - Report updated, skipped, not applicable, or pending for each relevant registry family.
+      - id: project_to_wiki
+        required: true
+        agent_judgment_required: true
+        writes:
+          - wiki/sources/
+          - wiki/concepts/
+          - wiki/entities/
+          - wiki/people/
+          - wiki/projects/
+          - wiki/timelines/
+          - wiki/analyses/
+        notes:
+          - Wiki pages are human-facing synthesis, not raw chunk dumps or graph exports.
+      - id: refresh_meta
+        required: true
+        deterministic: true
+        writes:
+          - wiki/_meta/index.md
+          - wiki/_meta/log.md
+      - id: validate
+        required: true
+        deterministic: true
+        structural_only: true
+        checks:
+          - jsonl_parseability
+          - required_fields
+          - duplicate_ids
+          - source_references
+          - segment_references
+          - broken_wikilinks
+          - orphan_pages
+          - stale_pages
+          - index_log_freshness
+        notes:
+          - Validation checks structure and provenance shape, not semantic truth.
+    reporting:
+      required_sections:
+        - source_registered
+        - jsonl_registries_updated_skipped_or_not_applicable
+        - wiki_pages_created_or_updated
+        - meta_pages_refreshed
+        - validation_result
+        - unresolved_uncertainties
+        - follow_up_actions

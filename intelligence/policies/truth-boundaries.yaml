@@ -20,3 +20,12 @@ policies:
       - scripts/incremental_ingest.py is the canonical repeated-export ingest CLI
       - scripts/workbench_api.py is a compatibility wrapper over scripts/workbench/*
       - intelligence/manifests/*.yaml describe contracts but do not replace Python execution
+  - key: closed-ingest-boundary
+    intent: Keep full ingest closed across artifacts without turning deterministic scripts or YAML into semantic judges.
+    rules:
+      - scripts/llm_wiki.py ingest is source registration only
+      - Full ontology-backed ingest continues through applicable JSONL updates, wiki projection, meta refresh, structural validation, and completion reporting
+      - Deterministic scripts may check structure, provenance shape, links, indexes, and required fields
+      - Deterministic scripts must not use filename, keyword, token shape, retrieval, graph projection, or YAML contracts as semantic truth
+      - Accepted claims require explicit review metadata and supporting evidence
+      - Pipeline manifests are declarative stage contracts, not runtime executors

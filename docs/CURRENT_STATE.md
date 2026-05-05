@@ -2,7 +2,7 @@
 title: "Current State"
 status: active
 source_of_truth: yes
-updated: 2026-04-14
+updated: 2026-05-05
 ---
 
 # Current State
@@ -89,3 +89,23 @@ The incremental ingest path now emits:
 - affected wiki surface paths
 
 This is groundwork for later ingest-promotion and operator-review flows without changing the truth hierarchy.
+
+## Closed ingest contract
+
+`scripts/llm_wiki.py ingest` is intentionally a source-registration step, not a
+complete ontology-backed ingest by itself.
+
+A full source-processing pass should continue through:
+
+- applicable canonical JSONL updates under `warehouse/jsonl/`
+- affected wiki source, concept, entity, person, project, timeline, or analysis pages
+- `wiki/_meta/index.md` and `wiki/_meta/log.md`
+- structural validation and a completion report
+
+Deterministic scripts may check structure, provenance shape, links, indexes,
+and required fields. They must not replace agent or model judgment for page
+selection, claim interpretation, contradiction handling, or open-question
+synthesis.
+
+The detailed contract lives in `docs/CLOSED_INGEST_PIPELINE.md` and the
+lightweight stage manifest lives in `intelligence/manifests/pipelines.yaml`.

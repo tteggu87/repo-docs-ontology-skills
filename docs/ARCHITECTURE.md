@@ -1,6 +1,6 @@
 # Architecture
 
-Updated: 2026-04-13
+Updated: 2026-05-05
 
 ## Canonical entrypoints
 
@@ -41,6 +41,22 @@ Updated: 2026-04-13
 2. `python3 scripts/llm_wiki.py ingest ...` creates or reuses a source page
 3. The CLI appends `wiki/_meta/log.md`
 4. The CLI rebuilds `wiki/_meta/index.md`
+
+This is source registration only. It does not imply that canonical ontology
+registries, affected concept pages, or review surfaces have been fully updated.
+
+### Closed ingest lifecycle
+
+1. Register source identity through the local wiki-maintenance path
+2. Update applicable canonical JSONL registries under `warehouse/jsonl/`
+3. Project source and canonical updates into the human-facing wiki
+4. Refresh `wiki/_meta/index.md`
+5. Append `wiki/_meta/log.md`
+6. Run structural validation
+7. Report updated, skipped, not-applicable, and pending artifacts
+
+The lifecycle is closed by artifact coverage, not by a hardcoded semantic
+router. Filename, keyword, or token-shape checks must not decide meaning.
 
 ### Incremental ingest
 

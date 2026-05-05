@@ -1,6 +1,6 @@
 # Skills Integration
 
-Updated: 2026-04-13
+Updated: 2026-05-05
 
 ## Repo-local source of truth
 
@@ -28,9 +28,27 @@ checked-in skill surface for this repository.
 ## Current repo/runtime fit
 
 - `scripts/llm_wiki.py` is support tooling but still a real local entrypoint
+- `scripts/llm_wiki.py ingest` is source registration only, not full ontology-backed ingest by itself
 - `scripts/incremental_ingest.py` is the current repeated-export ingest path
 - `scripts/workbench_api.py` is the compatibility shell for the local workbench adapter
 - reusable skills should align to these live paths instead of inventing new ones
+
+## Closed ingest skill contract
+
+When a skill processes a new source for this repository, it should close the
+artifact lifecycle instead of stopping at registration:
+
+1. register or update the source page
+2. update applicable canonical JSONL registries
+3. update affected human-facing wiki pages
+4. refresh meta pages
+5. run structural validation
+6. report updated, skipped, not-applicable, and pending artifacts
+
+The skill may use agent or helper-model judgment for affected pages, claims,
+relations, contradictions, and uncertainty. It must not turn filename keywords,
+token shape, retrieval hits, graph projection, or YAML contracts into semantic
+truth.
 
 ## What skills should not do here
 
@@ -39,3 +57,4 @@ checked-in skill surface for this repository.
 - they should not treat the browser workbench as the primary ownership surface
 - they should not create a second manifest/runtime system parallel to the existing Python paths
 - they should not treat `intelligence/` YAML as a second semantic wiki
+- they should not report source-registration-only work as completed ontology-backed ingest

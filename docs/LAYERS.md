@@ -1,6 +1,6 @@
 # Layers
 
-Updated: 2026-04-13
+Updated: 2026-05-05
 
 ## Truth hierarchy
 
@@ -39,6 +39,9 @@ These files define names and boundaries. They do not replace the runtime.
 
 - Python owns execution
 - manifests and registry files describe contracts around that execution
+- `scripts/llm_wiki.py ingest` performs source registration, not full ontology-backed ingest by itself
+- the closed ingest lifecycle is an agent/skill-guided artifact loop over source registration, applicable JSONL updates, wiki projection, meta refresh, and structural validation
+- structural validation checks shape, provenance, and links; it does not judge semantic truth
 - the repo currently uses a thin-wrapper / thick-core pattern for the workbench:
   - wrapper: `scripts/workbench_api.py`
   - core: `scripts/workbench/`
