@@ -101,6 +101,10 @@ DocTology의 기본 약속은 다음입니다.
 5. lint/status를 확인합니다.
 6. 기존 산출물 점검·갱신이 필요하면 `ontology-pipeline-operator`를 사용합니다.
 
+`scripts/llm_wiki.py ingest`는 registration only입니다. Full ingest는
+`raw -> register -> warehouse/jsonl 필요 시 갱신 -> wiki projection -> meta
+refresh -> structural validation`까지 이어지는 closed lifecycle입니다.
+
 ## 어디서 시작할지 먼저 고르세요
 
 ### 1) LLM Wiki를 먼저 쓰고 싶나요?
@@ -203,6 +207,7 @@ better future answers
 - deterministic script는 source 등록, stable ID, index refresh, basic validation을 담당
 - LLM agent는 wiki, source page, 관련 ontology evidence를 읽고 semantic synthesis를 수행
 - 사람은 broad rewrite, 민감한 accepted claim, contradiction, 큰 ontology 변경을 검토
+- 파이프라인은 의미 판단을 닫는 것이 아니라, 산출물 생명주기를 닫습니다.
 
 이 구조는 Karpathy식 LLM Wiki에 가깝습니다. LLM은 top-k chunk만 받는 것이 아니라 구조화되고 링크된 knowledge base를 읽습니다.
 

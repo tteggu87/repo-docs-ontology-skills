@@ -102,6 +102,21 @@ For LLM Wiki repos, also refresh wiki meta pages if the normal ingest flow does 
 
 Run validators last so they check the final current state, not an intermediate one.
 
+For LLM Wiki repos, validation must check the closed ingest lifecycle:
+
+1. raw source registration is present
+2. applicable canonical JSONL registries were refreshed or explicitly reported as not applicable
+3. affected wiki pages were refreshed
+4. `wiki/_meta/index.md` and `wiki/_meta/log.md` were refreshed
+5. structural validation ran, or the missing validator is reported as an operational risk
+
+Validation checks structure and provenance shape. It must not judge semantic
+truth, source relevance, or page type correctness.
+
+Do not report success when validation output is missing. Report missing
+validation, stale meta pages, or source-registration-only results under
+remaining operational risks.
+
 ## What To Add When Missing
 
 If the repo lacks them, consider adding:
@@ -124,3 +139,4 @@ Keep these additions thin and execution-oriented.
 4. validation result
 5. raw vs structured quality difference, if relevant
 6. remaining operational risks
+7. whether any source-registration-only step was intentionally left incomplete

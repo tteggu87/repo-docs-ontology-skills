@@ -116,6 +116,27 @@ When the user asks to ingest a source:
 
 If ontology-backed ingest is not yet available, the agent may continue with wiki-only ingest, but should preserve the same source boundaries and note that canonical ontology extraction is pending.
 
+`scripts/llm_wiki.py ingest` is source registration only. It is not full ontology-backed ingest.
+
+## Closed Ingest Pipeline
+
+When the user asks to ingest a source, do not stop at source registration unless the user explicitly asks for registration only.
+
+Default source ingest must follow this lifecycle:
+
+1. Register the source.
+2. Extract or update canonical machine-truth registries under `warehouse/jsonl/` when ontology-backed ingest applies.
+3. Project source-backed synthesis into `wiki/sources/` and affected wiki pages.
+4. Refresh `wiki/_meta/index.md`.
+5. Append a clear entry to `wiki/_meta/log.md`.
+6. Run structural validation or report why validation could not run.
+
+This pipeline closes the lifecycle, not semantic judgment.
+
+Do not use filename, keyword, directory, token-shape, graph, retrieval, or YAML shortcuts as hard gates for semantic routing. Inspect the source, existing wiki map, relevant page bodies, and canonical evidence before choosing affected pages.
+
+Weak, passing, or uncertain signals may stay on the source page instead of becoming standalone pages. Accepted claims require explicit review metadata and supporting evidence. Graph projection, retrieval output, and workbench previews are derived aids, not canonical truth.
+
 ## Query Workflow
 
 When the user asks a question:

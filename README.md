@@ -101,6 +101,10 @@ Treat the other skills as later-stage refinement or optional extension layers.
 5. Run lint/status checks.
 6. Use `ontology-pipeline-operator` when existing outputs need refresh or validation.
 
+`scripts/llm_wiki.py ingest` is registration only. Full ingest means the
+closed lifecycle: `raw -> register -> warehouse/jsonl when applicable -> wiki
+projection -> meta refresh -> structural validation`.
+
 ## Choose your starting path first
 
 ### 1) Do you want to start with an LLM Wiki?
@@ -203,6 +207,7 @@ Responsibilities:
 - deterministic scripts may register sources, keep IDs stable, refresh indexes, and validate basic structure
 - the LLM agent performs semantic synthesis by reading the wiki, source pages, and relevant ontology evidence
 - humans review broad rewrites, sensitive accepted claims, contradictions, and major ontology changes
+- the pipeline closes artifact coverage, not semantic judgment
 
 This keeps the system close to a Karpathy-style LLM Wiki: the LLM reads a structured, linked knowledge base instead of receiving only top-k chunks.
 

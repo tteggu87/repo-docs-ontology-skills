@@ -8,6 +8,7 @@ Updated: 2026-05-05
 - The biggest gap was not architecture ambiguity inside code; it was missing durable docs around current entrypoints, layer boundaries, and the minimal intelligence contract.
 - The workbench split is transitional but real: `scripts/workbench_api.py` is still live while `scripts/workbench/` contains the thicker implementation.
 - The closed ingest gap is now documented explicitly: source registration is not the same as a completed ontology-backed ingest lifecycle.
+- The closed ingest contract is now propagated to repo-local `AGENTS.md`, public READMEs, checked-in skills, and bootstrap-generated ontology starter files.
 
 ## Docs structure changes
 
@@ -27,8 +28,20 @@ Created:
 
 Checked and left unchanged:
 
-- `README.md`
+- `scripts/llm_wiki.py`
+- `scripts/incremental_ingest.py`
+- `scripts/incremental_support.py`
+- `scripts/workbench/*.py`
+
+Also updated outside `docs/`:
+
 - `AGENTS.md`
+- `README.md`
+- `README.ko.md`
+- `.agents/skills/llm-wiki-bootstrap/scripts/bootstrap_llm_wiki.py`
+- `.agents/skills/llm-wiki-ontology-ingest/SKILL.md`
+- `.agents/skills/ontology-pipeline-operator/SKILL.md`
+- `tests/test_llm_wiki_pipeline_contract.py`
 
 ## Intelligence layer changes
 
@@ -65,6 +78,7 @@ Checked and left unchanged:
 - Missing intelligence artifacts for named runtime surfaces, capability bindings, and explicit truth/mutation policies
 - Missing action contracts for current workbench query-preview, save-analysis, review-claim, and maintenance flows
 - Missing explicit closed-ingest distinction between source registration, canonical JSONL updates, wiki projection, meta refresh, structural validation, and reporting
+- Missing propagation of the closed-ingest contract into the primary agent/skill/bootstrap surfaces
 
 ## Remaining drift
 
@@ -72,6 +86,7 @@ Checked and left unchanged:
 - There is still no dedicated `pipeline-check` command that automatically emits the closed ingest completion report
 - `docs/` reflects current runtime truth, but future route or adapter growth will need follow-up updates
 - The intelligence layer remains intentionally minimal and does not yet document every workbench route as a first-class entity
+- `pipeline-check` remains intentionally deferred to avoid implying that structural checks prove semantic completion
 
 ## Validator status
 

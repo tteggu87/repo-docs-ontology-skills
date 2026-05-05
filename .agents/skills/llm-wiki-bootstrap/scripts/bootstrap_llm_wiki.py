@@ -127,6 +127,24 @@ When the user asks to ingest a source:
 6. Rebuild or refresh `wiki/_meta/index.md` if page inventory changed.
 7. Append an entry to `wiki/_meta/log.md`.
 
+If the local CLI `scripts/llm_wiki.py ingest` was used first, treat that as source registration only.
+
+## Closed Wiki Ingest Pipeline
+
+When the user asks to ingest a source, do not stop at source registration unless the user explicitly asks for registration only.
+
+Default wiki-only ingest must follow this lifecycle:
+
+1. Register the source.
+2. Project source-backed synthesis into `wiki/sources/` and affected wiki pages.
+3. Refresh `wiki/_meta/index.md`.
+4. Append a clear entry to `wiki/_meta/log.md`.
+5. Run structural validation or report why validation could not run.
+
+This pipeline closes the lifecycle, not semantic judgment.
+
+Do not use filename, keyword, directory, token-shape, graph, retrieval, or YAML shortcuts as hard gates for semantic routing. Inspect the source, existing wiki map, and relevant page bodies before choosing affected pages.
+
 ## Query Workflow
 
 When the user asks a question:
@@ -339,6 +357,27 @@ When the user asks to ingest a source:
 
 If ontology-backed ingest is not yet available, wiki-only ingest may continue, but preserve source boundaries and note that canonical ontology extraction is pending.
 
+`scripts/llm_wiki.py ingest` is source registration only. It is not full ontology-backed ingest.
+
+## Closed Ingest Pipeline
+
+When the user asks to ingest a source, do not stop at source registration unless the user explicitly asks for registration only.
+
+Default source ingest must follow this lifecycle:
+
+1. Register the source.
+2. Extract or update canonical machine-truth registries under `warehouse/jsonl/` when ontology-backed ingest applies.
+3. Project source-backed synthesis into `wiki/sources/` and affected wiki pages.
+4. Refresh `wiki/_meta/index.md`.
+5. Append a clear entry to `wiki/_meta/log.md`.
+6. Run structural validation or report why validation could not run.
+
+This pipeline closes the lifecycle, not semantic judgment.
+
+Do not use filename, keyword, directory, token-shape, graph, retrieval, or YAML shortcuts as hard gates for semantic routing. Inspect the source, existing wiki map, relevant page bodies, and canonical evidence before choosing affected pages.
+
+Weak, passing, or uncertain signals may stay on the source page instead of becoming standalone pages. Accepted claims require explicit review metadata and supporting evidence. Graph projection, retrieval output, and workbench previews are derived aids, not canonical truth.
+
 ## Query Workflow
 
 When the user asks a question:
@@ -487,7 +526,8 @@ The LLM ingests, structures, cross-links, updates, and keeps the wiki healthy.
 │   ├── glossary.yaml
 │   └── manifests/
 │       ├── actions.yaml
-│       └── datasets.yaml
+│       ├── datasets.yaml
+│       └── pipelines.yaml
 ├── raw/
 │   ├── inbox/
 │   ├── processed/
@@ -553,6 +593,8 @@ python scripts/llm_wiki.py ingest raw/inbox/my-source.md --title "My Source Titl
 
 This is source registration only. It creates a source page stub, appends a log entry, and rebuilds the index.
 It does not perform ontology-backed ingest by itself.
+
+The full closed lifecycle is: `raw -> register -> warehouse/jsonl when applicable -> wiki projection -> meta refresh -> structural validation`.
 
 ### 5. Run Ontology-Backed Ingest
 
@@ -714,6 +756,8 @@ This is source registration only.
 It does not auto-summarize the source or perform ontology-backed ingest.
 That is deliberate: the LLM or a higher-level ingest skill should read the source and write the synthesis with context.
 
+Full wiki ingest means the closed lifecycle: `raw -> register -> wiki projection -> meta refresh -> structural validation`.
+
 ### 5. Ask Me To Maintain The Wiki
 
 Use prompts like:
@@ -850,6 +894,12 @@ def glossary_yaml() -> str:
     definition: Durable answer or synthesis note saved under wiki/analyses/.
   - key: ontology_backed_ingest
     definition: Repeated source-processing workflow that updates canonical registries first and then projects results into wiki pages.
+  - key: closed_ingest_pipeline
+    definition: Artifact lifecycle contract for source ingest that continues beyond source registration into applicable canonical JSONL updates, wiki projection, meta refresh, structural validation, and completion reporting.
+  - key: source_registration_only
+    definition: Lightweight source identity registration performed by scripts/llm_wiki.py ingest; it is not full ontology-backed ingest by itself.
+  - key: structural_validation
+    definition: Validation that checks artifact presence, parseability, required fields, link integrity, and provenance shape without judging semantic truth.
 """
 
 
@@ -935,6 +985,11 @@ def datasets_yaml() -> str:
     role: optional graph-style exploration layer exported from canonical truth
     truth_class: derived
     owner: graph
+  - id: pipeline_manifest
+    path: intelligence/manifests/pipelines.yaml
+    role: declarative stage contract for closed ingest lifecycle expectations
+    truth_class: contract
+    owner: operator
 """
 
 
@@ -953,6 +1008,7 @@ def actions_yaml() -> str:
       - wiki/_meta/log.md
     notes:
       - This is lighter than ontology-backed ingest and may be used when canonical extraction is not yet available.
+      - This is source registration only; do not report it as completed ontology-backed ingest by itself.
   - id: ingest_with_ontology
     description: Update canonical ontology registries first, then refresh wiki pages and meta outputs.
     inputs:
@@ -982,6 +1038,8 @@ def actions_yaml() -> str:
       - wiki/_meta/log.md
     notes:
       - This is the intended repeated user-facing ingest workflow once the ontology-backed ingest skill exists.
+      - Close the lifecycle across source registration, applicable JSONL updates, wiki projection, meta refresh, structural validation, and completion reporting.
+      - Agent or helper-model judgment may choose affected pages, claims, relations, contradictions, and uncertainties; filename, keyword, token-shape, retrieval, graph, or YAML shortcuts must not decide semantic truth.
   - id: answer_query
     description: Answer using wiki pages first, with ontology-backed verification when provenance or contradictions matter.
     inputs:
@@ -995,6 +1053,61 @@ def actions_yaml() -> str:
       - wiki/_meta/log.md
     notes:
       - Prefer wiki as the human-facing answer surface and use ontology registries for provenance, contradictions, and coverage checks.
+"""
+
+
+def pipelines_yaml() -> str:
+    return """pipelines:
+  - id: ontology_backed_ingest
+    description: Closed artifact lifecycle for source ingest in an ontology-backed LLM Wiki.
+    semantic_judgment_owner: agent_or_configured_helper_model
+    deterministic_script_scope:
+      - file_discovery
+      - source_registration
+      - id_generation
+      - jsonl_parseability
+      - required_field_validation
+      - link_integrity
+      - index_refresh
+      - log_append
+      - structural_completion_reporting
+    forbidden:
+      - filename_keyword_semantic_routing
+      - token_shape_semantic_routing
+      - regex_page_selection_as_understanding
+      - auto_accept_claims_without_review_metadata
+      - graph_projection_as_canonical_truth
+      - retrieval_result_as_truth
+      - yaml_as_semantic_wiki
+      - manifest_as_runtime_executor
+    stages:
+      - id: register_source
+        required: true
+        deterministic: true
+        notes:
+          - scripts/llm_wiki.py ingest covers this stage, not the whole pipeline.
+      - id: update_canonical_jsonl
+        required_when: ontology_backed_ingest_applies
+        agent_judgment_required: true
+      - id: project_to_wiki
+        required: true
+        agent_judgment_required: true
+      - id: refresh_meta
+        required: true
+        deterministic: true
+      - id: validate
+        required: true
+        deterministic: true
+        structural_only: true
+    reporting:
+      required_sections:
+        - source_registered
+        - jsonl_registries_updated_skipped_or_not_applicable
+        - wiki_pages_created_or_updated
+        - meta_pages_refreshed
+        - validation_result
+        - unresolved_uncertainties
+        - follow_up_actions
 """
 
 
@@ -1493,6 +1606,7 @@ def scaffold(target: Path, force: bool, profile: str) -> None:
         write_text(target / "intelligence" / "glossary.yaml", glossary_yaml())
         write_text(target / "intelligence" / "manifests" / "datasets.yaml", datasets_yaml())
         write_text(target / "intelligence" / "manifests" / "actions.yaml", actions_yaml())
+        write_text(target / "intelligence" / "manifests" / "pipelines.yaml", pipelines_yaml())
 
 
 def build_parser() -> argparse.ArgumentParser:

@@ -82,6 +82,26 @@ Wiki outputs:
 - refreshed `wiki/_meta/index.md`
 - appended `wiki/_meta/log.md`
 
+## Closed Pipeline Contract
+
+This skill must complete the full ingest lifecycle unless the user explicitly
+requests a partial operation.
+
+Required stages:
+
+1. Register source identity.
+2. Update applicable canonical JSONL registries.
+3. Project canonical/source-backed synthesis into wiki pages.
+4. Refresh meta surfaces.
+5. Validate structural integrity or report why validation could not run.
+6. Report changed files, uncertainty, and remaining open questions.
+
+This pipeline closes the lifecycle, not semantic judgment.
+
+Do not replace semantic judgment with deterministic keyword routing. Use
+deterministic scripts only for registration, indexing, logging, JSONL
+integrity, and structural validation.
+
 ## Workflow
 
 ### 1. Read Local Repo Contracts First
@@ -172,10 +192,24 @@ The ingest succeeded when:
 - affected wiki pages are refreshed or created
 - uncertainty is preserved
 - `wiki/_meta/index.md` and `wiki/_meta/log.md` reflect the new work
+- the completion report distinguishes updated, skipped, not-applicable, and pending artifacts
+
+## Completion Report
+
+Report:
+
+1. Source registered
+2. JSONL registries updated, skipped, not applicable, or pending
+3. Wiki pages updated or created
+4. Claims proposed, accepted, disputed, or left pending
+5. Evidence coverage
+6. Validation result
+7. Open questions and uncertainty
+8. Files changed
 
 ## Notes
 
 - Prefer `ingest` language with the user; keep `adapter` or `bridge` as internal mental models only.
 - Prefer repo-local `AGENTS.md` over generic habits when they conflict.
-- If the repo does not yet have ontology-ready folders, fall back gracefully and say what is missing.
+- If the repo does not yet have ontology-ready folders, fall back gracefully, say what is missing, and do not report the result as completed ontology-backed ingest.
 - Keep `warehouse/jsonl/` as canonical truth and treat markdown pages as the human-facing projection layer.
