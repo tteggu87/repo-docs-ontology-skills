@@ -236,7 +236,7 @@ YAML may define vocabulary, dataset boundaries, profiles, and validation hints. 
 
 `wikiconfig.json` is a local-only configuration file. Use `wikiconfig.example.json` as the committed template.
 
-Helper LLMs are optional accelerators for narrow tasks. If helper LLMs are disabled or absent, the surrounding chat agent can still perform semantic work directly by reading:
+Helper LLMs are optional accelerators for bounded tasks. If helper LLMs are disabled or absent, the surrounding chat agent can still perform semantic work directly by reading:
 
 - `AGENTS.md`
 - `wiki/_meta/index.md`
@@ -246,6 +246,23 @@ Helper LLMs are optional accelerators for narrow tasks. If helper LLMs are disab
 
 In other words, helper LLMs should not replace the main agent-maintained wiki loop.
 
+Probe local helper configuration before using it:
+
+```bash
+python scripts/helper_llm.py --root . --check-config
+python scripts/helper_llm.py --root . --probe-chat
+python scripts/helper_llm.py --root . --probe-embedding
+```
+
+For source-page-only LLM ingest, keep `scripts/llm_wiki.py ingest` as registration-only and use:
+
+```bash
+python scripts/llm_full_ingest.py raw/inbox/example.md --mode dry_run
+python scripts/llm_full_ingest.py raw/inbox/example.md --mode apply_source_page
+```
+
+The first full-ingest runner version fills source pages and writes ingest reports. Broad wiki updates, JSONL proposal writes, and accepted-claim promotion remain intentionally closed.
+
 ## About the reference runtime
 
 The included local runtime is a reference implementation, not the whole product.
@@ -253,6 +270,8 @@ The included local runtime is a reference implementation, not the whole product.
 Useful entry points include:
 
 - `scripts/llm_wiki.py` for source registration, indexing, linting, and status checks
+- `scripts/helper_llm.py` for local `wikiconfig.json` probes and OpenAI-compatible helper calls
+- `scripts/llm_full_ingest.py` for configured-LLM source-page ingest drafts/apply
 - `scripts/incremental_ingest.py` for repeated export-style ingest paths
 - `scripts/workbench_api.py` as a compatibility shell for local workbench adapters
 - `apps/workbench/` as an optional GUI/read-review surface
