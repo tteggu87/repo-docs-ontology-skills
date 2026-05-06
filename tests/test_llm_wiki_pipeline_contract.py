@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import importlib.util
+import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -8,6 +10,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 BOOTSTRAP_PATH = ROOT / ".agents" / "skills" / "llm-wiki-bootstrap" / "scripts" / "bootstrap_llm_wiki.py"
+BOOTSTRAP_LLM_WIKI_ASSET = ROOT / ".agents" / "skills" / "llm-wiki-bootstrap" / "assets" / "llm_wiki.py"
+ROOT_LLM_WIKI_SCRIPT = ROOT / "scripts" / "llm_wiki.py"
 
 
 def read_repo_text(relative_path: str) -> str:
@@ -23,10 +27,20 @@ def load_bootstrap_module():
     return module
 
 
+def load_llm_wiki_module():
+    spec = importlib.util.spec_from_file_location("root_llm_wiki", ROOT_LLM_WIKI_SCRIPT)
+    assert spec is not None
+    assert spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
 class ClosedIngestPipelineContractTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls.bootstrap = load_bootstrap_module()
+        cls.llm_wiki = load_llm_wiki_module()
 
     def test_root_agents_declares_closed_ingest_without_semantic_router(self) -> None:
         text = read_repo_text("AGENTS.md")
@@ -64,6 +78,13 @@ class ClosedIngestPipelineContractTest(unittest.TestCase):
         self.assertIn("raw -> register -> warehouse/jsonl when applicable -> wiki projection", ontology_readme)
         self.assertIn("raw -> register -> wiki projection -> meta refresh", wiki_only_readme)
 
+    def test_bootstrap_llm_wiki_script_matches_root_script(self) -> None:
+        root_script = ROOT_LLM_WIKI_SCRIPT.read_text(encoding="utf-8")
+        asset_script = BOOTSTRAP_LLM_WIKI_ASSET.read_text(encoding="utf-8")
+
+        self.assertEqual(root_script, asset_script)
+        self.assertEqual(root_script, self.bootstrap.llm_wiki_py())
+
     def test_bootstrap_writes_pipeline_manifest_for_ontology_profile(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             target = Path(tmp) / "vault"
@@ -87,6 +108,89 @@ class ClosedIngestPipelineContractTest(unittest.TestCase):
         self.assertIn("semantic_judgment_owner", text)
         self.assertNotIn("if_keyword", text)
         self.assertNotIn("filename_contains", text)
+
+    def test_llm_wiki_helpers_remain_structural_and_korean_safe(self) -> None:
+        self.assertEqual(self.llm_wiki.slugify("라텔이 좋아하는 생물"), "라텔이-좋아하는-생물")
+        self.assertEqual(self.llm_wiki.slugify("Hello, World! 2026"), "hello-world-2026")
+
+        content = """---
+title: Example
+type: source
+status: inbox
+tags:
+  - source
+---
+
+# Example
+
+- First body fact.
+"""
+        self.assertEqual(self.llm_wiki.extract_summary(content), "First body fact.")
+
+    def test_generated_ingest_reports_registration_only_and_warns_for_nonstandard_raw_path(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "vault"
+            self.bootstrap.scaffold(target, force=False, profile="wiki-plus-ontology")
+            source = target / "docs" / "korean-source.txt"
+            source.parent.mkdir(parents=True)
+            source.write_text("라텔은 벌꿀오소리다.\n", encoding="utf-8")
+
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(target / "scripts" / "llm_wiki.py"),
+                    "ingest",
+                    "docs/korean-source.txt",
+                    "--title",
+                    "라텔 생물",
+                ],
+                cwd=target,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertIn("Source registration complete.", result.stdout)
+            self.assertIn("Full LLM synthesis or ontology-backed ingest is still pending.", result.stdout)
+            self.assertIn("source is outside recommended raw source folders", result.stderr)
+            self.assertTrue(list((target / "wiki" / "sources").glob("source-*-라텔-생물.md")))
+
+    def test_generated_lint_distinguishes_source_and_synthesis_orphans(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "vault"
+            self.bootstrap.scaffold(target, force=False, profile="wiki-plus-ontology")
+            source_page = target / "wiki" / "sources" / "source-test.md"
+            concept_page = target / "wiki" / "concepts" / "concept-test.md"
+            source_page.write_text(
+                "---\ntitle: Source Test\ntype: source\nstatus: inbox\ncreated: 2026-05-06\nupdated: 2026-05-06\n---\n\n# Source Test\n",
+                encoding="utf-8",
+            )
+            concept_page.write_text(
+                "---\ntitle: Concept Test\ntype: concept\nstatus: active\ncreated: 2026-05-06\nupdated: 2026-05-06\n---\n\n# Concept Test\n",
+                encoding="utf-8",
+            )
+
+            subprocess.run(
+                [sys.executable, str(target / "scripts" / "llm_wiki.py"), "reindex"],
+                cwd=target,
+                text=True,
+                capture_output=True,
+                check=True,
+            )
+            result = subprocess.run(
+                [sys.executable, str(target / "scripts" / "llm_wiki.py"), "lint"],
+                cwd=target,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertIn("- Orphan source pages:", result.stdout)
+            self.assertIn("- Orphan synthesis pages:", result.stdout)
+            self.assertIn("wiki/sources/source-test.md", result.stdout)
+            self.assertIn("wiki/concepts/concept-test.md", result.stdout)
 
 
 if __name__ == "__main__":

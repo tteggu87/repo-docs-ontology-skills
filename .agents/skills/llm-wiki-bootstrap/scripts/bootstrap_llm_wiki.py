@@ -104,7 +104,7 @@ Guidelines:
 
 - `title`: human-readable page title
 - `type`: one of `source`, `concept`, `entity`, `person`, `project`, `timeline`, `analysis`, `meta`
-- `status`: usually `active`, `draft`, `superseded`, or `open-question`
+- `status`: usually `active`, `draft`, `superseded`, or `open-question`; source pages may use lifecycle statuses such as `inbox`, `registered`, or `pending-synthesis`
 - `sources`: wikilinks to source pages, not raw file paths
 - Keep sections crisp and scannable
 - Use headings instead of long uninterrupted prose
@@ -331,7 +331,7 @@ Guidelines:
 
 - `title`: human-readable page title
 - `type`: one of `source`, `concept`, `entity`, `person`, `project`, `timeline`, `analysis`, `meta`
-- `status`: usually `active`, `draft`, `superseded`, or `open-question`
+- `status`: usually `active`, `draft`, `superseded`, or `open-question`; source pages may use lifecycle statuses such as `inbox`, `registered`, or `pending-synthesis`
 - `sources`: wikilinks to source pages, not raw file paths
 - Keep sections crisp and scannable
 - Use headings instead of long uninterrupted prose
@@ -1229,6 +1229,9 @@ updated: {date}
 
 
 def llm_wiki_py() -> str:
+    asset = Path(__file__).resolve().parents[1] / "assets" / "llm_wiki.py"
+    if asset.exists():
+        return asset.read_text(encoding="utf-8")
     return """#!/usr/bin/env python3
 \"\"\"Minimal local tooling for an Obsidian-first LLM Wiki.
 
