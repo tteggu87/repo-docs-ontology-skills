@@ -145,6 +145,8 @@ This pipeline closes the lifecycle, not semantic judgment.
 
 Do not use filename, keyword, directory, token-shape, graph, retrieval, or YAML shortcuts as hard gates for semantic routing. Inspect the source, existing wiki map, and relevant page bodies before choosing affected pages.
 
+Semantic no-fallback rule: when source-page synthesis, affected-page selection, contradiction handling, or wiki projection requires agent or configured LLM judgment, an unavailable, failed, or invalid judgment must be reported as `failed`, `partial`, or `pending`. Do not replace it with lexical diagnostics, retrieval output, graph projection, structural validation, filename/keyword summaries, or deterministic fallback prose and call the semantic step complete. Transport fallback for the same configured LLM request is allowed; semantic fallback that changes the judgment owner is not.
+
 ## Query Workflow
 
 When the user asks a question:
@@ -375,6 +377,8 @@ Default source ingest must follow this lifecycle:
 This pipeline closes the lifecycle, not semantic judgment.
 
 Do not use filename, keyword, directory, token-shape, graph, retrieval, or YAML shortcuts as hard gates for semantic routing. Inspect the source, existing wiki map, relevant page bodies, and canonical evidence before choosing affected pages.
+
+Semantic no-fallback rule: when source-page synthesis, affected-page selection, claim extraction, contradiction handling, or wiki projection requires agent or configured LLM judgment, an unavailable, failed, or invalid judgment must be reported as `failed`, `partial`, or `pending`. Do not replace it with lexical diagnostics, retrieval output, graph projection, structural validation, filename/keyword summaries, or deterministic fallback prose and call the semantic step complete. Transport fallback for the same configured LLM request is allowed; semantic fallback that changes the judgment owner is not.
 
 Weak, passing, or uncertain signals may stay on the source page instead of becoming standalone pages. Accepted claims require explicit review metadata and supporting evidence. Graph projection, retrieval output, and workbench previews are derived aids, not canonical truth.
 
@@ -1061,6 +1065,7 @@ def pipelines_yaml() -> str:
   - id: ontology_backed_ingest
     description: Closed artifact lifecycle for source ingest in an ontology-backed LLM Wiki.
     semantic_judgment_owner: agent_or_configured_helper_model
+    semantic_no_fallback: true
     deterministic_script_scope:
       - file_discovery
       - source_registration
@@ -1080,6 +1085,9 @@ def pipelines_yaml() -> str:
       - retrieval_result_as_truth
       - yaml_as_semantic_wiki
       - manifest_as_runtime_executor
+      - semantic_fallback_to_deterministic_summary
+      - semantic_success_without_agent_or_configured_llm_judgment
+      - structural_validation_as_semantic_completion
     stages:
       - id: register_source
         required: true
@@ -1089,9 +1097,13 @@ def pipelines_yaml() -> str:
       - id: update_canonical_jsonl
         required_when: ontology_backed_ingest_applies
         agent_judgment_required: true
+        notes:
+          - If agent or configured LLM judgment is unavailable, failed, or invalid, report pending/partial/failed instead of substituting deterministic output.
       - id: project_to_wiki
         required: true
         agent_judgment_required: true
+        notes:
+          - Lexical previews, retrieval output, graph output, and YAML hints may inform diagnostics but must not become semantic fallback success.
       - id: refresh_meta
         required: true
         deterministic: true
@@ -1099,6 +1111,8 @@ def pipelines_yaml() -> str:
         required: true
         deterministic: true
         structural_only: true
+        notes:
+          - Validation must not upgrade failed, partial, or pending semantic work into completion.
     reporting:
       required_sections:
         - source_registered

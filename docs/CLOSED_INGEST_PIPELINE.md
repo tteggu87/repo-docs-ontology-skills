@@ -124,6 +124,31 @@ The agent or a configured helper model may help decide affected pages, claims,
 entities, contradictions, and open questions. Those judgments must remain
 grounded in source evidence and repository rules.
 
+## Semantic no-fallback rule
+
+If source-page synthesis, affected-page selection, claim extraction,
+contradiction handling, or wiki projection requires agent or configured LLM
+judgment, then missing, failed, timed-out, or invalid judgment output must be
+reported as `failed`, `partial`, or `pending`.
+
+Do not replace failed semantic judgment with deterministic fallback prose and
+call the step complete. The following are allowed as diagnostics or structural
+aids only:
+
+- lexical previews
+- filename or keyword summaries
+- retrieval results
+- graph projections
+- YAML/manifest hints
+- structural validation results
+
+Those aids may explain what remains pending, but they must not become semantic
+success, accepted claims, or automatic wiki projection.
+
+Transport fallback is different: retrying the same configured LLM request
+through another HTTP transport is allowed. Changing the semantic owner from
+agent/configured LLM judgment to deterministic script output is not allowed.
+
 ## Claim review boundary
 
 `warehouse/jsonl/claims.jsonl` may contain draft or pending claims. A claim

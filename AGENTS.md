@@ -135,6 +135,8 @@ This pipeline closes the lifecycle, not semantic judgment.
 
 Do not use filename, keyword, directory, token-shape, graph, retrieval, or YAML shortcuts as hard gates for semantic routing. Inspect the source, existing wiki map, relevant page bodies, and canonical evidence before choosing affected pages.
 
+Semantic no-fallback rule: when source-page synthesis, affected-page selection, claim extraction, contradiction handling, or wiki projection requires agent or configured LLM judgment, an unavailable, failed, or invalid judgment must be reported as `failed`, `partial`, or `pending`. Do not replace it with lexical diagnostics, retrieval output, graph projection, structural validation, filename/keyword summaries, or deterministic fallback prose and call the semantic step complete. Transport fallback for the same configured LLM request is allowed; semantic fallback that changes the judgment owner is not.
+
 Weak, passing, or uncertain signals may stay on the source page instead of becoming standalone pages. Accepted claims require explicit review metadata and supporting evidence. Graph projection, retrieval output, and workbench previews are derived aids, not canonical truth.
 
 ## Query Workflow

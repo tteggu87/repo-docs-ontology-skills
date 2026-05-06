@@ -102,6 +102,15 @@ Do not replace semantic judgment with deterministic keyword routing. Use
 deterministic scripts only for registration, indexing, logging, JSONL
 integrity, and structural validation.
 
+Semantic no-fallback rule: if source-page synthesis, affected-page selection,
+claim extraction, contradiction handling, or wiki projection requires agent or
+configured LLM judgment, unavailable, failed, or invalid judgment must be
+reported as failed, partial, or pending. Do not replace it with lexical
+diagnostics, retrieval output, graph projection, structural validation,
+filename/keyword summaries, or deterministic fallback prose and call semantic
+ingest complete. Transport fallback for the same configured LLM request is
+allowed; semantic fallback that changes the judgment owner is not.
+
 ## Workflow
 
 ### 1. Read Local Repo Contracts First

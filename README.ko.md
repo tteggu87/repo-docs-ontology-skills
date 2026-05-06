@@ -246,6 +246,8 @@ Helper LLM은 경계가 분명한 작업을 빠르게 처리하는 선택적 acc
 
 즉 helper LLM은 main agent-maintained wiki loop를 대체하지 않습니다.
 
+Semantic no-fallback 원칙: helper/configured LLM 호출이 실패하면 해당 단계는 failed, partial, pending으로 보고합니다. deterministic fallback 문장을 대신 넣고 full ingest 완료라고 부르면 안 됩니다.
+
 로컬 helper 설정은 먼저 probe로 확인합니다.
 
 ```bash

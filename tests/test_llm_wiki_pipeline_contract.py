@@ -49,6 +49,8 @@ class ClosedIngestPipelineContractTest(unittest.TestCase):
         self.assertIn("This pipeline closes the lifecycle, not semantic judgment.", text)
         self.assertIn("Accepted claims require explicit review metadata and supporting evidence.", text)
         self.assertIn("Do not use filename, keyword", text)
+        self.assertIn("Semantic no-fallback rule", text)
+        self.assertIn("semantic fallback that changes the judgment owner is not", text)
 
     def test_ingest_skill_has_closed_contract_and_report_format(self) -> None:
         text = read_repo_text(".agents/skills/llm-wiki-ontology-ingest/SKILL.md")
@@ -57,6 +59,7 @@ class ClosedIngestPipelineContractTest(unittest.TestCase):
         self.assertIn("## Completion Report", text)
         self.assertIn("JSONL registries updated, skipped, not applicable, or pending", text)
         self.assertIn("do not report the result as completed ontology-backed ingest", text)
+        self.assertIn("Semantic no-fallback rule", text)
 
     def test_operator_skill_does_not_accept_missing_validation_as_success(self) -> None:
         text = read_repo_text(".agents/skills/ontology-pipeline-operator/SKILL.md")
@@ -73,8 +76,10 @@ class ClosedIngestPipelineContractTest(unittest.TestCase):
         self.assertIn("## Closed Ingest Pipeline", ontology_agents)
         self.assertIn("`scripts/llm_wiki.py ingest` is source registration only", ontology_agents)
         self.assertIn("Accepted claims require explicit review metadata", ontology_agents)
+        self.assertIn("Semantic no-fallback rule", ontology_agents)
         self.assertIn("## Closed Wiki Ingest Pipeline", wiki_only_agents)
         self.assertIn("source registration only", wiki_only_agents)
+        self.assertIn("Semantic no-fallback rule", wiki_only_agents)
         self.assertIn("raw -> register -> warehouse/jsonl when applicable -> wiki projection", ontology_readme)
         self.assertIn("raw -> register -> wiki projection -> meta refresh", wiki_only_readme)
 
@@ -98,6 +103,8 @@ class ClosedIngestPipelineContractTest(unittest.TestCase):
         self.assertIn("source registration only", readme)
         self.assertIn("manifest_as_runtime_executor", manifest)
         self.assertIn("yaml_as_semantic_wiki", manifest)
+        self.assertIn("semantic_no_fallback: true", manifest)
+        self.assertIn("semantic_fallback_to_deterministic_summary", manifest)
         self.assertNotIn("if_keyword", manifest)
         self.assertNotIn("filename_contains", manifest)
 
@@ -106,8 +113,20 @@ class ClosedIngestPipelineContractTest(unittest.TestCase):
         self.assertIn("manifest_as_runtime_executor", text)
         self.assertIn("yaml_as_semantic_wiki", text)
         self.assertIn("semantic_judgment_owner", text)
+        self.assertIn("semantic_no_fallback: true", text)
+        self.assertIn("semantic_success_without_agent_or_configured_llm_judgment", text)
         self.assertNotIn("if_keyword", text)
         self.assertNotIn("filename_contains", text)
+
+    def test_closed_ingest_docs_and_policies_pin_no_fallback(self) -> None:
+        docs = read_repo_text("docs/CLOSED_INGEST_PIPELINE.md")
+        policy = read_repo_text("intelligence/policies/truth-boundaries.yaml")
+
+        self.assertIn("## Semantic no-fallback rule", docs)
+        self.assertIn("must not become semantic", docs)
+        self.assertIn("Transport fallback is different", docs)
+        self.assertIn("semantic stage must be reported as failed, partial, or pending", policy)
+        self.assertIn("semantic fallback must not change the judgment owner", policy)
 
     def test_llm_wiki_helpers_remain_structural_and_korean_safe(self) -> None:
         self.assertEqual(self.llm_wiki.slugify("라텔이 좋아하는 생물"), "라텔이-좋아하는-생물")

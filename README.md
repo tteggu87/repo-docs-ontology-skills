@@ -246,6 +246,8 @@ Helper LLMs are optional accelerators for bounded tasks. If helper LLMs are disa
 
 In other words, helper LLMs should not replace the main agent-maintained wiki loop.
 
+Semantic no-fallback principle: if the helper/configured LLM call fails, report the step as failed, partial, or pending. Do not replace it with deterministic fallback prose and call full ingest complete.
+
 Probe local helper configuration before using it:
 
 ```bash
