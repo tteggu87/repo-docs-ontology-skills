@@ -27,5 +27,8 @@ policies:
       - Full ontology-backed ingest continues through applicable JSONL updates, wiki projection, meta refresh, structural validation, and completion reporting
       - Deterministic scripts may check structure, provenance shape, links, indexes, and required fields
       - Deterministic scripts must not use filename, keyword, token shape, retrieval, graph projection, or YAML contracts as semantic truth
+      - If configured LLM or agent judgment is required and unavailable, failed, timed out, or invalid, the semantic stage must be reported as failed, partial, or pending
+      - Deterministic fallback text, lexical diagnostics, retrieval output, graph output, or structural validation must not be reported as semantic completion
+      - Transport fallback may retry the same configured LLM request, but semantic fallback must not change the judgment owner
       - Accepted claims require explicit review metadata and supporting evidence
       - Pipeline manifests are declarative stage contracts, not runtime executors

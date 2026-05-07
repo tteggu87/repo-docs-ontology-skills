@@ -26,9 +26,10 @@ It should feel simple to the human:
 Internally, this skill should:
 
 1. honor the repo-local `AGENTS.md`
-2. use [`lightweight-ontology-core`](../lightweight-ontology-core/SKILL.md) for canonical ontology extraction
-3. project the resulting structured truth back into `wiki/`
-4. refresh `wiki/_meta/index.md` and `wiki/_meta/log.md`
+2. prefer the repo's configured full ingest runner when available
+3. append proposed ontology records rather than accepted truth
+4. project source-backed synthesis back into `wiki/`
+5. refresh `wiki/_meta/index.md` and `wiki/_meta/log.md`
 
 This skill does not require a top-level Hermes-style `SCHEMA.md`.
 Repo-local `AGENTS.md` remains the governing contract.
@@ -63,13 +64,11 @@ For lower-level ontology work, use [`lightweight-ontology-core`](../lightweight-
 
 Canonical ontology outputs:
 
-- `warehouse/jsonl/messages.jsonl` when the source is conversational or sequential
-- `warehouse/jsonl/documents.jsonl`
-- `warehouse/jsonl/entities.jsonl`
-- `warehouse/jsonl/claims.jsonl`
-- `warehouse/jsonl/claim_evidence.jsonl`
-- `warehouse/jsonl/segments.jsonl`
-- `warehouse/jsonl/derived_edges.jsonl`
+- `warehouse/jsonl/proposed_entities.jsonl`
+- `warehouse/jsonl/proposed_claims.jsonl`
+- `warehouse/jsonl/proposed_evidence.jsonl`
+- optional `warehouse/jsonl/proposed_relations.jsonl`
+- accepted/canonical registries only after explicit review or a repo-specific promotion workflow
 
 Wiki outputs:
 
@@ -90,7 +89,7 @@ requests a partial operation.
 Required stages:
 
 1. Register source identity.
-2. Update applicable canonical JSONL registries.
+2. Append applicable proposed JSONL records.
 3. Project canonical/source-backed synthesis into wiki pages.
 4. Refresh meta surfaces.
 5. Validate structural integrity or report why validation could not run.
@@ -101,6 +100,15 @@ This pipeline closes the lifecycle, not semantic judgment.
 Do not replace semantic judgment with deterministic keyword routing. Use
 deterministic scripts only for registration, indexing, logging, JSONL
 integrity, and structural validation.
+
+Semantic no-fallback rule: if source-page synthesis, affected-page selection,
+claim extraction, contradiction handling, or wiki projection requires agent or
+configured LLM judgment, unavailable, failed, or invalid judgment must be
+reported as failed, partial, or pending. Do not replace it with lexical
+diagnostics, retrieval output, graph projection, structural validation,
+filename/keyword summaries, or deterministic fallback prose and call semantic
+ingest complete. Transport fallback for the same configured LLM request is
+allowed; semantic fallback that changes the judgment owner is not.
 
 ## Workflow
 
@@ -131,10 +139,16 @@ Important:
 
 - the local CLI `python scripts/llm_wiki.py ingest ...` is source registration only
 - it is not the full ontology-backed ingest workflow by itself
+- when available, use `python scripts/llm_full_ingest.py raw/inbox/source.md --apply`
+  as the minimal configured-LLM full growth loop
+- `--apply` may update source pages, affected wiki pages, proposed JSONL, index,
+  log, and ingest reports
+- `--apply` must not modify raw sources, create accepted truth, delete content,
+  rename pages, merge pages, or auto-commit
 
-### 3. Build Canonical Ontology Truth
+### 3. Build Proposed Ontology Truth
 
-Use [`lightweight-ontology-core`](../lightweight-ontology-core/SKILL.md) concepts and conventions to update canonical truth.
+Use [`lightweight-ontology-core`](../lightweight-ontology-core/SKILL.md) concepts and conventions to draft proposed ontology truth.
 
 At minimum, preserve or create:
 
@@ -147,6 +161,8 @@ At minimum, preserve or create:
 
 Keep `warehouse/jsonl/...` canonical and machine-oriented.
 Do not let wiki summaries become the canonical truth layer.
+For automatic ingest, write records as proposed/needs_review unless the user has
+explicitly requested and reviewed accepted promotion.
 
 ### 4. Project Back Into The Wiki
 
@@ -177,7 +193,7 @@ The normal human workflow should look like this:
 
 1. scaffold once with [`llm-wiki-bootstrap`](../llm-wiki-bootstrap/SKILL.md)
 2. place a source in `raw/inbox/`
-3. run this ingest skill
+3. run `python scripts/llm_full_ingest.py raw/inbox/source.md --apply`
 4. ask a question from the wiki
 
 The human should not need to call `lightweight-ontology-core` directly for normal ingest.
@@ -188,7 +204,7 @@ That lower-level skill remains available for advanced tuning, debugging, or oper
 The ingest succeeded when:
 
 - source coverage is reflected in `wiki/sources/`
-- canonical ontology truth is updated under `warehouse/jsonl/`
+- proposed ontology truth is updated under `warehouse/jsonl/`
 - affected wiki pages are refreshed or created
 - uncertainty is preserved
 - `wiki/_meta/index.md` and `wiki/_meta/log.md` reflect the new work
