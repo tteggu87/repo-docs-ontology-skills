@@ -1,6 +1,6 @@
 # Closed Ingest Pipeline
 
-Updated: 2026-05-05
+Updated: 2026-05-08
 
 ## Purpose
 
@@ -8,17 +8,27 @@ The closed ingest contract exists to prevent source processing from stopping at
 registration.
 
 `python3 scripts/llm_wiki.py ingest ...` is a **source registration** tool. It
-creates or updates the source page and meta surfaces, but it is not the whole
-ontology-backed ingest loop.
+creates or updates the source page stub and meta surfaces, but it is not the
+whole ontology-backed ingest loop.
 
 A full ingest should close the artifact lifecycle:
 
 1. register the source identity
-2. update canonical JSONL registries when ontology-backed ingest applies
-3. project the source and canonical updates into the human-facing wiki
+2. append proposed JSONL records when ontology-backed ingest applies
+3. project source-backed updates into the human-facing wiki
 4. refresh meta pages
 5. run structural validation
 6. report what changed, what was skipped, and what remains uncertain
+
+The current configured automation path is:
+
+```bash
+python3 scripts/llm_full_ingest.py raw/inbox/source.md --apply
+```
+
+This path may write source pages, affected wiki pages, proposed JSONL records,
+meta pages, and ingest reports. It must not modify `raw/`, create accepted
+truth, delete content, rename pages, merge pages, or auto-commit.
 
 ## Lifecycle
 
@@ -30,23 +40,24 @@ A full ingest should close the artifact lifecycle:
 - append `wiki/_meta/log.md`
 - refresh `wiki/_meta/index.md`
 
-### 2. Canonical JSONL update
+### 2. Proposed JSONL append
 
-When ontology-backed ingest applies, update relevant registries under
+When ontology-backed ingest applies automatically, append proposed records under
 `warehouse/jsonl/` before broad wiki synthesis.
 
 Typical targets include:
 
-- `documents.jsonl`
-- `messages.jsonl`
-- `entities.jsonl`
-- `claims.jsonl`
-- `claim_evidence.jsonl`
-- `segments.jsonl`
-- `derived_edges.jsonl`
-- `source_versions.jsonl`
+- `proposed_entities.jsonl`
+- `proposed_claims.jsonl`
+- `proposed_evidence.jsonl`
+- optional `proposed_relations.jsonl`
 
-Not every source requires every registry. The report must distinguish:
+Accepted/canonical registries remain review-gated. A later promotion workflow
+may update canonical files such as `entities.jsonl`, `claims.jsonl`,
+`claim_evidence.jsonl`, `segments.jsonl`, or `derived_edges.jsonl`, but the
+automatic full ingest runner must not create accepted truth by itself.
+
+Not every source requires every proposed registry. The report must distinguish:
 
 - updated
 - skipped
@@ -55,7 +66,7 @@ Not every source requires every registry. The report must distinguish:
 
 ### 3. Wiki projection
 
-After source registration and applicable canonical updates, update the
+After source registration and applicable proposed updates, update the
 human-facing wiki:
 
 - `wiki/sources/`
@@ -124,6 +135,18 @@ The agent or a configured helper model may help decide affected pages, claims,
 entities, contradictions, and open questions. Those judgments must remain
 grounded in source evidence and repository rules.
 
+## Configured full ingest runtime
+
+`scripts/llm_full_ingest.py` is the minimal configured-LLM full growth runtime.
+Its public modes are `dry_run` and `--apply`. `--apply` closes the growth loop
+by completing the source page, creating or appending affected wiki pages,
+appending proposed JSONL records, refreshing index/log, and writing an ingest
+report.
+
+Invalid semantic judgment output must fail before being reported as completed.
+Affected page updates must use explicit allowed wiki paths and `create` or
+`append` actions only.
+
 ## Automated graph ingest runtime
 
 `scripts/wiki_growth_graph.py` is the strict automated graph ingest runtime for
@@ -176,7 +199,7 @@ JSONL wins.
 A closed ingest report should state:
 
 - source registered
-- canonical registries updated, skipped, or not applicable
+- proposed JSONL records appended, skipped, or not applicable
 - wiki pages created or updated
 - meta pages refreshed
 - validation run and result
@@ -190,7 +213,6 @@ Do not report registration-only work as a completed ontology-backed ingest.
 This contract is intentionally smaller than a strict LLM-first proposal system.
 It does not require:
 
-- proposal registries
 - a manifest-driven executor
 - helper-model-only semantic paths
 - automatic rejection of local agent processing

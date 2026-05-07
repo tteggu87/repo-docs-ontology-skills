@@ -897,11 +897,15 @@ def glossary_yaml() -> str:
   - key: analysis_page
     definition: Durable answer or synthesis note saved under wiki/analyses/.
   - key: ontology_backed_ingest
-    definition: Repeated source-processing workflow that updates canonical registries first and then projects results into wiki pages.
+    definition: Repeated source-processing workflow that registers source identity, appends proposed ontology records during automatic ingest, and projects source-backed results into wiki pages before any accepted-truth promotion.
   - key: closed_ingest_pipeline
-    definition: Artifact lifecycle contract for source ingest that continues beyond source registration into applicable canonical JSONL updates, wiki projection, meta refresh, structural validation, and completion reporting.
+    definition: Artifact lifecycle contract for source ingest that continues beyond source registration into proposed JSONL appends, wiki projection, meta refresh, structural validation, and completion reporting.
   - key: source_registration_only
     definition: Lightweight source identity registration performed by scripts/llm_wiki.py ingest; it is not full ontology-backed ingest by itself.
+  - key: configured_full_ingest
+    definition: Configured helper-LLM runtime in scripts/llm_full_ingest.py that can dry-run or apply source-backed wiki growth and proposed JSONL output without semantic fallback.
+  - key: proposed_ontology_record
+    definition: Automatically generated entity, claim, evidence, or relation candidate stored as proposed/needs_review rather than accepted canonical truth.
   - key: structural_validation
     definition: Validation that checks artifact presence, parseability, required fields, link integrity, and provenance shape without judging semantic truth.
 """
@@ -1042,7 +1046,7 @@ def actions_yaml() -> str:
       - wiki/_meta/log.md
     notes:
       - This is the intended repeated user-facing ingest workflow once the ontology-backed ingest skill exists.
-      - Close the lifecycle across source registration, applicable JSONL updates, wiki projection, meta refresh, structural validation, and completion reporting.
+      - Close the lifecycle across source registration, proposed JSONL appends, wiki projection, meta refresh, structural validation, and completion reporting.
       - Agent or helper-model judgment may choose affected pages, claims, relations, contradictions, and uncertainties; filename, keyword, token-shape, retrieval, graph, or YAML shortcuts must not decide semantic truth.
   - id: answer_query
     description: Answer using wiki pages first, with ontology-backed verification when provenance or contradictions matter.
@@ -1064,6 +1068,7 @@ def pipelines_yaml() -> str:
     return """pipelines:
   - id: ontology_backed_ingest
     description: Closed artifact lifecycle for source ingest in an ontology-backed LLM Wiki.
+    current_configured_runtime: scripts/llm_full_ingest.py --apply
     semantic_judgment_owner: agent_or_configured_helper_model
     semantic_no_fallback: true
     deterministic_script_scope:
@@ -1094,15 +1099,18 @@ def pipelines_yaml() -> str:
         deterministic: true
         notes:
           - scripts/llm_wiki.py ingest covers this stage, not the whole pipeline.
-      - id: update_canonical_jsonl
+      - id: append_proposed_jsonl
         required_when: ontology_backed_ingest_applies
         agent_judgment_required: true
         notes:
+          - Automatic full ingest appends proposed/needs_review records only.
+          - Accepted canonical promotion remains a separate review-gated workflow.
           - If agent or configured LLM judgment is unavailable, failed, or invalid, report pending/partial/failed instead of substituting deterministic output.
       - id: project_to_wiki
         required: true
         agent_judgment_required: true
         notes:
+          - Configured full ingest may create or append affected pages, but must not delete, rename, merge, or overwrite pages.
           - Lexical previews, retrieval output, graph output, and YAML hints may inform diagnostics but must not become semantic fallback success.
       - id: refresh_meta
         required: true
@@ -1116,7 +1124,7 @@ def pipelines_yaml() -> str:
     reporting:
       required_sections:
         - source_registered
-        - jsonl_registries_updated_skipped_or_not_applicable
+        - proposed_jsonl_records_appended_skipped_or_not_applicable
         - wiki_pages_created_or_updated
         - meta_pages_refreshed
         - validation_result

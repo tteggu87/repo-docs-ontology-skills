@@ -1,6 +1,6 @@
 # Skills Integration
 
-Updated: 2026-05-05
+Updated: 2026-05-08
 
 ## Repo-local source of truth
 
@@ -29,6 +29,7 @@ checked-in skill surface for this repository.
 
 - `scripts/llm_wiki.py` is support tooling but still a real local entrypoint
 - `scripts/llm_wiki.py ingest` is source registration only, not full ontology-backed ingest by itself
+- `scripts/llm_full_ingest.py --apply` is the current configured-LLM full growth path
 - `scripts/incremental_ingest.py` is the current repeated-export ingest path
 - `scripts/workbench_api.py` is the compatibility shell for the local workbench adapter
 - reusable skills should align to these live paths instead of inventing new ones
@@ -39,7 +40,7 @@ When a skill processes a new source for this repository, it should close the
 artifact lifecycle instead of stopping at registration:
 
 1. register or update the source page
-2. update applicable canonical JSONL registries
+2. append applicable proposed JSONL records
 3. update affected human-facing wiki pages
 4. refresh meta pages
 5. run structural validation
@@ -49,6 +50,10 @@ The skill may use agent or helper-model judgment for affected pages, claims,
 relations, contradictions, and uncertainty. It must not turn filename keywords,
 token shape, retrieval hits, graph projection, or YAML contracts into semantic
 truth.
+
+Automatic source processing must not promote proposed records to accepted
+canonical truth. Accepted claim/entity/evidence promotion requires a separate
+review gate with explicit metadata.
 
 ## What skills should not do here
 

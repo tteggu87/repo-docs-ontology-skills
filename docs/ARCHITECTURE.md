@@ -1,12 +1,23 @@
 # Architecture
 
-Updated: 2026-05-05
+Updated: 2026-05-08
 
 ## Canonical entrypoints
 
 - `scripts/llm_wiki.py`
   - local maintenance CLI for `ingest`, `reindex`, `lint`, `status`, and `log`
   - owns wiki index rebuild and wiki health checks
+- `scripts/llm_full_ingest.py`
+  - configured-LLM full growth CLI for `dry_run` and `--apply`
+  - keeps `scripts/llm_wiki.py ingest` registration-only
+  - completes source pages, creates/appends affected wiki pages, appends proposed JSONL records, refreshes index/log, and writes ingest reports
+  - forbids raw mutation, accepted-truth automation, delete, rename, merge, and auto-commit
+- `scripts/wiki_growth_graph.py`
+  - strict LangGraph source-page growth runtime
+  - requires LangGraph plus a configured ingest LLM and fails fast without semantic fallback
+- `scripts/pipeline_check.py`
+  - structural route checker for source registration, reports, proposed JSONL, and broader wiki projection
+  - never upgrades structural presence into accepted semantic truth
 - `scripts/incremental_ingest.py`
   - repeated-export ingest CLI
   - resolves source families from `intelligence/manifests/source_families.yaml`
@@ -48,8 +59,8 @@ registries, affected concept pages, or review surfaces have been fully updated.
 ### Closed ingest lifecycle
 
 1. Register source identity through the local wiki-maintenance path
-2. Update applicable canonical JSONL registries under `warehouse/jsonl/`
-3. Project source and canonical updates into the human-facing wiki
+2. Append proposed JSONL records under `warehouse/jsonl/proposed_*.jsonl` when the configured LLM emits source-backed candidates
+3. Project source-backed updates into the human-facing wiki
 4. Refresh `wiki/_meta/index.md`
 5. Append `wiki/_meta/log.md`
 6. Run structural validation
@@ -57,6 +68,8 @@ registries, affected concept pages, or review surfaces have been fully updated.
 
 The lifecycle is closed by artifact coverage, not by a hardcoded semantic
 router. Filename, keyword, or token-shape checks must not decide meaning.
+Accepted canonical truth remains review-gated; automatic full ingest writes
+proposed records only.
 
 ### Incremental ingest
 
@@ -92,8 +105,21 @@ router. Filename, keyword, or token-shape checks must not decide meaning.
    - `rerankerProvider`
 5. The current helper-model compatibility path is limited to OpenAI-compatible chat providers
 6. Browser routes must not expose provider secrets or raw provider internals
-7. Helper-model routes must return draft output only and must not write to `raw/` or `warehouse/jsonl/`
+7. Workbench helper-model routes must return draft output only and must not write to `raw/` or `warehouse/jsonl/`
 8. Helper-model source reads must stay under `raw/inbox/`, `raw/processed/`, or `raw/notes/`
+
+## Configured full ingest flow
+
+1. Human adds a source under `raw/inbox/`
+2. `python3 scripts/llm_full_ingest.py raw/inbox/source.md --apply` verifies configured helper LLM availability
+3. The runner registers the source through `scripts/llm_wiki.py ingest` when needed
+4. The configured LLM returns JSON for source-page synthesis, affected page updates, and proposed ontology records
+5. The runner prevalidates semantic output before writes:
+   - affected page paths must be explicit allowed `wiki/...` paths
+   - affected page actions must be `create` or `append`
+   - accepted truth is rejected
+6. The runner writes source-backed wiki growth and proposed JSONL only
+7. The runner refreshes index/log and emits an ingest report for `git diff` review
 
 ## Current intentional legacy split
 

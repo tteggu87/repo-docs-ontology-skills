@@ -2,7 +2,7 @@
 title: "Current State"
 status: active
 source_of_truth: yes
-updated: 2026-05-05
+updated: 2026-05-08
 ---
 
 # Current State
@@ -90,6 +90,28 @@ The incremental ingest path now emits:
 
 This is groundwork for later ingest-promotion and operator-review flows without changing the truth hierarchy.
 
+## Configured full ingest runtime
+
+`scripts/llm_full_ingest.py --apply` is now the minimal configured-LLM wiki
+growth loop.
+
+It keeps `scripts/llm_wiki.py ingest` as registration-only, then uses the
+configured helper LLM to produce source-page synthesis, affected wiki page
+updates, and proposed ontology records.
+
+The automatic apply path may write:
+
+- `wiki/sources/`
+- affected `wiki/concepts/`, `wiki/entities/`, `wiki/people/`, `wiki/projects/`, `wiki/timelines/`, or `wiki/analyses/`
+- `warehouse/jsonl/proposed_*.jsonl`
+- `wiki/_meta/index.md`
+- `wiki/_meta/log.md`
+- `wiki/_meta/ingest_reports/`
+
+It must fail rather than fall back when helper LLM semantic output is missing,
+invalid, or unavailable. It must not modify `raw/`, create accepted truth,
+delete content, rename pages, merge pages, or auto-commit.
+
 ## Closed ingest contract
 
 `scripts/llm_wiki.py ingest` is intentionally a source-registration step, not a
@@ -97,7 +119,7 @@ complete ontology-backed ingest by itself.
 
 A full source-processing pass should continue through:
 
-- applicable canonical JSONL updates under `warehouse/jsonl/`
+- proposed JSONL appends under `warehouse/jsonl/`
 - affected wiki source, concept, entity, person, project, timeline, or analysis pages
 - `wiki/_meta/index.md` and `wiki/_meta/log.md`
 - structural validation and a completion report

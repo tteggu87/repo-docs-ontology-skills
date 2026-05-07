@@ -1,6 +1,6 @@
 # Impact Summary
 
-Updated: 2026-05-05
+Updated: 2026-05-08
 
 ## Repository analysis summary
 
@@ -9,6 +9,7 @@ Updated: 2026-05-05
 - The workbench split is transitional but real: `scripts/workbench_api.py` is still live while `scripts/workbench/` contains the thicker implementation.
 - The closed ingest gap is now documented explicitly: source registration is not the same as a completed ontology-backed ingest lifecycle.
 - The closed ingest contract is now propagated to repo-local `AGENTS.md`, public READMEs, checked-in skills, and bootstrap-generated ontology starter files.
+- The configured full ingest path now exists: `scripts/llm_full_ingest.py --apply` closes source page, affected wiki page, proposed JSONL, index/log, and report artifacts without accepted-truth automation.
 
 ## Docs structure changes
 
@@ -38,10 +39,14 @@ Also updated outside `docs/`:
 - `AGENTS.md`
 - `README.md`
 - `README.ko.md`
+- `scripts/llm_full_ingest.py`
+- `scripts/pipeline_check.py`
 - `.agents/skills/llm-wiki-bootstrap/scripts/bootstrap_llm_wiki.py`
 - `.agents/skills/llm-wiki-ontology-ingest/SKILL.md`
 - `.agents/skills/ontology-pipeline-operator/SKILL.md`
 - `tests/test_llm_wiki_pipeline_contract.py`
+- `tests/test_llm_full_ingest_runtime.py`
+- `tests/test_pipeline_check.py`
 
 ## Intelligence layer changes
 
@@ -77,22 +82,23 @@ Checked and left unchanged:
 - Missing docs portal pages for architecture, layers, skills integration, roadmap, and impact reporting
 - Missing intelligence artifacts for named runtime surfaces, capability bindings, and explicit truth/mutation policies
 - Missing action contracts for current workbench query-preview, save-analysis, review-claim, and maintenance flows
-- Missing explicit closed-ingest distinction between source registration, canonical JSONL updates, wiki projection, meta refresh, structural validation, and reporting
+- Missing explicit closed-ingest distinction between source registration, proposed JSONL appends, wiki projection, meta refresh, structural validation, and reporting
 - Missing propagation of the closed-ingest contract into the primary agent/skill/bootstrap surfaces
+- Previously missing executable configured-LLM growth loop beyond source-page-only projection
 
 ## Remaining drift
 
 - There is still no repo-local validator such as `scripts/validate_repo_docs_intelligence.py`
-- There is still no dedicated `pipeline-check` command that automatically emits the closed ingest completion report
+- `scripts/pipeline_check.py` exists, but it remains structural and should not be treated as semantic truth validation
 - `docs/` reflects current runtime truth, but future route or adapter growth will need follow-up updates
 - The intelligence layer remains intentionally minimal and does not yet document every workbench route as a first-class entity
-- `pipeline-check` remains intentionally deferred to avoid implying that structural checks prove semantic completion
+- Accepted-truth promotion remains a separate future review workflow
 
 ## Validator status
 
-- No validator script exists in this repository, so no automated docs/intelligence validation was run
+- No dedicated docs/intelligence validator script exists in this repository, so manual drift checks are still required
 - Manual drift verification should continue to compare `AGENTS.md`, `docs/`, `intelligence/`, `scripts/`, and tests together
-- YAML parse and unit-test verification were run for this refresh
+- Unit-test verification should include the full ingest and pipeline-check tests
 
 ## Cautions
 
