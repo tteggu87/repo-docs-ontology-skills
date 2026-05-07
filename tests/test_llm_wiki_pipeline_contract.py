@@ -12,6 +12,9 @@ ROOT = Path(__file__).resolve().parents[1]
 BOOTSTRAP_PATH = ROOT / ".agents" / "skills" / "llm-wiki-bootstrap" / "scripts" / "bootstrap_llm_wiki.py"
 BOOTSTRAP_LLM_WIKI_ASSET = ROOT / ".agents" / "skills" / "llm-wiki-bootstrap" / "assets" / "llm_wiki.py"
 ROOT_LLM_WIKI_SCRIPT = ROOT / "scripts" / "llm_wiki.py"
+ROOT_HELPER_LLM_SCRIPT = ROOT / "scripts" / "helper_llm.py"
+ROOT_LLM_FULL_INGEST_SCRIPT = ROOT / "scripts" / "llm_full_ingest.py"
+ROOT_PIPELINE_CHECK_SCRIPT = ROOT / "scripts" / "pipeline_check.py"
 
 
 def read_repo_text(relative_path: str) -> str:
@@ -89,6 +92,31 @@ class ClosedIngestPipelineContractTest(unittest.TestCase):
 
         self.assertEqual(root_script, asset_script)
         self.assertEqual(root_script, self.bootstrap.llm_wiki_py())
+
+    def test_bootstrap_configured_full_ingest_scripts_match_root_scripts(self) -> None:
+        self.assertEqual(ROOT_HELPER_LLM_SCRIPT.read_text(encoding="utf-8"), self.bootstrap.helper_llm_py())
+        self.assertEqual(ROOT_LLM_FULL_INGEST_SCRIPT.read_text(encoding="utf-8"), self.bootstrap.llm_full_ingest_py())
+        self.assertEqual(ROOT_PIPELINE_CHECK_SCRIPT.read_text(encoding="utf-8"), self.bootstrap.pipeline_check_py())
+
+    def test_bootstrap_writes_configured_full_ingest_runtime_for_ontology_profile(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "vault"
+            self.bootstrap.scaffold(target, force=False, profile="wiki-plus-ontology")
+
+            self.assertEqual(
+                ROOT_HELPER_LLM_SCRIPT.read_text(encoding="utf-8"),
+                (target / "scripts" / "helper_llm.py").read_text(encoding="utf-8"),
+            )
+            self.assertEqual(
+                ROOT_LLM_FULL_INGEST_SCRIPT.read_text(encoding="utf-8"),
+                (target / "scripts" / "llm_full_ingest.py").read_text(encoding="utf-8"),
+            )
+            self.assertEqual(
+                ROOT_PIPELINE_CHECK_SCRIPT.read_text(encoding="utf-8"),
+                (target / "scripts" / "pipeline_check.py").read_text(encoding="utf-8"),
+            )
+            self.assertTrue((target / "wikiconfig.example.json").exists())
+            self.assertIn("wikiconfig.json", (target / ".gitignore").read_text(encoding="utf-8"))
 
     def test_bootstrap_writes_pipeline_manifest_for_ontology_profile(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

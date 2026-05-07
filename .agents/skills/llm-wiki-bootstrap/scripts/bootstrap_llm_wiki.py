@@ -19,6 +19,20 @@ def write_text(path: Path, content: str) -> None:
     path.write_text(content, encoding="utf-8")
 
 
+def source_repo_root() -> Path:
+    return Path(__file__).resolve().parents[4]
+
+
+def read_source_repo_file(relative_path: str) -> str:
+    path = source_repo_root() / relative_path
+    if not path.exists():
+        raise FileNotFoundError(
+            f"Bootstrap expected DocTology reference file at {relative_path}. "
+            "Run this repo-local bootstrap from a complete DocTology checkout."
+        )
+    return path.read_text(encoding="utf-8")
+
+
 def ensure_safe_target(target: Path, force: bool) -> None:
     if not target.exists():
         target.mkdir(parents=True, exist_ok=True)
@@ -361,6 +375,10 @@ If ontology-backed ingest is not yet available, wiki-only ingest may continue, b
 
 `scripts/llm_wiki.py ingest` is source registration only. It is not full ontology-backed ingest.
 
+`scripts/llm_full_ingest.py --apply` is the minimal configured-LLM full growth loop. It may complete the source page, create or append affected wiki pages, append proposed JSONL records, refresh index/log, and write an ingest report. It must not modify `raw/`, create accepted truth, delete content, rename pages, merge pages, or auto-commit. Review the resulting `git diff` before committing.
+
+`scripts/pipeline_check.py` is structural validation for the closed ingest lifecycle. It checks artifact presence and parseability; it must not be treated as semantic truth validation.
+
 ## Closed Ingest Pipeline
 
 When the user asks to ingest a source, do not stop at source registration unless the user explicitly asks for registration only.
@@ -538,7 +556,10 @@ The LLM ingests, structures, cross-links, updates, and keeps the wiki healthy.
 │   ├── assets/
 │   └── notes/
 ├── scripts/
-│   └── llm_wiki.py
+│   ├── helper_llm.py
+│   ├── llm_full_ingest.py
+│   ├── llm_wiki.py
+│   └── pipeline_check.py
 ├── templates/
 │   └── source_page_template.md
 ├── warehouse/
@@ -600,15 +621,35 @@ It does not perform ontology-backed ingest by itself.
 
 The full closed lifecycle is: `raw -> register -> warehouse/jsonl when applicable -> wiki projection -> meta refresh -> structural validation`.
 
-### 5. Run Ontology-Backed Ingest
+### 5. Configure Helper LLM
 
-If you install `llm-wiki-ontology-ingest` later, use that skill after source registration so the repo can:
+Copy `wikiconfig.example.json` to `wikiconfig.json`, enable helper LLM calls, and
+fill in an OpenAI-compatible chat model.
 
-- update `warehouse/jsonl/...`
-- refresh affected wiki pages
-- keep provenance-aware structured truth aligned with human-facing synthesis
+```bash
+cp wikiconfig.example.json wikiconfig.json
+python scripts/helper_llm.py --root . --check-config
+```
 
-### 6. Ask Me To Maintain The Wiki
+### 6. Run Configured Full Ingest
+
+When helper LLM config is ready, run:
+
+```bash
+python scripts/llm_full_ingest.py raw/inbox/my-source.md --apply
+```
+
+This is the default automated growth loop. It completes the source page, creates
+or appends affected wiki pages, appends proposed JSONL records, refreshes
+`wiki/_meta/index.md` and `wiki/_meta/log.md`, and writes an ingest report.
+
+It must not modify `raw/`, create accepted truth, delete content, rename pages,
+merge pages, or auto-commit. Review `git diff` after each apply.
+
+Use `python scripts/pipeline_check.py raw/inbox/my-source.md` for structural
+status after ingest. This check validates artifact shape, not semantic truth.
+
+### 7. Ask Me To Maintain The Wiki
 
 Use prompts like:
 
@@ -620,7 +661,7 @@ Use prompts like:
 
 1. Put a source into `raw/inbox/`
 2. Register it with the CLI
-3. Run ontology-backed ingest if available
+3. Run `python scripts/llm_full_ingest.py raw/inbox/source.md --apply` when configured helper LLM ingest is available
 4. Review changed wiki pages in Obsidian
 5. Move the raw file into `raw/processed/` when you are happy
 
@@ -1596,6 +1637,31 @@ if __name__ == "__main__":
 """
 
 
+def helper_llm_py() -> str:
+    return read_source_repo_file("scripts/helper_llm.py")
+
+
+def llm_full_ingest_py() -> str:
+    return read_source_repo_file("scripts/llm_full_ingest.py")
+
+
+def pipeline_check_py() -> str:
+    return read_source_repo_file("scripts/pipeline_check.py")
+
+
+def wikiconfig_example_json() -> str:
+    return read_source_repo_file("wikiconfig.example.json")
+
+
+def gitignore_text() -> str:
+    return """.venv/
+__pycache__/
+*.pyc
+.DS_Store
+wikiconfig.json
+"""
+
+
 def scaffold(target: Path, force: bool, profile: str) -> None:
     date = today()
     ensure_safe_target(target, force)
@@ -1630,12 +1696,17 @@ def scaffold(target: Path, force: bool, profile: str) -> None:
 
     write_text(target / "AGENTS.md", agents_md(profile))
     write_text(target / "README.md", readme(target, profile))
+    write_text(target / ".gitignore", gitignore_text())
     write_text(target / "scripts" / "llm_wiki.py", llm_wiki_py())
     write_text(target / "templates" / "source_page_template.md", source_template())
     write_text(target / "wiki" / "_meta" / "dashboard.md", dashboard_md(date))
     write_text(target / "wiki" / "_meta" / "index.md", index_md(date))
     write_text(target / "wiki" / "_meta" / "log.md", log_md(date))
     if profile == "wiki-plus-ontology":
+        write_text(target / "wikiconfig.example.json", wikiconfig_example_json())
+        write_text(target / "scripts" / "helper_llm.py", helper_llm_py())
+        write_text(target / "scripts" / "llm_full_ingest.py", llm_full_ingest_py())
+        write_text(target / "scripts" / "pipeline_check.py", pipeline_check_py())
         write_text(target / "intelligence" / "glossary.yaml", glossary_yaml())
         write_text(target / "intelligence" / "manifests" / "datasets.yaml", datasets_yaml())
         write_text(target / "intelligence" / "manifests" / "actions.yaml", actions_yaml())

@@ -6,6 +6,7 @@ __pycache__/
 .gstack/
 .omx/
 continue.json
+wikiconfig.json
 
 # Local operator/runtime artifacts
 .codex/context/whiplash-state.json
