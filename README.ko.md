@@ -105,6 +105,12 @@ DocTology의 기본 약속은 다음입니다.
 `raw -> register -> warehouse/jsonl 필요 시 갱신 -> wiki projection -> meta
 refresh -> structural validation`까지 이어지는 closed lifecycle입니다.
 
+자동 graph ingest는 `scripts/wiki_growth_graph.py`를 사용합니다. 이 runtime은
+real LangGraph와 configured ingest LLM을 요구하며, deterministic semantic
+shortcut으로 fallback하지 않고 실패합니다. 단, 이 strict graph runtime 밖에서
+agent가 `AGENTS.md`, wiki map, source page, evidence를 직접 읽어 처리하는 경로는
+여전히 유효합니다.
+
 ## 어디서 시작할지 먼저 고르세요
 
 ### 1) LLM Wiki를 먼저 쓰고 싶나요?
@@ -259,11 +265,19 @@ python scripts/helper_llm.py --root . --probe-embedding
 source-page-only LLM ingest는 `scripts/llm_wiki.py ingest`를 registration-only로 유지한 채 별도 runner를 사용합니다.
 
 ```bash
+python scripts/wiki_growth_graph.py ingest raw/inbox/example.md --mode draft
+python scripts/wiki_growth_graph.py ingest raw/inbox/example.md --mode apply-source-page
+python scripts/wiki_growth_graph.py check --source raw/inbox/example.md
+```
+
+낮은 레벨의 transitional runner는 직접 디버깅용으로 계속 사용할 수 있습니다.
+
+```bash
 python scripts/llm_full_ingest.py raw/inbox/example.md --mode dry_run
 python scripts/llm_full_ingest.py raw/inbox/example.md --mode apply_source_page
 ```
 
-첫 full-ingest runner 버전은 source page를 채우고 ingest report를 씁니다. Broad wiki update, JSONL proposal write, accepted-claim promotion은 의도적으로 닫아둡니다.
+첫 graph/full-ingest runner 버전은 source page를 채우고 ingest report를 씁니다. Broad wiki update, JSONL proposal write, accepted-claim promotion은 의도적으로 닫아둡니다.
 
 ## Reference runtime에 대해
 
@@ -273,6 +287,8 @@ python scripts/llm_full_ingest.py raw/inbox/example.md --mode apply_source_page
 
 - `scripts/llm_wiki.py` — source registration, indexing, lint, status check
 - `scripts/helper_llm.py` — 로컬 `wikiconfig.json` probe와 OpenAI-compatible helper 호출
+- `scripts/wiki_growth_graph.py` — strict LangGraph source-page growth runtime
+- `scripts/pipeline_check.py` — pending-aware structural route check
 - `scripts/llm_full_ingest.py` — configured-LLM source-page ingest draft/apply
 - `scripts/incremental_ingest.py` — 반복 export-style ingest path
 - `scripts/workbench_api.py` — local workbench adapter용 compatibility shell

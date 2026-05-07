@@ -105,6 +105,11 @@ Treat the other skills as later-stage refinement or optional extension layers.
 closed lifecycle: `raw -> register -> warehouse/jsonl when applicable -> wiki
 projection -> meta refresh -> structural validation`.
 
+For automated graph ingest, use `scripts/wiki_growth_graph.py`. That runtime
+requires real LangGraph and a configured ingest LLM, and fails fast instead of
+falling back to deterministic semantic shortcuts. The agent-operated wiki
+workflow remains available outside that strict graph runtime.
+
 ## Choose your starting path first
 
 ### 1) Do you want to start with an LLM Wiki?
@@ -259,11 +264,19 @@ python scripts/helper_llm.py --root . --probe-embedding
 For source-page-only LLM ingest, keep `scripts/llm_wiki.py ingest` as registration-only and use:
 
 ```bash
+python scripts/wiki_growth_graph.py ingest raw/inbox/example.md --mode draft
+python scripts/wiki_growth_graph.py ingest raw/inbox/example.md --mode apply-source-page
+python scripts/wiki_growth_graph.py check --source raw/inbox/example.md
+```
+
+The lower-level transitional runner remains available for direct debugging:
+
+```bash
 python scripts/llm_full_ingest.py raw/inbox/example.md --mode dry_run
 python scripts/llm_full_ingest.py raw/inbox/example.md --mode apply_source_page
 ```
 
-The first full-ingest runner version fills source pages and writes ingest reports. Broad wiki updates, JSONL proposal writes, and accepted-claim promotion remain intentionally closed.
+The first graph/full-ingest runner version fills source pages and writes ingest reports. Broad wiki updates, JSONL proposal writes, and accepted-claim promotion remain intentionally closed.
 
 ## About the reference runtime
 
@@ -273,6 +286,8 @@ Useful entry points include:
 
 - `scripts/llm_wiki.py` for source registration, indexing, linting, and status checks
 - `scripts/helper_llm.py` for local `wikiconfig.json` probes and OpenAI-compatible helper calls
+- `scripts/wiki_growth_graph.py` for strict LangGraph source-page growth runtime
+- `scripts/pipeline_check.py` for pending-aware structural route checks
 - `scripts/llm_full_ingest.py` for configured-LLM source-page ingest drafts/apply
 - `scripts/incremental_ingest.py` for repeated export-style ingest paths
 - `scripts/workbench_api.py` as a compatibility shell for local workbench adapters

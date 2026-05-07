@@ -124,6 +124,18 @@ The agent or a configured helper model may help decide affected pages, claims,
 entities, contradictions, and open questions. Those judgments must remain
 grounded in source evidence and repository rules.
 
+## Automated graph ingest runtime
+
+`scripts/wiki_growth_graph.py` is the strict automated graph ingest runtime for
+source-page-first growth. In ingest modes it requires real LangGraph and a
+configured ingest LLM. If either is unavailable, the graph runtime fails fast and
+does not replace semantic work with deterministic fallback output.
+
+This runtime does not remove the agent-operated semantic path. An agent may
+still perform wiki growth directly by reading `AGENTS.md`, the wiki map, source
+pages, and ontology evidence. That path is explicit agent work, not an automatic
+fallback inside the graph runtime.
+
 ## Semantic no-fallback rule
 
 If source-page synthesis, affected-page selection, claim extraction,

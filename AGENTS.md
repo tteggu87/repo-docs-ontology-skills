@@ -118,6 +118,8 @@ If ontology-backed ingest is not yet available, the agent may continue with wiki
 
 `scripts/llm_wiki.py ingest` is source registration only. It is not full ontology-backed ingest.
 
+`scripts/wiki_growth_graph.py` is the strict automated graph ingest runtime. It requires real LangGraph and a configured ingest LLM for ingest modes, fails fast when either is unavailable, and must not fall back to deterministic semantic drafting. This does not remove the agent-operated semantic workflow: an agent may still read `AGENTS.md`, the wiki map, source pages, and evidence directly, but that path is not an automatic script fallback.
+
 ## Closed Ingest Pipeline
 
 When the user asks to ingest a source, do not stop at source registration unless the user explicitly asks for registration only.
