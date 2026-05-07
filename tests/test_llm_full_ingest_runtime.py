@@ -200,6 +200,139 @@ TBD.
                 {"path": "wiki/concepts/bad.md", "action": "create_or_append"}
             )
 
+    def test_proposed_jsonl_append_is_idempotent_for_same_source(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            raw_path = root / "raw" / "inbox" / "example.md"
+            raw_path.parent.mkdir(parents=True)
+            raw_path.write_text("source", encoding="utf-8")
+            source_page = root / "wiki" / "sources" / "source-example.md"
+            source_page.parent.mkdir(parents=True)
+            source_page.write_text("# Source\n", encoding="utf-8")
+            draft = {
+                "proposed_claims": [
+                    {
+                        "claim_text": "라텔은 벌꿀오소리다.",
+                        "status": "proposed",
+                        "review_state": "needs_review",
+                        "evidence_excerpt": "라텔은 벌꿀오소리다.",
+                    }
+                ]
+            }
+
+            changed_first, counts_first = self.full_ingest.append_proposed_jsonl_records(
+                root, raw_path, source_page, draft
+            )
+            changed_second, counts_second = self.full_ingest.append_proposed_jsonl_records(
+                root, raw_path, source_page, draft
+            )
+
+            proposed_claims = root / "warehouse" / "jsonl" / "proposed_claims.jsonl"
+            records = [
+                json.loads(line)
+                for line in proposed_claims.read_text(encoding="utf-8").splitlines()
+                if line.strip()
+            ]
+
+        self.assertEqual(len(records), 1)
+        self.assertIn("warehouse/jsonl/proposed_claims.jsonl", changed_first)
+        self.assertEqual(changed_second, [])
+        self.assertEqual(counts_first["proposed_claims"]["emitted"], 1)
+        self.assertEqual(counts_first["proposed_claims"]["appended"], 1)
+        self.assertEqual(counts_first["proposed_claims"]["skipped_existing"], 0)
+        self.assertEqual(counts_second["proposed_claims"]["emitted"], 1)
+        self.assertEqual(counts_second["proposed_claims"]["appended"], 0)
+        self.assertEqual(counts_second["proposed_claims"]["skipped_existing"], 1)
+        self.assertTrue(records[0]["id"].startswith("claim-proposed-"))
+        self.assertRegex(records[0]["content_hash"], r"^[0-9a-f]{24}$")
+        self.assertEqual(records[0]["dedupe_scope"], "source")
+
+    def test_proposed_jsonl_append_fails_on_invalid_existing_jsonl(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            raw_path = root / "raw" / "inbox" / "example.md"
+            raw_path.parent.mkdir(parents=True)
+            raw_path.write_text("source", encoding="utf-8")
+            source_page = root / "wiki" / "sources" / "source-example.md"
+            source_page.parent.mkdir(parents=True)
+            source_page.write_text("# Source\n", encoding="utf-8")
+            proposed_claims = root / "warehouse" / "jsonl" / "proposed_claims.jsonl"
+            proposed_claims.parent.mkdir(parents=True)
+            proposed_claims.write_text("{bad json\n", encoding="utf-8")
+
+            with self.assertRaises(RuntimeError):
+                self.full_ingest.append_proposed_jsonl_records(
+                    root,
+                    raw_path,
+                    source_page,
+                    {"proposed_claims": [{"claim_text": "ok", "evidence_excerpt": "ok"}]},
+                )
+
+    def test_same_claim_from_different_source_is_not_semantically_merged(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            draft = {
+                "proposed_claims": [
+                    {
+                        "claim_text": "라텔은 벌꿀오소리다.",
+                        "evidence_excerpt": "라텔은 벌꿀오소리다.",
+                    }
+                ]
+            }
+            raw_a = root / "raw" / "inbox" / "a.md"
+            raw_b = root / "raw" / "inbox" / "b.md"
+            raw_a.parent.mkdir(parents=True)
+            raw_a.write_text("a", encoding="utf-8")
+            raw_b.write_text("b", encoding="utf-8")
+            source_a = root / "wiki" / "sources" / "source-a.md"
+            source_b = root / "wiki" / "sources" / "source-b.md"
+            source_a.parent.mkdir(parents=True)
+            source_a.write_text("# A\n", encoding="utf-8")
+            source_b.write_text("# B\n", encoding="utf-8")
+
+            self.full_ingest.append_proposed_jsonl_records(root, raw_a, source_a, draft)
+            self.full_ingest.append_proposed_jsonl_records(root, raw_b, source_b, draft)
+
+            proposed_claims = root / "warehouse" / "jsonl" / "proposed_claims.jsonl"
+            records = [
+                json.loads(line)
+                for line in proposed_claims.read_text(encoding="utf-8").splitlines()
+                if line.strip()
+            ]
+
+        self.assertEqual(len(records), 2)
+        self.assertNotEqual(records[0]["id"], records[1]["id"])
+
+    def test_distinct_same_source_relation_strings_are_not_collapsed(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            raw_path = root / "raw" / "inbox" / "example.md"
+            raw_path.parent.mkdir(parents=True)
+            raw_path.write_text("source", encoding="utf-8")
+            source_page = root / "wiki" / "sources" / "source-example.md"
+            source_page.parent.mkdir(parents=True)
+            source_page.write_text("# Source\n", encoding="utf-8")
+
+            changed, counts = self.full_ingest.append_proposed_jsonl_records(
+                root,
+                raw_path,
+                source_page,
+                {"proposed_relations": ["A -> B", "C -> D"]},
+            )
+            proposed_relations = root / "warehouse" / "jsonl" / "proposed_relations.jsonl"
+            records = [
+                json.loads(line)
+                for line in proposed_relations.read_text(encoding="utf-8").splitlines()
+                if line.strip()
+            ]
+
+        self.assertIn("warehouse/jsonl/proposed_relations.jsonl", changed)
+        self.assertEqual(counts["proposed_relations"]["emitted"], 2)
+        self.assertEqual(counts["proposed_relations"]["appended"], 2)
+        self.assertEqual(counts["proposed_relations"]["skipped_existing"], 0)
+        self.assertEqual(len(records), 2)
+        self.assertNotEqual(records[0]["id"], records[1]["id"])
+
     def test_reserved_apply_modes_fail_without_writes(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -355,6 +488,8 @@ TBD.
                 report_text = reports[0].read_text(encoding="utf-8")
                 self.assertIn("## Applied Affected Pages", report_text)
                 self.assertIn("Review the automatic growth with `git diff`", report_text)
+                self.assertIn("`proposed_claims.jsonl`: emitted `1`, appended `1`, skipped_existing `0`", report_text)
+                self.assertIn("`proposed_relations.jsonl`: emitted `0`, appended `0`, skipped_existing `0`", report_text)
                 index_text = (root / "wiki" / "_meta" / "index.md").read_text(encoding="utf-8")
                 self.assertIn(f"[[{reports[0].stem}]]", index_text)
                 log_text = (root / "wiki" / "_meta" / "log.md").read_text(encoding="utf-8")

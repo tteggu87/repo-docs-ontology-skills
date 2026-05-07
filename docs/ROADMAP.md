@@ -1,11 +1,11 @@
 # Roadmap
 
-Updated: 2026-05-05
+Updated: 2026-05-08
 
 ## Near-term
 
 - keep `docs/` aligned whenever CLI surfaces, workbench routes, or truth boundaries change
-- make closed ingest reporting routine enough that operators can see registered, updated, skipped, not-applicable, and pending artifacts after each source-processing pass
+- keep closed ingest reporting routine enough that operators can see source registration, proposed JSONL emitted/appended/skipped_existing counts, changed wiki/meta artifacts, and unresolved follow-ups after each source-processing pass
 - extend source-family coverage only through explicit manifest mappings plus tested parser support
 - continue using the workbench as a bounded operator surface rather than a browser-owned authoring system
 

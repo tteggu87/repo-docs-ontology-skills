@@ -19,6 +19,7 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import difflib
+import hashlib
 import importlib.util
 import json
 import re
@@ -52,6 +53,18 @@ PROPOSED_JSONL_FILES = {
     "proposed_claims": "proposed_claims.jsonl",
     "proposed_evidence": "proposed_evidence.jsonl",
     "proposed_relations": "proposed_relations.jsonl",
+}
+PROPOSED_ID_PREFIXES = {
+    "proposed_entities": "entity",
+    "proposed_claims": "claim",
+    "proposed_evidence": "evidence",
+    "proposed_relations": "relation",
+}
+PROPOSED_HASH_FIELDS = {
+    "proposed_entities": ("name", "type", "evidence_excerpt"),
+    "proposed_claims": ("claim_text", "evidence_excerpt"),
+    "proposed_evidence": ("evidence_text", "evidence_excerpt"),
+    "proposed_relations": ("from", "to", "relation_type", "relation_text", "evidence_excerpt"),
 }
 ALLOWED_AFFECTED_PAGE_PREFIXES = (
     "wiki/concepts/",
@@ -626,6 +639,67 @@ def validate_affected_page_updates_for_apply(root: Path, draft: dict[str, Any]) 
         resolve_affected_page_path(root, raw_item.get("path"))
 
 
+def compact_structural_text(value: Any) -> str:
+    return re.sub(r"\s+", " ", str(value or "").strip())
+
+
+def proposed_hash_payload(
+    field: str,
+    raw_path_rel: str,
+    source_page_rel: str,
+    record: dict[str, Any],
+) -> dict[str, Any]:
+    payload: dict[str, Any] = {
+        "record_family": field,
+        "raw_path": raw_path_rel,
+        "source_page": source_page_rel,
+    }
+    for key in PROPOSED_HASH_FIELDS.get(field, ("text", "evidence_excerpt")):
+        payload[key] = compact_structural_text(record.get(key))
+    return payload
+
+
+def content_hash_for_payload(payload: dict[str, Any]) -> str:
+    canonical = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()[:24]
+
+
+def proposed_record_id(field: str, content_hash: str) -> str:
+    prefix = PROPOSED_ID_PREFIXES.get(field, "record")
+    return f"{prefix}-proposed-{content_hash}"
+
+
+def existing_proposed_jsonl_index(path: Path, field: str) -> tuple[str, set[str], set[str]]:
+    if not path.exists():
+        return "", set(), set()
+    existing = read_text(path)
+    ids: set[str] = set()
+    content_hashes: set[str] = set()
+    for line_number, line in enumerate(existing.splitlines(), start=1):
+        stripped = line.strip()
+        if not stripped:
+            continue
+        try:
+            record = json.loads(stripped)
+        except json.JSONDecodeError as exc:
+            raise RuntimeError(f"Refusing to append: invalid JSONL in {path} at line {line_number}") from exc
+        if not isinstance(record, dict):
+            raise RuntimeError(f"Refusing to append: non-object JSONL record in {path} at line {line_number}")
+        record_id = str(record.get("id") or "").strip()
+        if record_id:
+            ids.add(record_id)
+        raw_path_rel = str(record.get("raw_path") or "").strip()
+        source_page_rel = str(record.get("source_page") or "").strip()
+        content_hash = str(record.get("content_hash") or "").strip()
+        if not content_hash and raw_path_rel and source_page_rel:
+            content_hash = content_hash_for_payload(
+                proposed_hash_payload(field, raw_path_rel, source_page_rel, record)
+            )
+        if content_hash:
+            content_hashes.add(content_hash)
+    return existing, ids, content_hashes
+
+
 def proposed_jsonl_record(
     root: Path,
     raw_path: Path,
@@ -645,11 +719,18 @@ def proposed_jsonl_record(
         record = {value_key: str(item).strip()}
     if has_accepted_status(record):
         raise RuntimeError(f"Refusing to apply: configured LLM attempted accepted truth in {field}")
+    raw_path_rel = relative_to_root(root, raw_path)
+    source_page_rel = relative_to_root(root, source_page)
+    payload = proposed_hash_payload(field, raw_path_rel, source_page_rel, record)
+    content_hash = content_hash_for_payload(payload)
+    record["id"] = proposed_record_id(field, content_hash)
+    record["content_hash"] = content_hash
+    record["dedupe_scope"] = "source"
     record["status"] = "proposed"
     record["review_state"] = "needs_review"
     record.setdefault("created_at", today())
-    record["raw_path"] = relative_to_root(root, raw_path)
-    record["source_page"] = relative_to_root(root, source_page)
+    record["raw_path"] = raw_path_rel
+    record["source_page"] = source_page_rel
     record["source_wikilink"] = f"[[{source_page.stem}]]"
     record["ingest_runner"] = "scripts/llm_full_ingest.py"
     record["record_family"] = field
@@ -661,28 +742,37 @@ def append_proposed_jsonl_records(
     raw_path: Path,
     source_page: Path,
     draft: dict[str, Any],
-) -> tuple[list[str], dict[str, int]]:
+) -> tuple[list[str], dict[str, dict[str, int]]]:
     changed_files: list[str] = []
-    counts: dict[str, int] = {}
+    counts: dict[str, dict[str, int]] = {}
     jsonl_dir = root / "warehouse" / "jsonl"
     for field, filename in PROPOSED_JSONL_FILES.items():
         items = normalize_list(draft.get(field))
+        counts[field] = {"emitted": len(items), "appended": 0, "skipped_existing": 0}
         if not items:
-            counts[field] = 0
             continue
         path = jsonl_dir / filename
-        existing = read_text(path) if path.exists() else ""
+        existing, existing_ids, existing_hashes = existing_proposed_jsonl_index(path, field)
         lines = []
         for item in items:
             record = proposed_jsonl_record(root, raw_path, source_page, field, item)
+            record_id = str(record.get("id") or "")
+            content_hash = str(record.get("content_hash") or "")
+            if record_id in existing_ids or content_hash in existing_hashes:
+                counts[field]["skipped_existing"] += 1
+                continue
             lines.append(json.dumps(record, ensure_ascii=False, sort_keys=True))
+            existing_ids.add(record_id)
+            existing_hashes.add(content_hash)
+            counts[field]["appended"] += 1
+        if not lines:
+            continue
         content = existing
         if content and not content.endswith("\n"):
             content += "\n"
         content += "\n".join(lines) + "\n"
         write_text(path, content)
         add_changed(changed_files, relative_to_root(root, path))
-        counts[field] = len(lines)
     return changed_files, counts
 
 
@@ -825,7 +915,7 @@ def write_ingest_report(
     *,
     applied_pages: list[dict[str, Any]] | None = None,
     skipped_pages: list[dict[str, Any]] | None = None,
-    jsonl_counts: dict[str, int] | None = None,
+    jsonl_counts: dict[str, dict[str, int]] | None = None,
 ) -> Path:
     reports_dir = root / "wiki" / "_meta" / "ingest_reports"
     source_slug = slugify(source_page.stem if source_page else raw_path.stem)
@@ -865,7 +955,11 @@ def write_ingest_report(
     if jsonl_counts:
         for field, count in jsonl_counts.items():
             filename = PROPOSED_JSONL_FILES.get(field, f"{field}.jsonl")
-            lines.append(f"- `{filename}`: appended `{count}` proposed records")
+            lines.append(
+                f"- `{filename}`: emitted `{count.get('emitted', 0)}`, "
+                f"appended `{count.get('appended', 0)}`, "
+                f"skipped_existing `{count.get('skipped_existing', 0)}`"
+            )
     else:
         lines.append("- proposed JSONL: none emitted by configured LLM")
     lines.extend(
@@ -917,6 +1011,10 @@ def write_ingest_report(
         lines.extend(["", "## Source Page Diff", "", "```diff", diff_text.rstrip(), "```", ""])
     write_text(report_path, "\n".join(lines).rstrip() + "\n")
     return report_path
+
+
+def sum_jsonl_counts(jsonl_counts: dict[str, dict[str, int]], key: str) -> int:
+    return sum(int(count.get(key, 0) or 0) for count in jsonl_counts.values())
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -1017,7 +1115,7 @@ def main(argv: list[str] | None = None) -> int:
         report_path: Path | None = None
         applied_pages: list[dict[str, Any]] = []
         skipped_pages: list[dict[str, Any]] = []
-        jsonl_counts: dict[str, int] = {}
+        jsonl_counts: dict[str, dict[str, int]] = {}
 
         if mode in {"apply", "apply_source_page"}:
             if not source_page or source_page_new is None:
@@ -1065,7 +1163,9 @@ def main(argv: list[str] | None = None) -> int:
                     f"Full ingest apply | {raw_path.name}",
                     f"Updated source page `{relative_to_root(root, source_page)}`.",
                     f"Applied `{len(applied_pages)}` affected wiki page updates.",
-                    f"Appended proposed JSONL records: `{sum(jsonl_counts.values())}`.",
+                    f"Emitted proposed JSONL records: `{sum_jsonl_counts(jsonl_counts, 'emitted')}`.",
+                    f"Appended proposed JSONL records: `{sum_jsonl_counts(jsonl_counts, 'appended')}`.",
+                    f"Skipped existing proposed JSONL records: `{sum_jsonl_counts(jsonl_counts, 'skipped_existing')}`.",
                     f"Wrote ingest report `{relative_to_root(root, report_path)}`.",
                     "Review automatic growth with `git diff` before committing.",
                 ]

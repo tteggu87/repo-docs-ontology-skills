@@ -112,6 +112,12 @@ It must fail rather than fall back when helper LLM semantic output is missing,
 invalid, or unavailable. It must not modify `raw/`, create accepted truth,
 delete content, rename pages, merge pages, or auto-commit.
 
+Proposed JSONL writes are idempotent at the source-backed artifact level. Each
+proposed record gets a stable `id`, `content_hash`, and `dedupe_scope: source`;
+re-running the same source-backed proposal skips existing records instead of
+appending duplicates. This is structural artifact hygiene, not semantic entity
+resolution.
+
 ## Closed ingest contract
 
 `scripts/llm_wiki.py ingest` is intentionally a source-registration step, not a

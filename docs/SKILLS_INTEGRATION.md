@@ -44,7 +44,7 @@ artifact lifecycle instead of stopping at registration:
 3. update affected human-facing wiki pages
 4. refresh meta pages
 5. run structural validation
-6. report updated, skipped, not-applicable, and pending artifacts
+6. report proposed JSONL emitted/appended/skipped_existing counts plus changed wiki/meta artifacts
 
 The skill may use agent or helper-model judgment for affected pages, claims,
 relations, contradictions, and uncertainty. It must not turn filename keywords,

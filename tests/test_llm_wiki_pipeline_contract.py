@@ -57,7 +57,7 @@ class ClosedIngestPipelineContractTest(unittest.TestCase):
         self.assertIn("## Closed Pipeline Contract", text)
         self.assertIn("This pipeline closes the lifecycle, not semantic judgment.", text)
         self.assertIn("## Completion Report", text)
-        self.assertIn("JSONL registries updated, skipped, not applicable, or pending", text)
+        self.assertIn("Proposed JSONL records emitted, appended, and skipped_existing", text)
         self.assertIn("do not report the result as completed ontology-backed ingest", text)
         self.assertIn("Semantic no-fallback rule", text)
 

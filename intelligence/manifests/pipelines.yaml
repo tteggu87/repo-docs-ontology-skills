@@ -48,8 +48,9 @@ pipelines:
           - warehouse/jsonl/proposed_relations.jsonl
         notes:
           - Automatic full ingest appends proposed/needs_review records only.
+          - Proposed records receive stable artifact ids and content_hash values for source-scoped idempotent append-or-skip.
           - Accepted canonical promotion remains a separate review-gated workflow.
-          - Report appended, skipped, not applicable, or pending for each relevant registry family.
+          - Report emitted, appended, and skipped_existing for each relevant registry family.
           - If agent or configured LLM judgment is unavailable, failed, or invalid, report pending/partial/failed instead of substituting deterministic output.
       - id: project_to_wiki
         required: true
@@ -92,7 +93,7 @@ pipelines:
     reporting:
       required_sections:
         - source_registered
-        - proposed_jsonl_records_appended_skipped_or_not_applicable
+        - proposed_jsonl_records_emitted_appended_skipped_existing
         - wiki_pages_created_or_updated
         - meta_pages_refreshed
         - validation_result

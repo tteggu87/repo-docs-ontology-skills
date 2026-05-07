@@ -906,6 +906,12 @@ def glossary_yaml() -> str:
     definition: Configured helper-LLM runtime in scripts/llm_full_ingest.py that can dry-run or apply source-backed wiki growth and proposed JSONL output without semantic fallback.
   - key: proposed_ontology_record
     definition: Automatically generated entity, claim, evidence, or relation candidate stored as proposed/needs_review rather than accepted canonical truth.
+  - key: proposed_record_id
+    definition: Stable artifact identifier assigned to a proposed ontology record so repeated ingest can skip duplicates without semantic merging.
+  - key: content_hash
+    definition: Structural hash over source identity, record family, and field-specific source-backed text used for idempotent proposed JSONL writes.
+  - key: idempotent_proposed_append
+    definition: Append-or-skip behavior for proposed JSONL records where existing ids or content hashes prevent duplicate lines during repeated ingest.
   - key: structural_validation
     definition: Validation that checks artifact presence, parseability, required fields, link integrity, and provenance shape without judging semantic truth.
 """
@@ -1104,7 +1110,9 @@ def pipelines_yaml() -> str:
         agent_judgment_required: true
         notes:
           - Automatic full ingest appends proposed/needs_review records only.
+          - Proposed records receive stable artifact ids and content_hash values for source-scoped idempotent append-or-skip.
           - Accepted canonical promotion remains a separate review-gated workflow.
+          - Report emitted, appended, and skipped_existing for each relevant registry family.
           - If agent or configured LLM judgment is unavailable, failed, or invalid, report pending/partial/failed instead of substituting deterministic output.
       - id: project_to_wiki
         required: true
@@ -1124,7 +1132,7 @@ def pipelines_yaml() -> str:
     reporting:
       required_sections:
         - source_registered
-        - proposed_jsonl_records_appended_skipped_or_not_applicable
+        - proposed_jsonl_records_emitted_appended_skipped_existing
         - wiki_pages_created_or_updated
         - meta_pages_refreshed
         - validation_result

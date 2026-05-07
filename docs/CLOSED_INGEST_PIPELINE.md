@@ -29,6 +29,9 @@ python3 scripts/llm_full_ingest.py raw/inbox/source.md --apply
 This path may write source pages, affected wiki pages, proposed JSONL records,
 meta pages, and ingest reports. It must not modify `raw/`, create accepted
 truth, delete content, rename pages, merge pages, or auto-commit.
+Proposed JSONL records receive stable artifact IDs and content hashes so
+re-running the same source-backed draft skips existing proposals instead of
+duplicating them.
 
 ## Lifecycle
 
@@ -59,10 +62,9 @@ automatic full ingest runner must not create accepted truth by itself.
 
 Not every source requires every proposed registry. The report must distinguish:
 
-- updated
-- skipped
-- not applicable
-- pending manual or model-backed review
+- emitted
+- appended
+- skipped as already existing
 
 ### 3. Wiki projection
 
@@ -199,7 +201,7 @@ JSONL wins.
 A closed ingest report should state:
 
 - source registered
-- proposed JSONL records appended, skipped, or not applicable
+- proposed JSONL records emitted, appended, and skipped_existing
 - wiki pages created or updated
 - meta pages refreshed
 - validation run and result

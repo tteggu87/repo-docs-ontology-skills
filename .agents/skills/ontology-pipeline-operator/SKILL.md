@@ -105,7 +105,7 @@ Run validators last so they check the final current state, not an intermediate o
 For LLM Wiki repos, validation must check the closed ingest lifecycle:
 
 1. raw source registration is present
-2. applicable canonical JSONL registries were refreshed or explicitly reported as not applicable
+2. proposed JSONL records report emitted, appended, and skipped_existing counts when configured full ingest applies
 3. affected wiki pages were refreshed
 4. `wiki/_meta/index.md` and `wiki/_meta/log.md` were refreshed
 5. structural validation ran, or the missing validator is reported as an operational risk

@@ -208,14 +208,14 @@ The ingest succeeded when:
 - affected wiki pages are refreshed or created
 - uncertainty is preserved
 - `wiki/_meta/index.md` and `wiki/_meta/log.md` reflect the new work
-- the completion report distinguishes updated, skipped, not-applicable, and pending artifacts
+- the completion report distinguishes proposed JSONL emitted, appended, and skipped_existing counts
 
 ## Completion Report
 
 Report:
 
 1. Source registered
-2. JSONL registries updated, skipped, not applicable, or pending
+2. Proposed JSONL records emitted, appended, and skipped_existing
 3. Wiki pages updated or created
 4. Claims proposed, accepted, disputed, or left pending
 5. Evidence coverage

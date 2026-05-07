@@ -64,7 +64,7 @@ registries, affected concept pages, or review surfaces have been fully updated.
 4. Refresh `wiki/_meta/index.md`
 5. Append `wiki/_meta/log.md`
 6. Run structural validation
-7. Report updated, skipped, not-applicable, and pending artifacts
+7. Report proposed JSONL emitted/appended/skipped_existing counts plus changed wiki/meta artifacts
 
 The lifecycle is closed by artifact coverage, not by a hardcoded semantic
 router. Filename, keyword, or token-shape checks must not decide meaning.

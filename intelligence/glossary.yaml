@@ -39,6 +39,12 @@ terms:
     definition: Configured helper-LLM runtime in scripts/llm_full_ingest.py that can dry-run or apply source-backed wiki growth and proposed JSONL output without semantic fallback.
   - key: proposed_ontology_record
     definition: Automatically generated entity, claim, evidence, or relation candidate stored as proposed/needs_review rather than accepted canonical truth.
+  - key: proposed_record_id
+    definition: Stable artifact identifier assigned to a proposed ontology record so repeated ingest can skip duplicates without semantic merging.
+  - key: content_hash
+    definition: Structural hash over source identity, record family, and field-specific source-backed text used for idempotent proposed JSONL writes.
+  - key: idempotent_proposed_append
+    definition: Append-or-skip behavior for proposed JSONL records where existing ids or content hashes prevent duplicate lines during repeated ingest.
   - key: structural_validation
     definition: Validation that checks artifact presence, parseability, required fields, link integrity, and provenance shape without judging semantic truth.
   - key: source_family
