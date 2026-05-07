@@ -18,7 +18,7 @@ There are four layers:
 
 1. `raw/` contains immutable source material. Never modify source contents.
 2. `warehouse/jsonl/` contains canonical structured ontology truth such as messages, entities, claims, evidence, segments, and derived edges.
-3. `wiki/` contains LLM-maintained human-facing synthesis pages. The agent may create, update, rename, merge, and cross-link these pages.
+3. `wiki/` contains LLM-maintained human-facing synthesis pages. The agent may create, update, and cross-link these pages. Rename, merge, or deletion operations require explicit human intent and must not be performed by automatic ingest.
 4. `AGENTS.md` plus `intelligence/` define the operating rules, vocabulary, dataset boundaries, and action contracts.
 
 ## Core Rules
@@ -117,6 +117,8 @@ When the user asks to ingest a source:
 If ontology-backed ingest is not yet available, the agent may continue with wiki-only ingest, but should preserve the same source boundaries and note that canonical ontology extraction is pending.
 
 `scripts/llm_wiki.py ingest` is source registration only. It is not full ontology-backed ingest.
+
+`scripts/llm_full_ingest.py --apply` is the minimal configured-LLM full growth loop. It may complete the source page, create or append affected wiki pages, append proposed JSONL records, refresh index/log, and write an ingest report. It must not modify `raw/`, create accepted truth, delete content, rename pages, merge pages, or auto-commit. Review the resulting `git diff` before committing.
 
 `scripts/wiki_growth_graph.py` is the strict automated graph ingest runtime. It requires real LangGraph and a configured ingest LLM for ingest modes, fails fast when either is unavailable, and must not fall back to deterministic semantic drafting. This does not remove the agent-operated semantic workflow: an agent may still read `AGENTS.md`, the wiki map, source pages, and evidence directly, but that path is not an automatic script fallback.
 

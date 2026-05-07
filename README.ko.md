@@ -96,14 +96,16 @@ DocTology의 기본 약속은 다음입니다.
 
 1. 먼저 `AGENTS.md`를 읽습니다.
 2. 새 source를 `raw/inbox/`에 넣습니다.
-3. 필요하면 `scripts/llm_wiki.py ingest`로 source를 등록합니다.
-4. `llm-wiki-ontology-ingest` 또는 직접 에이전트 ingest로 wiki를 갱신합니다.
-5. lint/status를 확인합니다.
+3. configured helper LLM ingest를 쓸 수 있으면 `python scripts/llm_full_ingest.py raw/inbox/source.md --apply`를 실행합니다.
+4. 추가 검토나 수리가 필요하면 `llm-wiki-ontology-ingest` 또는 직접 에이전트 ingest로 보강합니다.
+5. `git diff`를 검토한 뒤 lint/status를 확인합니다.
 6. 기존 산출물 점검·갱신이 필요하면 `ontology-pipeline-operator`를 사용합니다.
 
-`scripts/llm_wiki.py ingest`는 registration only입니다. Full ingest는
-`raw -> register -> warehouse/jsonl 필요 시 갱신 -> wiki projection -> meta
-refresh -> structural validation`까지 이어지는 closed lifecycle입니다.
+`scripts/llm_wiki.py ingest`는 registration only입니다. `scripts/llm_full_ingest.py
+--apply`는 최소 configured-LLM growth loop입니다: `raw -> register -> source
+page -> affected wiki pages -> proposed JSONL -> meta refresh -> ingest report`.
+자동 apply는 `raw/` 수정, accepted truth 생성, content 삭제, page rename,
+page merge, auto-commit을 하지 않아야 합니다.
 
 자동 graph ingest는 `scripts/wiki_growth_graph.py`를 사용합니다. 이 runtime은
 real LangGraph와 configured ingest LLM을 요구하며, deterministic semantic
@@ -262,22 +264,24 @@ python scripts/helper_llm.py --root . --probe-chat
 python scripts/helper_llm.py --root . --probe-embedding
 ```
 
-source-page-only LLM ingest는 `scripts/llm_wiki.py ingest`를 registration-only로 유지한 채 별도 runner를 사용합니다.
+가장 단순한 full growth loop는 `scripts/llm_wiki.py ingest`를 registration-only로 유지한 채 다음 runner를 사용합니다.
+
+```bash
+python scripts/llm_full_ingest.py raw/inbox/example.md --mode dry_run
+python scripts/llm_full_ingest.py raw/inbox/example.md --apply
+python scripts/wiki_growth_graph.py check --source raw/inbox/example.md
+```
+
+strict LangGraph source-page runtime은 graph-runtime 디버깅용으로 계속 사용할 수 있습니다.
 
 ```bash
 python scripts/wiki_growth_graph.py ingest raw/inbox/example.md --mode draft
 python scripts/wiki_growth_graph.py ingest raw/inbox/example.md --mode apply-source-page
-python scripts/wiki_growth_graph.py check --source raw/inbox/example.md
 ```
 
-낮은 레벨의 transitional runner는 직접 디버깅용으로 계속 사용할 수 있습니다.
-
-```bash
-python scripts/llm_full_ingest.py raw/inbox/example.md --mode dry_run
-python scripts/llm_full_ingest.py raw/inbox/example.md --mode apply_source_page
-```
-
-첫 graph/full-ingest runner 버전은 source page를 채우고 ingest report를 씁니다. Broad wiki update, JSONL proposal write, accepted-claim promotion은 의도적으로 닫아둡니다.
+`--apply`는 source page 완성, affected wiki page 생성/append, proposed JSONL
+기록, index/log 갱신, ingest report 작성을 수행합니다. Accepted-claim
+promotion은 계속 review-gated입니다.
 
 ## Reference runtime에 대해
 
@@ -289,7 +293,7 @@ python scripts/llm_full_ingest.py raw/inbox/example.md --mode apply_source_page
 - `scripts/helper_llm.py` — 로컬 `wikiconfig.json` probe와 OpenAI-compatible helper 호출
 - `scripts/wiki_growth_graph.py` — strict LangGraph source-page growth runtime
 - `scripts/pipeline_check.py` — pending-aware structural route check
-- `scripts/llm_full_ingest.py` — configured-LLM source-page ingest draft/apply
+- `scripts/llm_full_ingest.py` — configured-LLM full growth dry-run/apply
 - `scripts/incremental_ingest.py` — 반복 export-style ingest path
 - `scripts/workbench_api.py` — local workbench adapter용 compatibility shell
 - `apps/workbench/` — 선택형 GUI/read-review surface

@@ -135,6 +135,136 @@ status: partial
         report_check = next(item for item in result["checks"] if item["name"] == "ingest_report_exists")
         self.assertEqual(report_check["status"], "pending")
 
+    def test_full_growth_artifacts_mark_growth_loop_applied(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "vault"
+            self.bootstrap.scaffold(root, force=False, profile="wiki-plus-ontology")
+            source = root / "raw" / "inbox" / "example.md"
+            source.write_text("# Example\n", encoding="utf-8")
+            source_page = root / "wiki" / "sources" / "source-example.md"
+            source_page.write_text(
+                """---
+title: "Example"
+type: source
+status: growth-applied
+created: 2026-05-07
+updated: 2026-05-07
+raw_path: "raw/inbox/example.md"
+---
+
+# Example
+""",
+                encoding="utf-8",
+            )
+            report_dir = root / "wiki" / "_meta" / "ingest_reports"
+            report_dir.mkdir(parents=True, exist_ok=True)
+            report = report_dir / "ingest-example.md"
+            report.write_text(
+                """---
+title: "Example Report"
+type: ingest_report
+status: applied
+---
+
+## Source Registered
+
+- Raw path: `raw/inbox/example.md`
+- Source page: [[source-example]]
+
+## Applied Affected Pages
+
+- `wiki/concepts/example.md`: created
+""",
+                encoding="utf-8",
+            )
+            proposed = root / "warehouse" / "jsonl" / "proposed_claims.jsonl"
+            proposed.write_text(
+                '{"raw_path":"raw/inbox/example.md","source_page":"wiki/sources/source-example.md","status":"proposed"}\n',
+                encoding="utf-8",
+            )
+            (root / "wiki" / "_meta" / "index.md").write_text(
+                "# Index\n\n- [[source-example]]\n- [[ingest-example]]\n",
+                encoding="utf-8",
+            )
+            (root / "wiki" / "_meta" / "log.md").write_text(
+                "# Log\n\n- Full ingest apply for `raw/inbox/example.md` via [[source-example]] and [[ingest-example]]\n",
+                encoding="utf-8",
+            )
+
+            result = self.pipeline_check.check_source(root, "raw/inbox/example.md")
+
+        self.assertEqual(result["semantic_status"], "growth_loop_applied")
+        jsonl_check = next(item for item in result["checks"] if item["name"] == "jsonl_projection")
+        wiki_check = next(item for item in result["checks"] if item["name"] == "broader_wiki_projection")
+        self.assertEqual(jsonl_check["status"], "ok")
+        self.assertEqual(wiki_check["status"], "ok")
+
+    def test_skipped_affected_pages_do_not_mark_growth_loop_applied(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "vault"
+            self.bootstrap.scaffold(root, force=False, profile="wiki-plus-ontology")
+            source = root / "raw" / "inbox" / "example.md"
+            source.write_text("# Example\n", encoding="utf-8")
+            source_page = root / "wiki" / "sources" / "source-example.md"
+            source_page.write_text(
+                """---
+title: "Example"
+type: source
+status: growth-applied
+created: 2026-05-07
+updated: 2026-05-07
+raw_path: "raw/inbox/example.md"
+---
+
+# Example
+""",
+                encoding="utf-8",
+            )
+            report_dir = root / "wiki" / "_meta" / "ingest_reports"
+            report_dir.mkdir(parents=True, exist_ok=True)
+            report = report_dir / "ingest-example.md"
+            report.write_text(
+                """---
+title: "Example Report"
+type: ingest_report
+status: applied
+---
+
+## Source Registered
+
+- Raw path: `raw/inbox/example.md`
+- Source page: [[source-example]]
+
+## Applied Affected Pages
+
+- `wiki/concepts/example.md`: created
+
+## Skipped Affected Pages
+
+- `affected page path is outside allowed wiki folders`
+""",
+                encoding="utf-8",
+            )
+            proposed = root / "warehouse" / "jsonl" / "proposed_claims.jsonl"
+            proposed.write_text(
+                '{"raw_path":"raw/inbox/example.md","source_page":"wiki/sources/source-example.md","status":"proposed"}\n',
+                encoding="utf-8",
+            )
+            (root / "wiki" / "_meta" / "index.md").write_text(
+                "# Index\n\n- [[source-example]]\n- [[ingest-example]]\n",
+                encoding="utf-8",
+            )
+            (root / "wiki" / "_meta" / "log.md").write_text(
+                "# Log\n\n- Full ingest apply for `raw/inbox/example.md` via [[source-example]] and [[ingest-example]]\n",
+                encoding="utf-8",
+            )
+
+            result = self.pipeline_check.check_source(root, "raw/inbox/example.md")
+
+        self.assertEqual(result["semantic_status"], "pending_broader_projection")
+        wiki_check = next(item for item in result["checks"] if item["name"] == "broader_wiki_projection")
+        self.assertEqual(wiki_check["status"], "pending")
+
 
 if __name__ == "__main__":
     unittest.main()

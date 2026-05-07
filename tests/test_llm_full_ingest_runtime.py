@@ -162,6 +162,44 @@ TBD.
         with self.assertRaises(RuntimeError):
             self.full_ingest.assert_apply_safe(validation)
 
+    def test_apply_validation_rejects_accepted_proposed_jsonl_records(self) -> None:
+        validation = self.full_ingest.validate_draft(
+            {
+                "summary": "ok",
+                "important_claims": [],
+                "proposed_entities": [{"name": "bad", "status": "accepted"}],
+            },
+            "no TBD here",
+        )
+
+        with self.assertRaises(RuntimeError):
+            self.full_ingest.assert_apply_safe(validation)
+
+    def test_apply_validation_rejects_forbidden_affected_page_actions(self) -> None:
+        validation = self.full_ingest.validate_draft(
+            {
+                "summary": "ok",
+                "important_claims": [],
+                "affected_page_updates": [
+                    {"path": "wiki/concepts/bad.md", "action": "delete"}
+                ],
+            },
+            "no TBD here",
+        )
+
+        with self.assertRaises(RuntimeError):
+            self.full_ingest.assert_apply_safe(validation)
+
+    def test_affected_page_update_contract_allows_only_create_or_append(self) -> None:
+        with self.assertRaises(RuntimeError):
+            self.full_ingest.validate_affected_update_action(
+                {"path": "wiki/concepts/bad.md", "action": "update"}
+            )
+        with self.assertRaises(RuntimeError):
+            self.full_ingest.validate_affected_update_action(
+                {"path": "wiki/concepts/bad.md", "action": "create_or_append"}
+            )
+
     def test_reserved_apply_modes_fail_without_writes(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -175,7 +213,7 @@ TBD.
 
         self.assertEqual(code, 2)
 
-    def test_apply_source_page_closes_source_page_report_index_log_loop(self) -> None:
+    def test_apply_closes_full_growth_report_index_log_loop(self) -> None:
         original_load_config = self.full_ingest.load_helper_config
         original_chat_completion = self.full_ingest.chat_completion
         try:
@@ -220,13 +258,58 @@ TBD.
                             "open_questions": ["라텔이 왜 중요한가?"],
                             "affected_pages": [
                                 {
-                                    "page": "[[라텔]]",
-                                    "action": "source_page_only",
-                                    "reason": "짧은 언급이라 source page에 보존",
+                                    "page": "wiki/concepts/라텔.md",
+                                    "action": "create_candidate",
+                                    "reason": "source의 중심 대상",
                                     "confidence": "medium",
                                 }
                             ],
-                            "completion_notes": ["source page only"],
+                            "affected_page_updates": [
+                                {
+                                    "path": "wiki/concepts/라텔.md",
+                                    "title": "라텔",
+                                    "type": "concept",
+                                    "action": "create",
+                                    "reason": "source의 중심 대상",
+                                    "summary_append": "라텔은 이 source에서 벌꿀오소리로 설명된다.",
+                                    "key_points": ["벌꿀오소리 언급이 source-backed claim으로 남는다."],
+                                    "evidence_timeline": [
+                                        {
+                                            "date": "unknown",
+                                            "text": "라텔이 벌꿀오소리로 언급됨.",
+                                            "evidence_excerpt": "라텔은 벌꿀오소리다.",
+                                        }
+                                    ],
+                                    "open_questions": ["라텔의 선호 생물과 연결되는가?"],
+                                }
+                            ],
+                            "proposed_entities": [
+                                {
+                                    "name": "라텔",
+                                    "type": "animal_or_character",
+                                    "status": "proposed",
+                                    "review_state": "needs_review",
+                                    "evidence_excerpt": "라텔은 벌꿀오소리다.",
+                                }
+                            ],
+                            "proposed_claims": [
+                                {
+                                    "claim_text": "라텔은 벌꿀오소리다.",
+                                    "status": "proposed",
+                                    "review_state": "needs_review",
+                                    "confidence": "medium",
+                                    "evidence_excerpt": "라텔은 벌꿀오소리다.",
+                                }
+                            ],
+                            "proposed_evidence": [
+                                {
+                                    "evidence_text": "라텔은 벌꿀오소리다.",
+                                    "status": "proposed",
+                                    "review_state": "needs_review",
+                                    "evidence_excerpt": "라텔은 벌꿀오소리다.",
+                                }
+                            ],
+                            "completion_notes": ["full apply"],
                         },
                         ensure_ascii=False,
                     )
@@ -240,8 +323,7 @@ TBD.
                             "raw/inbox/example.md",
                             "--root",
                             str(root),
-                            "--mode",
-                            "apply_source_page",
+                            "--apply",
                             "--title",
                             "라텔 예시",
                         ]
@@ -251,16 +333,32 @@ TBD.
                 source_pages = list((root / "wiki" / "sources").glob("source-*-라텔-예시.md"))
                 self.assertEqual(len(source_pages), 1)
                 source_text = source_pages[0].read_text(encoding="utf-8")
-                self.assertIn("status: pending-wiki-projection", source_text)
+                self.assertIn("status: growth-applied", source_text)
                 self.assertIn("라텔 관련 source-backed 요약입니다.", source_text)
                 self.assertNotIn("TBD", source_text)
 
+                concept_page = root / "wiki" / "concepts" / "라텔.md"
+                self.assertTrue(concept_page.exists())
+                concept_text = concept_page.read_text(encoding="utf-8")
+                self.assertIn("라텔은 이 source에서 벌꿀오소리로 설명된다.", concept_text)
+                self.assertIn(f"[[{source_pages[0].stem}]]", concept_text)
+
+                proposed_claims = root / "warehouse" / "jsonl" / "proposed_claims.jsonl"
+                self.assertTrue(proposed_claims.exists())
+                proposed_text = proposed_claims.read_text(encoding="utf-8")
+                self.assertIn('"status": "proposed"', proposed_text)
+                self.assertIn('"review_state": "needs_review"', proposed_text)
+                self.assertNotIn('"accepted"', proposed_text)
+
                 reports = list((root / "wiki" / "_meta" / "ingest_reports").glob("ingest-*.md"))
                 self.assertEqual(len(reports), 1)
+                report_text = reports[0].read_text(encoding="utf-8")
+                self.assertIn("## Applied Affected Pages", report_text)
+                self.assertIn("Review the automatic growth with `git diff`", report_text)
                 index_text = (root / "wiki" / "_meta" / "index.md").read_text(encoding="utf-8")
                 self.assertIn(f"[[{reports[0].stem}]]", index_text)
                 log_text = (root / "wiki" / "_meta" / "log.md").read_text(encoding="utf-8")
-                self.assertIn("Full ingest source-page draft", log_text)
+                self.assertIn("Full ingest apply", log_text)
         finally:
             self.full_ingest.load_helper_config = original_load_config
             self.full_ingest.chat_completion = original_chat_completion

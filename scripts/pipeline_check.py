@@ -2,9 +2,9 @@
 """Structural route checker for DocTology source ingest.
 
 This checker is intentionally structural. It reports whether a source has been
-registered, projected to a source page, reported, indexed, and logged. It never
-claims semantic truth and it never upgrades pending JSONL/wiki projection work
-to completion.
+registered, projected to a source page, reported, indexed, logged, and connected
+to broader wiki/proposed-JSONL growth artifacts. It never claims accepted
+semantic truth.
 """
 
 from __future__ import annotations
@@ -139,6 +139,65 @@ def find_ingest_report(root: Path, raw_path: Path, source_page: Path | None) -> 
     return None
 
 
+def proposed_jsonl_files_for_source(root: Path, raw_path: Path, source_page: Path | None) -> list[Path]:
+    jsonl_dir = root / "warehouse" / "jsonl"
+    if not jsonl_dir.exists():
+        return []
+    try:
+        raw_rel = relative_to_root(root, raw_path)
+    except Exception:
+        raw_rel = ""
+    source_rel = relative_to_root(root, source_page) if source_page is not None else ""
+    source_stem = source_page.stem if source_page is not None else ""
+    needles = [needle for needle in [raw_rel, source_rel, source_stem] if needle]
+    matches: list[Path] = []
+    for path in sorted(jsonl_dir.glob("proposed_*.jsonl")):
+        try:
+            text = read_text(path)
+        except Exception:
+            continue
+        if any(needle in text for needle in needles):
+            matches.append(path)
+    return matches
+
+
+def report_has_applied_affected_pages(report: Path | None) -> bool:
+    if report is None or not report.exists():
+        return False
+    text = read_text(report)
+    marker = "## Applied Affected Pages"
+    if marker not in text:
+        return False
+    after = text.split(marker, 1)[1]
+    section = after.split("\n## ", 1)[0]
+    return "- `" in section and "None applied" not in section
+
+
+def report_status(report: Path | None) -> str | None:
+    if report is None or not report.exists():
+        return None
+    text = read_text(report)
+    if not text.startswith("---\n"):
+        return None
+    frontmatter = text.split("---", 2)[1]
+    for line in frontmatter.splitlines():
+        if line.startswith("status:"):
+            return line.split(":", 1)[1].strip().strip('"')
+    return None
+
+
+def report_has_skipped_affected_pages(report: Path | None) -> bool:
+    if report is None or not report.exists():
+        return False
+    text = read_text(report)
+    marker = "## Skipped Affected Pages"
+    if marker not in text:
+        return False
+    after = text.split(marker, 1)[1]
+    section = after.split("\n## ", 1)[0]
+    return "- `" in section and "None skipped" not in section
+
+
 def index_mentions(root: Path, path: Path | None) -> bool:
     if path is None:
         return False
@@ -212,6 +271,9 @@ def check_source(root: Path, source: str) -> dict[str, Any]:
     source_page = find_source_page(root, source_path)
     handoff = find_handoff(root, source_path)
     report = find_ingest_report(root, source_path, source_page)
+    proposed_jsonl_files = proposed_jsonl_files_for_source(root, source_path, source_page)
+    applied_report = report_status(report) == "applied"
+    report_has_skips = report_has_skipped_affected_pages(report)
 
     if source_page is None:
         if handoff is not None:
@@ -228,8 +290,8 @@ def check_source(root: Path, source: str) -> dict[str, Any]:
         checks.append(check_item("ingest_report_exists", "pending", "source-page ingest report is pending"))
         checks.append(check_item("index_mentions_source_page", "pending", "source page is pending"))
         checks.append(check_item("log_mentions_source", "pending", "source page/log closure is pending"))
-        checks.append(check_item("jsonl_projection", "pending", "JSONL proposal/review is outside MVP"))
-        checks.append(check_item("broader_wiki_projection", "pending", "concept/entity wiki projection is outside MVP"))
+        checks.append(check_item("jsonl_projection", "pending", "proposed JSONL projection is pending"))
+        checks.append(check_item("broader_wiki_projection", "pending", "affected wiki projection is pending"))
         status = aggregate_status(checks)
         return {
             "status": status,
@@ -272,20 +334,44 @@ def check_source(root: Path, source: str) -> dict[str, Any]:
             "" if log_mentions(root, source_path, source_page, report) else "wiki/_meta/log.md does not mention this source stage yet",
         )
     )
-    checks.append(check_item("jsonl_projection", "pending", "JSONL proposal/review is outside MVP"))
-    checks.append(check_item("broader_wiki_projection", "pending", "concept/entity wiki projection is outside MVP"))
-    checks.append(check_item("review_gate", "pending", "accepted truth requires a later review gate"))
+    if proposed_jsonl_files:
+        checks.append(
+            check_item(
+                "jsonl_projection",
+                "ok",
+                "proposed JSONL records exist; accepted truth is still review-gated",
+                paths=[relative_to_root(root, path) for path in proposed_jsonl_files],
+            )
+        )
+    else:
+        checks.append(check_item("jsonl_projection", "pending", "proposed JSONL records are pending or source was too thin"))
+
+    if report_has_applied_affected_pages(report) and applied_report and not report_has_skips:
+        checks.append(check_item("broader_wiki_projection", "ok", "applied ingest report lists affected wiki page updates"))
+    elif report_has_skips:
+        checks.append(check_item("broader_wiki_projection", "pending", "ingest report contains skipped affected page updates"))
+    elif report_has_applied_affected_pages(report):
+        checks.append(check_item("broader_wiki_projection", "pending", "affected wiki updates exist, but report is not applied"))
+    else:
+        checks.append(check_item("broader_wiki_projection", "pending", "affected wiki projection is pending or source-page-only"))
+    checks.append(check_item("review_gate", "ok", "accepted truth remains intentionally review-gated"))
 
     source_page_stage = "ok" if report is not None and index_mentions(root, source_page) else "pending"
     status = aggregate_status(checks)
+    semantic_status = (
+        "growth_loop_applied"
+        if proposed_jsonl_files and report_has_applied_affected_pages(report) and applied_report and not report_has_skips
+        else "pending_broader_projection"
+    )
     return {
         "status": status,
-        "semantic_status": "pending_broader_projection",
+        "semantic_status": semantic_status,
         "source": source_display,
         "source_page_stage": source_page_stage,
         "source_page": source_page_rel,
         "handoff": relative_to_root(root, handoff) if handoff else None,
         "ingest_report": relative_to_root(root, report) if report else None,
+        "proposed_jsonl_files": [relative_to_root(root, path) for path in proposed_jsonl_files],
         "checks": checks,
     }
 

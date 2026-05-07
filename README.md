@@ -96,14 +96,16 @@ Treat the other skills as later-stage refinement or optional extension layers.
 
 1. Read `AGENTS.md` first.
 2. Put new sources into `raw/inbox/`.
-3. Register the source with `scripts/llm_wiki.py ingest` when appropriate.
-4. Use `llm-wiki-ontology-ingest` or direct agent-maintained ingest.
-5. Run lint/status checks.
+3. Run `python scripts/llm_full_ingest.py raw/inbox/source.md --apply` when configured helper LLM ingest is available.
+4. Use `llm-wiki-ontology-ingest` or direct agent-maintained ingest when the source needs extra review or repair.
+5. Review `git diff`, then run lint/status checks.
 6. Use `ontology-pipeline-operator` when existing outputs need refresh or validation.
 
-`scripts/llm_wiki.py ingest` is registration only. Full ingest means the
-closed lifecycle: `raw -> register -> warehouse/jsonl when applicable -> wiki
-projection -> meta refresh -> structural validation`.
+`scripts/llm_wiki.py ingest` is registration only. `scripts/llm_full_ingest.py
+--apply` is the minimal configured-LLM growth loop: `raw -> register -> source
+page -> affected wiki pages -> proposed JSONL -> meta refresh -> ingest report`.
+Automatic apply must not modify `raw/`, create accepted truth, delete content,
+rename pages, merge pages, or auto-commit.
 
 For automated graph ingest, use `scripts/wiki_growth_graph.py`. That runtime
 requires real LangGraph and a configured ingest LLM, and fails fast instead of
@@ -261,22 +263,24 @@ python scripts/helper_llm.py --root . --probe-chat
 python scripts/helper_llm.py --root . --probe-embedding
 ```
 
-For source-page-only LLM ingest, keep `scripts/llm_wiki.py ingest` as registration-only and use:
+For the simplest full growth loop, keep `scripts/llm_wiki.py ingest` as registration-only and use:
+
+```bash
+python scripts/llm_full_ingest.py raw/inbox/example.md --mode dry_run
+python scripts/llm_full_ingest.py raw/inbox/example.md --apply
+python scripts/wiki_growth_graph.py check --source raw/inbox/example.md
+```
+
+The strict LangGraph source-page runtime remains available for graph-runtime debugging:
 
 ```bash
 python scripts/wiki_growth_graph.py ingest raw/inbox/example.md --mode draft
 python scripts/wiki_growth_graph.py ingest raw/inbox/example.md --mode apply-source-page
-python scripts/wiki_growth_graph.py check --source raw/inbox/example.md
 ```
 
-The lower-level transitional runner remains available for direct debugging:
-
-```bash
-python scripts/llm_full_ingest.py raw/inbox/example.md --mode dry_run
-python scripts/llm_full_ingest.py raw/inbox/example.md --mode apply_source_page
-```
-
-The first graph/full-ingest runner version fills source pages and writes ingest reports. Broad wiki updates, JSONL proposal writes, and accepted-claim promotion remain intentionally closed.
+`--apply` completes source pages, creates or appends affected wiki pages, writes
+proposed JSONL records, refreshes index/log, and writes an ingest report.
+Accepted-claim promotion remains intentionally review-gated.
 
 ## About the reference runtime
 
@@ -288,7 +292,7 @@ Useful entry points include:
 - `scripts/helper_llm.py` for local `wikiconfig.json` probes and OpenAI-compatible helper calls
 - `scripts/wiki_growth_graph.py` for strict LangGraph source-page growth runtime
 - `scripts/pipeline_check.py` for pending-aware structural route checks
-- `scripts/llm_full_ingest.py` for configured-LLM source-page ingest drafts/apply
+- `scripts/llm_full_ingest.py` for configured-LLM full growth dry-run/apply
 - `scripts/incremental_ingest.py` for repeated export-style ingest paths
 - `scripts/workbench_api.py` as a compatibility shell for local workbench adapters
 - `apps/workbench/` as an optional GUI/read-review surface
