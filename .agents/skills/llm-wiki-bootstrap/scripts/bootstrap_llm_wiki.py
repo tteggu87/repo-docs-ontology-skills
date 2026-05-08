@@ -561,6 +561,7 @@ The LLM ingests, structures, cross-links, updates, and keeps the wiki healthy.
 │   ├── llm_wiki.py
 │   └── pipeline_check.py
 ├── templates/
+│   ├── answer_receipt_template.md
 │   └── source_page_template.md
 ├── warehouse/
 │   └── jsonl/
@@ -648,6 +649,13 @@ merge pages, or auto-commit. Review `git diff` after each apply.
 
 Use `python scripts/pipeline_check.py raw/inbox/my-source.md` for structural
 status after ingest. This check validates artifact shape, not semantic truth.
+
+When a later answer required raw/source fallback or wiki repair, record the
+trace with:
+
+```bash
+python scripts/llm_wiki.py answer-receipt "Question text" --used-raw raw/inbox/my-source.md --wiki-update wiki/analyses/example.md
+```
 
 ### 7. Ask Me To Maintain The Wiki
 
@@ -1653,6 +1661,10 @@ def wikiconfig_example_json() -> str:
     return read_source_repo_file("wikiconfig.example.json")
 
 
+def answer_receipt_template() -> str:
+    return read_source_repo_file("templates/answer_receipt_template.md")
+
+
 def gitignore_text() -> str:
     return """.venv/
 __pycache__/
@@ -1699,6 +1711,7 @@ def scaffold(target: Path, force: bool, profile: str) -> None:
     write_text(target / ".gitignore", gitignore_text())
     write_text(target / "scripts" / "llm_wiki.py", llm_wiki_py())
     write_text(target / "templates" / "source_page_template.md", source_template())
+    write_text(target / "templates" / "answer_receipt_template.md", answer_receipt_template())
     write_text(target / "wiki" / "_meta" / "dashboard.md", dashboard_md(date))
     write_text(target / "wiki" / "_meta" / "index.md", index_md(date))
     write_text(target / "wiki" / "_meta" / "log.md", log_md(date))

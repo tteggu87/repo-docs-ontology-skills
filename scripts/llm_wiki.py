@@ -19,6 +19,7 @@ WIKI_DIR = ROOT / "wiki"
 META_DIR = WIKI_DIR / "_meta"
 RAW_DIR = ROOT / "raw"
 TEMPLATE_PATH = ROOT / "templates" / "source_page_template.md"
+ANSWER_RECEIPT_TEMPLATE_PATH = ROOT / "templates" / "answer_receipt_template.md"
 
 VALID_PAGE_DIRS = [
     "analyses",
@@ -57,6 +58,12 @@ def read_text(path: Path) -> str:
 def write_text(path: Path, content: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(content, encoding="utf-8")
+
+
+def bullet_list(items: list[str], *, empty: str = "None recorded.") -> str:
+    if not items:
+        return f"- {empty}"
+    return "\n".join(f"- {item}" for item in items)
 
 
 def iter_markdown_pages() -> list[Path]:
@@ -274,6 +281,61 @@ def ingest_source(raw_path_str: str, title: str | None) -> int:
     return 0
 
 
+def available_analysis_path(title: str) -> Path:
+    base = WIKI_DIR / "analyses" / f"answer-{today()}-{slugify(title)}.md"
+    if not base.exists():
+        return base
+    for index in range(2, 1000):
+        candidate = WIKI_DIR / "analyses" / f"answer-{today()}-{slugify(title)}-{index}.md"
+        if not candidate.exists():
+            return candidate
+    raise RuntimeError("Could not allocate answer receipt path")
+
+
+def create_answer_receipt(
+    question: str,
+    title: str | None,
+    answer_summary: str | None,
+    used_wiki_pages: list[str],
+    used_source_pages: list[str],
+    used_raw_files: list[str],
+    used_jsonl_hints: list[str],
+    wiki_updates: list[str],
+    uncertainties: list[str],
+    follow_up: list[str],
+) -> int:
+    receipt_title = title or question
+    path = available_analysis_path(receipt_title)
+    template = read_text(ANSWER_RECEIPT_TEMPLATE_PATH)
+    content = (
+        template.replace("{{title}}", receipt_title)
+        .replace("{{date}}", today())
+        .replace("{{question}}", question)
+        .replace("{{answer_summary}}", answer_summary or "TBD.")
+        .replace("{{used_wiki_pages}}", bullet_list(used_wiki_pages))
+        .replace("{{used_source_pages}}", bullet_list(used_source_pages))
+        .replace("{{used_raw_files}}", bullet_list(used_raw_files))
+        .replace("{{used_jsonl_hints}}", bullet_list(used_jsonl_hints))
+        .replace("{{wiki_updates}}", bullet_list(wiki_updates))
+        .replace("{{uncertainties}}", bullet_list(uncertainties))
+        .replace("{{follow_up}}", bullet_list(follow_up))
+    )
+
+    write_text(path, content)
+    append_log(
+        "query",
+        receipt_title,
+        [
+            f"Created answer receipt at `{path.relative_to(ROOT).as_posix()}`",
+            "Receipt records context actually read and wiki updates made; it is not a heuristic answer generator.",
+        ],
+    )
+    rebuild_index()
+    print(f"Created answer receipt: {path.relative_to(ROOT)}")
+    print("Answer receipt records context and follow-up only; it does not perform semantic routing or answer generation.")
+    return 0
+
+
 def lint_wiki() -> int:
     lookup = page_lookup()
     broken: list[tuple[Path, str]] = []
@@ -441,6 +503,21 @@ def build_parser() -> argparse.ArgumentParser:
     ingest.add_argument("path", help="Path to the raw source, absolute or relative to project root.")
     ingest.add_argument("--title", help="Human-readable title for the source page.")
 
+    receipt = sub.add_parser(
+        "answer-receipt",
+        help="Create a structural answer receipt under wiki/analyses/. This records context; it does not answer.",
+    )
+    receipt.add_argument("question", help="Question that was answered or investigated.")
+    receipt.add_argument("--title", help="Receipt title. Defaults to the question.")
+    receipt.add_argument("--answer-summary", help="Optional short answer summary. Defaults to TBD.")
+    receipt.add_argument("--used-wiki", action="append", default=[], help="Wiki page actually read. Repeatable.")
+    receipt.add_argument("--used-source", action="append", default=[], help="Source page actually read. Repeatable.")
+    receipt.add_argument("--used-raw", action="append", default=[], help="Raw file revisited because wiki context was insufficient. Repeatable.")
+    receipt.add_argument("--used-jsonl", action="append", default=[], help="JSONL or ontology hint consulted. Repeatable.")
+    receipt.add_argument("--wiki-update", action="append", default=[], help="Wiki page created or updated after the answer. Repeatable.")
+    receipt.add_argument("--uncertainty", action="append", default=[], help="Uncertainty or limitation to preserve. Repeatable.")
+    receipt.add_argument("--follow-up", action="append", default=[], help="Follow-up action or open question. Repeatable.")
+
     sub.add_parser("reindex", help="Rebuild wiki/_meta/index.md")
     sub.add_parser("lint", help="Check for broken links, source/synthesis orphans, and missing frontmatter.")
     sub.add_parser("status", help="Show counts and basic wiki health metrics.")
@@ -463,6 +540,19 @@ def main() -> int:
 
     if args.command == "ingest":
         return ingest_source(args.path, args.title)
+    if args.command == "answer-receipt":
+        return create_answer_receipt(
+            args.question,
+            args.title,
+            args.answer_summary,
+            args.used_wiki,
+            args.used_source,
+            args.used_raw,
+            args.used_jsonl,
+            args.wiki_update,
+            args.uncertainty,
+            args.follow_up,
+        )
     if args.command == "reindex":
         out = rebuild_index()
         print(f"Rebuilt {out.relative_to(ROOT)}")

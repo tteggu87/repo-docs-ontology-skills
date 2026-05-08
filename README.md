@@ -282,13 +282,26 @@ python scripts/wiki_growth_graph.py ingest raw/inbox/example.md --mode apply-sou
 proposed JSONL records, refreshes index/log, and writes an ingest report.
 Accepted-claim promotion remains intentionally review-gated.
 
+When a later question requires raw/source fallback or wiki repair, record the
+trace without adding semantic heuristics:
+
+```bash
+python scripts/llm_wiki.py answer-receipt "Question text" \
+  --used-wiki wiki/_meta/index.md \
+  --used-raw raw/inbox/example.md \
+  --wiki-update wiki/analyses/example.md
+```
+
+Answer receipts are context receipts, not answer generators or page-selection
+rules. The agent still decides what to read and what the answer means.
+
 ## About the reference runtime
 
 The included local runtime is a reference implementation, not the whole product.
 
 Useful entry points include:
 
-- `scripts/llm_wiki.py` for source registration, indexing, linting, and status checks
+- `scripts/llm_wiki.py` for source registration, answer receipts, indexing, linting, and status checks
 - `scripts/helper_llm.py` for local `wikiconfig.json` probes and OpenAI-compatible helper calls
 - `scripts/wiki_growth_graph.py` for strict LangGraph source-page growth runtime
 - `scripts/pipeline_check.py` for pending-aware structural route checks

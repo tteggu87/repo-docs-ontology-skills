@@ -117,6 +117,7 @@ class ClosedIngestPipelineContractTest(unittest.TestCase):
             )
             self.assertTrue((target / "wikiconfig.example.json").exists())
             self.assertIn("wikiconfig.json", (target / ".gitignore").read_text(encoding="utf-8"))
+            self.assertTrue((target / "templates" / "answer_receipt_template.md").exists())
 
     def test_bootstrap_writes_pipeline_manifest_for_ontology_profile(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -238,6 +239,44 @@ tags:
             self.assertIn("- Orphan synthesis pages:", result.stdout)
             self.assertIn("wiki/sources/source-test.md", result.stdout)
             self.assertIn("wiki/concepts/concept-test.md", result.stdout)
+
+    def test_generated_answer_receipt_records_context_without_answer_generation(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "vault"
+            self.bootstrap.scaffold(target, force=False, profile="wiki-plus-ontology")
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(target / "scripts" / "llm_wiki.py"),
+                    "answer-receipt",
+                    "라텔이 좋아하는 생물은?",
+                    "--used-wiki",
+                    "wiki/_meta/index.md",
+                    "--used-raw",
+                    "raw/processed/chat.txt",
+                    "--wiki-update",
+                    "wiki/analyses/ratel-answer.md",
+                    "--uncertainty",
+                    "raw 문맥 재확인이 필요함",
+                ],
+                cwd=target,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertIn("Created answer receipt:", result.stdout)
+            self.assertIn("does not perform semantic routing or answer generation", result.stdout)
+            receipts = list((target / "wiki" / "analyses").glob("answer-*-라텔이-좋아하는-생물은.md"))
+            self.assertEqual(len(receipts), 1)
+            content = receipts[0].read_text(encoding="utf-8")
+            self.assertIn("kind: answer-receipt", content)
+            self.assertIn("라텔이 좋아하는 생물은?", content)
+            self.assertIn("- wiki/_meta/index.md", content)
+            self.assertIn("- raw/processed/chat.txt", content)
+            self.assertIn("- wiki/analyses/ratel-answer.md", content)
+            self.assertIn("- raw 문맥 재확인이 필요함", content)
 
 
 if __name__ == "__main__":

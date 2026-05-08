@@ -156,6 +156,35 @@ When the user asks a question:
 7. Cross-link that analysis page from relevant pages if appropriate.
 8. Append a `query` log entry for substantial work.
 
+## Answer Receipt Workflow
+
+When a query reveals that the wiki was insufficient and the agent had to inspect
+source pages, raw files, or JSONL hints, leave an answer receipt unless the user
+explicitly wants chat-only output.
+
+An answer receipt records:
+
+- the question
+- wiki pages actually read
+- source pages actually read
+- raw files revisited because wiki context was insufficient
+- JSONL or ontology hints consulted
+- wiki pages created or updated after the answer
+- uncertainties and follow-up work
+
+Use:
+
+```bash
+python scripts/llm_wiki.py answer-receipt "Question text" \
+  --used-wiki wiki/_meta/index.md \
+  --used-raw raw/inbox/source.md \
+  --wiki-update wiki/analyses/example.md
+```
+
+This is structural logging only. It must not become semantic routing, retrieval
+ranking, answer generation, or a deterministic fallback. The LLM still decides
+what to read, what the answer means, and whether the wiki needs repair.
+
 ## Ontology-Aware Ingest And Query Defaults
 
 When ontology-backed ingest is available, treat the default repeated workflow as:

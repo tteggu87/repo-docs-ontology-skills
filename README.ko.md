@@ -283,13 +283,26 @@ python scripts/wiki_growth_graph.py ingest raw/inbox/example.md --mode apply-sou
 기록, index/log 갱신, ingest report 작성을 수행합니다. Accepted-claim
 promotion은 계속 review-gated입니다.
 
+나중에 질문 과정에서 raw/source fallback이나 wiki 보완이 필요했다면,
+semantic heuristic을 추가하지 않고 trace만 기록합니다.
+
+```bash
+python scripts/llm_wiki.py answer-receipt "Question text" \
+  --used-wiki wiki/_meta/index.md \
+  --used-raw raw/inbox/example.md \
+  --wiki-update wiki/analyses/example.md
+```
+
+Answer receipt는 context receipt이지 answer generator나 page-selection rule이
+아닙니다. 무엇을 읽고 답을 어떻게 해석할지는 여전히 agent가 판단합니다.
+
 ## Reference runtime에 대해
 
 로컬 runtime은 reference implementation이지 제품 전체가 아닙니다.
 
 유용한 entrypoint:
 
-- `scripts/llm_wiki.py` — source registration, indexing, lint, status check
+- `scripts/llm_wiki.py` — source registration, answer receipt, indexing, lint, status check
 - `scripts/helper_llm.py` — 로컬 `wikiconfig.json` probe와 OpenAI-compatible helper 호출
 - `scripts/wiki_growth_graph.py` — strict LangGraph source-page growth runtime
 - `scripts/pipeline_check.py` — pending-aware structural route check
